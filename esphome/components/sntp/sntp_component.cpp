@@ -4,6 +4,9 @@
 #if defined(USE_ESP32) || defined(USE_LIBRETINY)
 #include "lwip/apps/sntp.h"
 #ifdef USE_ESP_IDF
+#ifndef ESP_NETIF_COMPONENT_BUILD
+#define ESP_NETIF_COMPONENT_BUILD 1
+#endif
 #include "esp_sntp.h"
 #endif
 #endif
