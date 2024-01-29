@@ -3,9 +3,9 @@ name: JH Publish Release
 
 # yamllint disable-line rule:truthy
 on:
-  workflow_dispatch:
   release:
     types: [published]
+  workflow_dispatch:
   schedule:
     - cron: "0 2 * * *"
 
