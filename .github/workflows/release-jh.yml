@@ -3,9 +3,9 @@ name: JH Publish Release
 
 # yamllint disable-line rule:truthy
 on:
+  workflow_dispatch:
   release:
     types: [published]
-  workflow_dispatch:
   schedule:
     - cron: "0 2 * * *"
 
@@ -40,7 +40,7 @@ jobs:
 
   deploy-pypi:
     name: Build and publish to PyPi
-    if: github.repository == 'jethome-iot/esphome' && github.event_name == 'release'
+    if: 0 #github.repository == 'jethome-iot/esphome' && github.event_name == 'release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.1.1
