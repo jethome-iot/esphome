@@ -159,6 +159,7 @@ CONFIG_SCHEMA = cv.All(
             "KSZ8081": RMII_SCHEMA,
             "KSZ8081RNA": RMII_SCHEMA,
             "W5500": SPI_SCHEMA,
+            "LAN867X": RMII_SCHEMA,
         },
         upper=True,
     ),
