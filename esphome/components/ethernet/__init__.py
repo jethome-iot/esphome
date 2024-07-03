@@ -2,7 +2,7 @@ from esphome import pins
 import esphome.config_validation as cv
 import esphome.final_validate as fv
 import esphome.codegen as cg
-from esphome.components.esp32 import add_idf_sdkconfig_option, get_esp32_variant
+from esphome.components.esp32 import add_idf_sdkconfig_option, get_esp32_variant, add_idf_component
 from esphome.components.esp32.const import (
     VARIANT_ESP32C3,
     VARIANT_ESP32S2,
@@ -30,6 +30,7 @@ from esphome.const import (
     CONF_PAGE_ID,
     CONF_ADDRESS,
 )
+from esphome.const import KEY_CORE, KEY_FRAMEWORK_VERSION
 from esphome.core import CORE, coroutine_with_priority
 from esphome.components.network import IPAddress
 from esphome.components.spi import get_spi_interface, CONF_INTERFACE_INDEX
@@ -59,6 +60,7 @@ ETHERNET_TYPES = {
     "KSZ8081": EthernetType.ETHERNET_TYPE_KSZ8081,
     "KSZ8081RNA": EthernetType.ETHERNET_TYPE_KSZ8081RNA,
     "W5500": EthernetType.ETHERNET_TYPE_W5500,
+    "LAN867X": EthernetType.ETHERNET_TYPE_LAN867X,
 }
 
 SPI_ETHERNET_TYPES = ["W5500"]
@@ -170,6 +172,7 @@ CONFIG_SCHEMA = cv.All(
             "JL1101": RMII_SCHEMA,
             "KSZ8081": RMII_SCHEMA,
             "KSZ8081RNA": RMII_SCHEMA,
+            "LAN867X": RMII_SCHEMA,
             "W5500": SPI_SCHEMA,
         },
         upper=True,
@@ -260,6 +263,20 @@ async def to_code(config):
 
     if CONF_MANUAL_IP in config:
         cg.add(var.set_manual_ip(manual_ip(config[CONF_MANUAL_IP])))
+
+    if (config[CONF_TYPE] == "LAN867X" and CORE.using_esp_idf and CORE.data[KEY_CORE][KEY_FRAMEWORK_VERSION] >= cv.Version(5,3,0)):
+        add_idf_component(
+            name="lan867x",
+            repo="https://github.com/espressif/esp-eth-drivers.git",
+            ref="master",
+            path="lan867x",
+        )
+        add_idf_component(
+            name="ethernet_init",
+            repo="https://github.com/espressif/esp-eth-drivers.git",
+            ref="master",
+            path="ethernet_init",
+        )
 
     cg.add_define("USE_ETHERNET")
 

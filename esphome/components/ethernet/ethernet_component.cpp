@@ -180,6 +180,12 @@ void EthernetComponent::setup() {
       break;
     }
 #endif
+#if ESP_IDF_VERSION_MAJOR >= 5 && ESP_IDF_VERSION_MINOR >= 3
+    case ETHERNET_TYPE_LAN867X: {
+      this->phy_ = esp_eth_phy_new_lan867x(&phy_config);
+      break;
+    }
+#endif
     default: {
       this->mark_failed();
       return;
@@ -300,6 +306,10 @@ void EthernetComponent::dump_config() {
 
     case ETHERNET_TYPE_W5500:
       eth_type = "W5500";
+      break;
+
+    case ETHERNET_TYPE_LAN867X:
+      eth_type = "LAN867X";
       break;
 
     default:
