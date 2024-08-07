@@ -12,6 +12,10 @@
 #include "esp_netif.h"
 #include "esp_mac.h"
 
+#if ESP_IDF_VERSION_MAJOR >= 5 && ESP_IDF_VERSION_MINOR >= 3
+#include "esp_eth_phy_lan867x.h"
+#endif
+
 namespace esphome {
 namespace ethernet {
 
