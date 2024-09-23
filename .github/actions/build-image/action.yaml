@@ -28,7 +28,7 @@ runs:
       run: |
         output=$(docker/generate_tags.py \
           --tag "${{ inputs.version }}" \
-          --suffix "${{ inputs.suffix }}" --registry ghcr)
+          --suffix "${{ inputs.suffix }}")
         echo $output
         for l in $output; do
           echo $l >> $GITHUB_OUTPUT
