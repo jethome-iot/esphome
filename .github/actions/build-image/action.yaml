@@ -28,7 +28,7 @@ runs:
       run: |
         output=$(docker/generate_tags.py \
           --tag "${{ inputs.version }}" \
-          --suffix "${{ inputs.suffix }}")
+          --suffix "${{ inputs.suffix }}" --registry ghcr)
         echo $output
         for l in $output; do
           echo $l >> $GITHUB_OUTPUT
@@ -71,6 +71,7 @@ runs:
         touch "/tmp/digests/${{ inputs.target }}/ghcr/${digest#sha256:}"
 
     - name: Build and push to dockerhub by digest
+      if: 0
       id: build-dockerhub
       uses: docker/build-push-action@v6.9.0
       env:
@@ -90,6 +91,7 @@ runs:
           type=image,name=docker.io/${{ steps.tags.outputs.image_name }},push-by-digest=true,name-canonical=true,push=true
 
     - name: Export dockerhub digests
+      if: 0
       shell: bash
       run: |
         mkdir -p /tmp/digests/${{ inputs.target }}/dockerhub
