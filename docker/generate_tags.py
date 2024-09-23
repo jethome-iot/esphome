@@ -8,6 +8,7 @@ CHANNEL_RELEASE = "release"
 
 GHCR = "ghcr"
 DOCKERHUB = "dockerhub"
+CRJETHOME = "crjethome"
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -25,7 +26,7 @@ parser.add_argument(
 parser.add_argument(
     "--registry",
     type=str,
-    choices=[GHCR, DOCKERHUB],
+    choices=[GHCR, DOCKERHUB, CRJETHOME],
     required=False,
     action="append",
     help="The registry to build tags for.",
@@ -75,6 +76,8 @@ def main():
             print(f"image=ghcr.io/{image_name}")
         if DOCKERHUB in args.registry:
             print(f"image=docker.io/{image_name}")
+        if CRJETHOME in args.registry:
+            print(f"image=cr.jethome.work/{image_name}")
 
     print(f"image_name={image_name}")
 
@@ -85,6 +88,8 @@ def main():
             full_tags += [f"ghcr.io/{image_name}:{tag}"]
         if DOCKERHUB in args.registry:
             full_tags += [f"docker.io/{image_name}:{tag}"]
+        if CRJETHOME in args.registry:
+            full_tags += [f"cr.jethome.work/{image_name}:{tag}"]
     print(f"tags={','.join(full_tags)}")
 
 
