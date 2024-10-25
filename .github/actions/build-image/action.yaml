@@ -72,7 +72,7 @@ runs:
 
     - name: Build and push to crjethome by digest
       id: build-crjethome
-      uses: docker/build-push-action@v6.7.0
+      uses: docker/build-push-action@v6.9.0
       env:
         DOCKER_BUILD_SUMMARY: false
         DOCKER_BUILD_RECORD_UPLOAD: false
