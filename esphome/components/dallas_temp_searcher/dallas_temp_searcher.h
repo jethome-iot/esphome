@@ -19,6 +19,12 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
 
   void dump_config() override;
 
+  uint16_t sensors_size() { return sensors_.size(); }
+
+  dallas_temp::DallasTemperatureSensor *sensor(uint16_t index) {
+    return index < sensors_.size() ? sensors_[index] : nullptr;
+  }
+
  protected:
   void set_default_parameters_(dallas_temp::DallasTemperatureSensor *sensor);
 
