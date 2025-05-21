@@ -12,7 +12,7 @@ static const char *const TAG = "dallas.temp.searcher";
 void DallasTemperatureSearcher::setup() {
   if (this->bus_ == nullptr)
     return;
-  ESP_LOGCONFIG(TAG, "Dallas sensor searcher started");
+
   const std::vector<uint64_t> &addresses = this->bus_->get_devices();
 
   this->sensors_params_.reserve(addresses.size());
@@ -31,7 +31,6 @@ void DallasTemperatureSearcher::setup() {
     strcpy(string_buff, "Temp Sensor 0x");
     strcat(string_buff, address_str.c_str());
     entity_base_info.name = string_buff;
-    ESP_LOGCONFIG(TAG, "Added %s", string_buff);
 
     strcpy(string_buff, "ts_0x");
     strcat(string_buff, address_str.c_str());
@@ -47,6 +46,13 @@ void DallasTemperatureSearcher::setup() {
 
     App.register_sensor(sensor);
     App.register_component(sensor);
+  }
+}
+
+void DallasTemperatureSearcher::dump_config() {
+  ESP_LOGCONFIG(TAG, "Dallas sensor searcher:");
+  for (dallas_temp::DallasTemperatureSensor *sensor : this->sensors_) {
+    ESP_LOGCONFIG(TAG, "  Added %s", sensor->get_name());
   }
 }
 

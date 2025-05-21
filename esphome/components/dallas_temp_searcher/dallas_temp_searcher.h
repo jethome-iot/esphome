@@ -17,6 +17,8 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
   // Update interval for all sensors
   void set_update_interval(uint32_t update_interval_ms) { this->update_interval_ms_ = update_interval_ms; }
 
+  void dump_config() override;
+
  protected:
   void set_default_parameters_(dallas_temp::DallasTemperatureSensor *sensor);
 
