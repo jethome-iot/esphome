@@ -35,11 +35,20 @@ void Application::setup() {
   for (uint32_t i = 0; i < this->components_.size(); i++) {
     Component *component = this->components_[i];
 
+    size_t last_components_size = this->components_.size();
     // Update loop_component_start_time_ before calling each component during setup
     this->loop_component_start_time_ = millis();
     component->call();
     this->scheduler.process_to_add();
     this->feed_wdt();
+
+    // if current component dynamically added other components in its call setup, sorting of next components is needed
+    if (this->components_.size() != last_components_size) {
+      std::stable_sort(this->components_.begin() + i + 1, this->components_.end(), [](Component *a, Component *b) {
+        return a->get_actual_setup_priority() > b->get_actual_setup_priority();
+      });
+    }
+
     if (component->can_proceed())
       continue;
 
