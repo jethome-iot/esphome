@@ -9,7 +9,7 @@ namespace dallas_temp_searcher {
 
 static const char *const TAG = "dallas.temp.searcher";
 
-template<typename... Args> EntityBaseInfo make_sensor_info_(const char *format, Args... args) {
+template<typename... Args> EntityBaseInfo make_sensor_info(const char *format, Args... args) {
   const size_t string_buffer_size = 64;
   char string_buff[string_buffer_size];
 
@@ -148,10 +148,12 @@ void DallasTemperatureSearcher::dump_config() {
   ESP_LOGCONFIG(TAG, "Dallas sensor searcher:");
   uint8_t index = 0;
   for (dallas_temp::DallasTemperatureSensor *sensor : this->sensors_) {
-    if (sensor)
+    if (sensor) {
       ESP_LOGCONFIG(TAG, "  Added %s", sensor->get_name().c_str());
-    else if (search_mode_ == SearchMode::ADDRESS_MAP)
+
+    } else if (search_mode_ == SearchMode::ADDRESS_MAP) {
       ESP_LOGCONFIG(TAG, "  Lost sensor 0x%s", format_hex(this->saved_addresses_[index]).c_str());
+    }
 
     index++;
   }
@@ -169,7 +171,7 @@ void DallasTemperatureSearcher::set_default_parameters_(dallas_temp::DallasTempe
 }
 
 dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_with_address_(const uint64_t &address) {
-  EntityBaseInfo info = make_sensor_info_("0x%s", format_hex(address).c_str());
+  EntityBaseInfo info = make_sensor_info("0x%s", format_hex(address).c_str());
   ESP_LOGI(TAG, "info %s - %s", info.name.c_str(), info.object_id.c_str());
   return make_sensor_(address, std::move(info));
 }
@@ -177,7 +179,7 @@ dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_wit
 dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_with_number_(const uint64_t &address,
                                                                                           uint32_t number) {
   ESP_LOGI(TAG, "info number %d", number);
-  EntityBaseInfo info = make_sensor_info_("number_%d", number);
+  EntityBaseInfo info = make_sensor_info("number_%d", number);
   ESP_LOGI(TAG, "info %s - %s", info.name.c_str(), info.object_id.c_str());
   return make_sensor_(address, std::move(info));
 }

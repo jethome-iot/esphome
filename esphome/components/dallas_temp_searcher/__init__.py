@@ -10,7 +10,7 @@ DallasTempSearcherComponent = dallas_temp_searcher_ns.class_(
     "DallasTemperatureSearcher", cg.Component
 )
 
-CONF_MAX_SENSORS_NUM = "maximum_sensors"
+CONF_MAX_SENSORS_NUM = "max_sensors_num"
 
 search_mode = dallas_temp_searcher_ns.enum("SearchMode", is_class=True)
 
