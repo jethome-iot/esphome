@@ -1,0 +1,65 @@
+#include "dallas_temp_searcher.h"
+#include "esphome/core/log.h"
+#include "esphome/core/helpers.h"
+#include "esphome/core/application.h"
+#include <string.h>
+
+namespace esphome {
+namespace dallas_temp_searcher {
+
+static const char *const TAG = "dallas.temp.searcher";
+
+void DallasTemperatureSearcher::setup() {
+  if (this->bus_ == nullptr)
+    return;
+  ESP_LOGCONFIG(TAG, "Dallas sensor searcher started");
+  const std::vector<uint64_t> &addresses = this->bus_->get_devices();
+
+  this->sensors_params_.reserve(addresses.size());
+  this->sensors_.reserve(addresses.size());
+
+  char string_buff[32];
+
+  for (size_t i = 0; i < addresses.size(); i++) {
+    auto sensor = new dallas_temp::DallasTemperatureSensor();
+    EntityBaseInfo entity_base_info;
+    sensor->set_one_wire_bus(bus_);
+
+    const uint64_t &address = addresses[i];
+    std::string address_str = format_hex(address);
+
+    strcpy(string_buff, "Temp Sensor 0x");
+    strcat(string_buff, address_str.c_str());
+    entity_base_info.name = string_buff;
+    ESP_LOGCONFIG(TAG, "Added %s", string_buff);
+
+    strcpy(string_buff, "ts_0x");
+    strcat(string_buff, address_str.c_str());
+    entity_base_info.object_id = string_buff;
+
+    sensor->set_name(entity_base_info.name.c_str());
+    sensor->set_object_id(entity_base_info.object_id.c_str());
+    sensor->set_address(addresses[i]);
+    set_default_parameters_(sensor);
+
+    this->sensors_.push_back(sensor);
+    this->sensors_params_.push_back(std::move(entity_base_info));
+
+    App.register_sensor(sensor);
+    App.register_component(sensor);
+  }
+}
+
+void DallasTemperatureSearcher::set_default_parameters_(dallas_temp::DallasTemperatureSensor *sensor) {
+  sensor->set_device_class("temperature");
+  sensor->set_state_class(sensor::STATE_CLASS_MEASUREMENT);
+  sensor->set_unit_of_measurement("\302\260C");
+  sensor->set_accuracy_decimals(1);
+  sensor->set_force_update(false);
+  sensor->set_update_interval(this->update_interval_ms_);
+  sensor->set_component_source("dallas_temp.sensor");
+  sensor->set_resolution(12);
+}
+
+}  // namespace dallas_temp_searcher
+}  // namespace esphome
