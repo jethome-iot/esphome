@@ -31,6 +31,8 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
  protected:
   void set_default_parameters_(dallas_temp::DallasTemperatureSensor *sensor);
 
+  dallas_temp::DallasTemperatureSensor *make_sensor_(const uint64_t &address);
+
   std::vector<dallas_temp::DallasTemperatureSensor *> sensors_;
   std::vector<EntityBaseInfo> sensors_params_;
   uint32_t update_interval_ms_ = 60000;
