@@ -25,10 +25,10 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
 
   uint16_t sensors_size() { return this->sensors_.size(); }
 
-  dallas_temp::DallasTemperatureSensor *sensor(uint16_t index) {
-    if (index >= this->sensors_.size())
+  dallas_temp::DallasTemperatureSensor *sensor(uint16_t number) {
+    if (number > this->sensors_.size() || number == 0)
       return nullptr;
-    return this->sensors_[index];
+    return this->sensors_[number - 1];
   }
 
   void set_search_mode(SearchMode mode) { this->search_mode_ = mode; }
@@ -40,8 +40,9 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
   void restore_sensors_count_();
   bool restore_address_data_(ESPPreferenceObject &obj);
 
-  dallas_temp::DallasTemperatureSensor *make_sensor_(const uint64_t &address);
-  void add_sensor_(const uint64_t &address);
+  dallas_temp::DallasTemperatureSensor *make_sensor_(const uint64_t &address, EntityBaseInfo &&info);
+  dallas_temp::DallasTemperatureSensor *make_sensor_with_address_(const uint64_t &address);
+  dallas_temp::DallasTemperatureSensor *make_sensor_with_number_(const uint64_t &address, uint32_t number);
 
   std::vector<dallas_temp::DallasTemperatureSensor *> sensors_;
   std::vector<EntityBaseInfo> sensors_params_;

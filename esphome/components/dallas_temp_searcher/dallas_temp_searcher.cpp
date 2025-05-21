@@ -9,18 +9,39 @@ namespace dallas_temp_searcher {
 
 static const char *const TAG = "dallas.temp.searcher";
 
+template<typename... Args> EntityBaseInfo make_sensor_info_(const char *format, Args... args) {
+  const size_t string_buffer_size = 64;
+  char string_buff[string_buffer_size];
+
+  EntityBaseInfo entity_base_info;
+
+  strcpy(string_buff, "Temp Sensor ");
+  snprintf(string_buff + strlen(string_buff), string_buffer_size, format, args...);
+  entity_base_info.name = string_buff;
+
+  strcpy(string_buff, "dallas_searcher_temp_sensor_");
+  snprintf(string_buff + strlen(string_buff), string_buffer_size, format, args...);
+  entity_base_info.object_id = string_buff;
+
+  return entity_base_info;
+}
+
 void DallasTemperatureSearcher::setup() {
   if (this->bus_ == nullptr)
     return;
 
   const std::vector<uint64_t> &addresses = this->bus_->get_devices();
 
-  if (search_mode_ == SearchMode::ALL) {
+  if (this->search_mode_ == SearchMode::ALL) {
     this->sensors_params_.reserve(addresses.size());
     this->sensors_.reserve(addresses.size());
 
     for (const uint64_t &address : addresses) {
-      add_sensor_(address);
+      auto *sensor = make_sensor_with_address_(address);
+      this->sensors_.push_back(sensor);
+
+      App.register_sensor(sensor);
+      App.register_component(sensor);
     }
     return;
   }
@@ -62,11 +83,13 @@ void DallasTemperatureSearcher::setup() {
     auto it = std::find(addresses.begin(), addresses.end(), address);
 
     if (it != addresses.end()) {
-      add_sensor_(address);
+      auto *sensor = make_sensor_with_number_(address, i + 1);
+      this->sensors_.push_back(sensor);
     } else {
       ESP_LOGD(TAG, "Cannot find sensor with address 0x%s", format_hex(address).c_str());
       sensors_.push_back(nullptr);
     }
+    i++;
   }
 
   // Второй проход - попытка привязать новые адреса по возможности
@@ -80,7 +103,8 @@ void DallasTemperatureSearcher::setup() {
     if (this->saved_addresses_.size() < this->max_sensors_num_) {
       ESP_LOGD(TAG, "New sensor was added. Address 0x%s", format_hex(address).c_str());
       saved_addresses_.push_back(address);
-      add_sensor_(address);
+      auto *sensor = make_sensor_with_number_(address, saved_addresses_.size());
+      this->sensors_.push_back(sensor);
       continue;
     }
 
@@ -92,14 +116,19 @@ void DallasTemperatureSearcher::setup() {
       size_t index = it2 - sensors_.begin();
       ESP_LOGD(TAG, "Replacing the lost sensor 0x%s with a new one with an address 0x%s",
                format_hex(saved_addresses_[index]).c_str(), format_hex(address).c_str());
-      *it2 = make_sensor_(address);
+      *it2 = make_sensor_with_number_(address, index + 1);
       saved_addresses_[index] = address;
-      App.register_sensor(*it2);
-      App.register_component(*it2);
 
     } else {
       // Достигли максимального значения ничего сделать не можем
       break;
+    }
+  }
+
+  for (auto *sensor : sensors_) {
+    if (sensor) {
+      App.register_sensor(sensor);
+      App.register_component(sensor);
     }
   }
 
@@ -139,38 +168,30 @@ void DallasTemperatureSearcher::set_default_parameters_(dallas_temp::DallasTempe
   sensor->set_resolution(12);
 }
 
-void DallasTemperatureSearcher::add_sensor_(const uint64_t &address) {
-  dallas_temp::DallasTemperatureSensor *sensor = make_sensor_(address);
-  this->sensors_.push_back(sensor);
-
-  App.register_sensor(sensor);
-  App.register_component(sensor);
+dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_with_address_(const uint64_t &address) {
+  EntityBaseInfo info = make_sensor_info_("0x%s", format_hex(address).c_str());
+  ESP_LOGI(TAG, "info %s - %s", info.name.c_str(), info.object_id.c_str());
+  return make_sensor_(address, std::move(info));
 }
 
-dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_(const uint64_t &address) {
-  const size_t string_buffer_size = 32;
-  char string_buff[string_buffer_size];
+dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_with_number_(const uint64_t &address,
+                                                                                          uint32_t number) {
+  ESP_LOGI(TAG, "info number %d", number);
+  EntityBaseInfo info = make_sensor_info_("number_%d", number);
+  ESP_LOGI(TAG, "info %s - %s", info.name.c_str(), info.object_id.c_str());
+  return make_sensor_(address, std::move(info));
+}
 
+dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_(const uint64_t &address,
+                                                                              EntityBaseInfo &&info) {
   auto *sensor = new dallas_temp::DallasTemperatureSensor();
-  EntityBaseInfo entity_base_info;
   sensor->set_one_wire_bus(bus_);
-
-  std::string address_str = format_hex(address);
-
-  strcpy(string_buff, "Temp Sensor 0x");
-  strlcat(string_buff, address_str.c_str(), string_buffer_size);
-  entity_base_info.name = string_buff;
-
-  strcpy(string_buff, "ts_0x");
-  strlcat(string_buff, address_str.c_str(), string_buffer_size);
-  entity_base_info.object_id = string_buff;
-
-  sensor->set_name(entity_base_info.name.c_str());
-  sensor->set_object_id(entity_base_info.object_id.c_str());
+  sensor->set_name(info.name.c_str());
+  sensor->set_object_id(info.object_id.c_str());
   sensor->set_address(address);
   set_default_parameters_(sensor);
 
-  this->sensors_params_.push_back(std::move(entity_base_info));
+  this->sensors_params_.push_back(std::move(info));
   return sensor;
 }
 
