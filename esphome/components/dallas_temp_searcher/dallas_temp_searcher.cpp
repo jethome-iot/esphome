@@ -46,6 +46,14 @@ void DallasTemperatureSearcher::set_default_parameters_(dallas_temp::DallasTempe
   sensor->set_resolution(12);
 }
 
+void DallasTemperatureSearcher::add_sensor_(const uint64_t &address) {
+  dallas_temp::DallasTemperatureSensor *sensor = make_sensor_(address);
+  this->sensors_.push_back(sensor);
+
+  App.register_sensor(sensor);
+  App.register_component(sensor);
+}
+
 dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_(const uint64_t &address) {
   const size_t string_buffer_size = 32;
   char string_buff[string_buffer_size];
