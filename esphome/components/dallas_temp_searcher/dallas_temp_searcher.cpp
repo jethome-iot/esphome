@@ -53,7 +53,7 @@ void DallasTemperatureSearcher::setup() {
   this->saved_addresses_.reserve(this->max_sensors_num_);
   this->addresses_pref_.reserve(this->max_sensors_num_);
 
-  uint32_t hash = fnv1_hash(std::string("_dallas_temp_searcher_test"));
+  uint32_t hash = fnv1_hash(std::string("_dallas_temp_searcher_"));
   this->sensors_count_pref_ = global_preferences->make_preference<uint8_t>(hash, true);
   this->restore_sensors_count_();
 
