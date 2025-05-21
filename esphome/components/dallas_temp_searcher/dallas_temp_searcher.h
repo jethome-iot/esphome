@@ -40,7 +40,7 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
   void restore_sensors_count_();
   bool restore_address_data_(ESPPreferenceObject &obj);
 
-  dallas_temp::DallasTemperatureSensor *make_sensor_(const uint64_t &address, EntityBaseInfo &&info);
+  dallas_temp::DallasTemperatureSensor *make_sensor_base_(const uint64_t &address, EntityBaseInfo &&info);
   dallas_temp::DallasTemperatureSensor *make_sensor_with_address_(const uint64_t &address);
   dallas_temp::DallasTemperatureSensor *make_sensor_with_number_(const uint64_t &address, uint32_t number);
 
