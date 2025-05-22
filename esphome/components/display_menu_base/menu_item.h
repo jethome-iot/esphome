@@ -13,6 +13,10 @@
 #include "esphome/components/switch/switch.h"
 #endif
 
+#ifdef USE_GROUPS
+#include "esphome/components/groups/groups.h"
+#endif
+
 #include <vector>
 #include "esphome/core/log.h"
 
@@ -78,11 +82,35 @@ class MenuItemMenu : public MenuItem {
     item->set_parent(this);
     this->items_.push_back(item);
   }
+
+  void add_generated_items(MenuItem *item) {
+    item->set_parent(this);
+    if (this->add_to_begin_) {
+      this->items_.emplace(this->items_.begin(), item);
+    } else {
+      this->items_.push_back(item);
+    }
+  }
   size_t items_size() const { return this->items_.size(); }
-  MenuItem *get_item(size_t i) { return this->items_[i]; }
+  MenuItem *get_item(size_t i) const { return this->items_[i]; }
+
+#ifdef USE_GROUPS
+  void add_group(groups::Group *group) { this->groups_.push_back(group); }
+  const auto &groups() { return groups_; }
+
+  void add_group_name(std::string &&name) { return this->group_names_.push_back(name); }
+  const auto &group_names() { return group_names_; }
+#endif
+
+  void set_add_to_begin(bool val) { this->add_to_begin_ = val; }
 
  protected:
   std::vector<MenuItem *> items_;
+#ifdef USE_GROUPS
+  std::vector<groups::Group *> groups_;
+  std::vector<std::string> group_names_;
+#endif
+  bool add_to_begin_ = false;
 };
 
 class MenuItemEditable : public MenuItem {

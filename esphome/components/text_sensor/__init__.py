@@ -1,12 +1,13 @@
 from esphome import automation
 import esphome.codegen as cg
-from esphome.components import mqtt, web_server
+from esphome.components import groups, mqtt, web_server
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_DEVICE_CLASS,
     CONF_ENTITY_CATEGORY,
     CONF_FILTERS,
     CONF_FROM,
+    CONF_GROUPS,
     CONF_ICON,
     CONF_ID,
     CONF_MQTT_ID,
@@ -127,6 +128,7 @@ validate_device_class = cv.one_of(*DEVICE_CLASSES, lower=True, space="_")
 
 _TEXT_SENSOR_SCHEMA = (
     cv.ENTITY_BASE_SCHEMA.extend(web_server.WEBSERVER_SORTING_SCHEMA)
+    .extend(groups.LIST_OF_GROUPS_SCHEMA)
     .extend(cv.MQTT_COMPONENT_SCHEMA)
     .extend(
         {
@@ -209,6 +211,9 @@ async def setup_text_sensor_core_(var, config):
 
     if web_server_config := config.get(CONF_WEB_SERVER):
         await web_server.add_entity_config(var, web_server_config)
+
+    if group_config := config.get(CONF_GROUPS):
+        await groups.add_entity_config(var, group_config)
 
 
 async def register_text_sensor(var, config):

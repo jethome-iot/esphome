@@ -1,8 +1,98 @@
 #include "display_menu_base.h"
 #include <algorithm>
+#include "esphome/core/application.h"
+#include "esphome/components/display_menu_base/display_menu_renderers.h"
 
 namespace esphome {
 namespace display_menu_base {
+
+void DisplayMenuComponent::setup() {
+  renderers_.push_back(new SwitchMenuRender());
+#ifdef USE_GROUPS
+  recurse_menu_items_(this->root_item_);
+#endif
+}
+
+#ifdef USE_GROUPS
+void DisplayMenuComponent::recurse_menu_items_(MenuItemMenu *parent_menu) {
+  // Find menu items with groups and generate_items
+  for (size_t i = 0; i < parent_menu->items_size(); i++) {
+    MenuItem *item = parent_menu->get_item(i);
+    if (item->get_type() == MENU_ITEM_MENU) {
+      MenuItemMenu *menu = static_cast<MenuItemMenu *>(item);
+      recurse_menu_items_(menu);
+      if (menu->groups().size() > 0 || menu->group_names().size() > 0) {
+        generate_to_menu_items_(menu);
+      }
+    }
+  }
+}
+
+void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
+  size_t num_added = 0;
+  for (groups::Group *group : menu->groups()) {
+    num_added += process_group(menu, group);
+  }
+
+  for (const std::string &name : menu->group_names()) {
+    groups::Group *group = groups::global_groups_storage.find_group(name.c_str());
+    num_added += process_group(menu, group);
+  }
+
+  if (num_added == 0 && menu->items_size() == 0) {
+    display_menu_base::MenuItem *back_item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_BACK);
+    back_item->set_text("No items in menu. Back");
+    menu->add_item(back_item);
+  }
+}
+
+size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *group) {
+  size_t added = 0;
+  if (group == nullptr) {
+    return added;
+  }
+
+  for (const groups::EntityInfo &info : group->items()) {
+    MenuRenderInterface *render = nullptr;
+
+    // Проход раз
+    for (auto render_variant : this->renderers_) {
+      if (render_variant->type() == info.type && render_variant->subtype() == info.subtype) {
+        render = render_variant;
+        break;
+      }
+    }
+
+    // Проход два
+    if (render == nullptr) {
+      for (auto render_variant : this->renderers_) {
+        if (render_variant->type() == info.type) {
+          render = render_variant;
+          break;
+        }
+      }
+    }
+
+    if (render != nullptr) {
+      added += render->render_entity(menu, info);
+    }
+  }
+  return added;
+}
+
+#ifdef USE_SWITCH
+MenuItemSwitch *DisplayMenuComponent::create_switch(switch_::Switch *switch_obj) {
+  MenuItemSwitch *n_switch = new display_menu_base::MenuItemSwitch();
+  n_switch->set_text(switch_obj->get_name());
+  n_switch->set_immediate_edit(true);
+  n_switch->set_switch_variable(switch_obj);
+  n_switch->set_on_text("On");
+  n_switch->set_off_text("Off");
+  return n_switch;
+}
+#endif
+
+#endif
 
 void DisplayMenuComponent::up() {
   if (this->check_healthy_and_active_()) {

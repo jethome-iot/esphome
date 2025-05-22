@@ -1,0 +1,73 @@
+import esphome.codegen as cg
+import esphome.config_validation as cv
+from esphome.const import CONF_ID, CONF_NAME
+
+CONF_GROUPS = "groups"
+CONF_GROUPS_STORAGE_ID = "groups_storage_id"
+CONF_LIST = "list"
+
+groups_ns = cg.esphome_ns.namespace("groups")
+GroupClass = groups_ns.class_("Group")
+GroupStorage = groups_ns.class_("GroupsStorage")
+
+GROUP_BASE_SCHEMA = {
+    cv.Required(CONF_ID): cv.declare_id(GroupClass),
+    cv.Optional(CONF_NAME): cv.string,
+}
+
+GROUP_ID_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(cg.int_),
+    }
+)
+
+EntityType = groups_ns.enum("EntityType", is_class=True)
+
+ENTITY_TYPE_ENUM = {
+    "none": EntityType.NONE,
+    "switch": EntityType.SWITCH,
+    "sensor": EntityType.SENSOR,
+}
+
+EntitySubtype = groups_ns.enum("EntitySubtype", is_class=True)
+ENTITY_SUBTYPE_ENUM = {"none": EntitySubtype.NONE, "dallas": EntitySubtype.DALLAS}
+
+
+def group_id(value):
+    return GROUP_ID_SCHEMA(value)
+
+
+LIST_OF_GROUPS_SCHEMA = cv.Schema(
+    {cv.Optional(CONF_GROUPS): cv.All(cv.ensure_list(group_id), cv.Length(min=1))}
+)
+
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(GroupStorage),
+            cv.Optional(CONF_LIST): cv.ensure_list(GROUP_BASE_SCHEMA),
+        }
+    ),
+)
+
+
+def add_groups(storage_var, config):
+    for group_config in config:
+        group_var = cg.new_Pvariable(group_config[CONF_ID])
+        cg.add(group_var.set_group_name(group_config[CONF_NAME]))
+        cg.add(storage_var.add_group(group_var))
+
+
+async def add_entity_config(
+    entity, config, entity_type=EntityType.NONE, entity_subtype=EntitySubtype.NONE
+):
+    for group in config:
+        group_var = await cg.get_variable(group[CONF_ID])
+        cg.add(group_var.add_entity(entity, entity_type, entity_subtype))
+
+
+async def to_code(config):
+    if (group_config := config.get(CONF_LIST)) is not None:
+        var = cg.new_Pvariable(config[CONF_ID], len(group_config))
+        add_groups(var, group_config)
+        cg.add_define("USE_GROUPS")

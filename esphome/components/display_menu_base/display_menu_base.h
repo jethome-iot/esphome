@@ -6,6 +6,8 @@
 
 #include <forward_list>
 
+#include "esphome/components/groups/entity_types.h"
+
 namespace esphome {
 namespace display_menu_base {
 
@@ -15,12 +17,27 @@ enum MenuMode {
 };
 
 class MenuItem;
+class MenuItemMenu;
+
+class MenuRenderInterface {
+ public:
+  MenuRenderInterface(groups::EntityType type, groups::EntitySubtype subtype = groups::EntitySubtype::NONE)
+      : type_(type), subtype_(subtype){};
+
+  groups::EntityType type() { return type_; }
+  groups::EntitySubtype subtype() { return subtype_; }
+
+  groups::EntityType type_;
+  groups::EntitySubtype subtype_;
+  virtual size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) = 0;
+};
 
 /** Class to display a hierarchical menu.
  *
  */
 class DisplayMenuComponent : public Component {
  public:
+  void setup() override;
   void set_root_item(MenuItemMenu *item) { this->displayed_item_ = this->root_item_ = item; }
   void set_active(bool active) { this->active_ = active; }
   void set_mode(MenuMode mode) { this->mode_ = mode; }
@@ -66,6 +83,18 @@ class DisplayMenuComponent : public Component {
     update();
   }
 
+#ifdef USE_GROUPS
+  void recurse_menu_items_(MenuItemMenu *parent_menu);
+  void generate_to_menu_items_(MenuItemMenu *menu);
+  size_t process_group(MenuItemMenu *menu, groups::Group *group);
+
+#ifdef USE_SWITCH
+  void check_switches_in_generated_menu_(MenuItemMenu *menu);
+  MenuItemSwitch *create_switch(switch_::Switch *);
+#endif
+
+#endif
+
   virtual void on_before_show(){};
   virtual void on_after_show(){};
   virtual void on_before_hide(){};
@@ -83,6 +112,9 @@ class DisplayMenuComponent : public Component {
   std::forward_list<std::pair<uint8_t, uint8_t>> selection_stack_{};
   bool editing_{false};
   bool root_on_enter_called_{false};
+  std::vector<MenuItem *> generated_items_;
+
+  std::vector<MenuRenderInterface *> renderers_;
 };
 
 }  // namespace display_menu_base

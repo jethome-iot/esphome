@@ -1,7 +1,8 @@
 import esphome.codegen as cg
-from esphome.components import one_wire, sensor
+from esphome.components import groups, one_wire, sensor
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_GROUPS_SUBTYPE,
     CONF_RESOLUTION,
     DEVICE_CLASS_TEMPERATURE,
     STATE_CLASS_MEASUREMENT,
@@ -36,6 +37,7 @@ CONFIG_SCHEMA = (
 
 
 async def to_code(config):
+    config[CONF_GROUPS_SUBTYPE] = groups.EntitySubtype.DALLAS
     var = await sensor.new_sensor(config)
     await cg.register_component(var, config)
     await one_wire.register_one_wire_device(var, config)

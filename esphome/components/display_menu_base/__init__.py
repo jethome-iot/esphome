@@ -3,6 +3,7 @@ import re
 from esphome import automation, core
 from esphome.automation import maybe_simple_id
 import esphome.codegen as cg
+from esphome.components import groups
 from esphome.components.number import Number
 from esphome.components.select import Select
 from esphome.components.switch import Switch
@@ -12,6 +13,7 @@ from esphome.const import (
     CONF_COMMAND,
     CONF_CUSTOM,
     CONF_FORMAT,
+    CONF_GROUPS,
     CONF_ID,
     CONF_ITEMS,
     CONF_MODE,
@@ -44,6 +46,11 @@ CONF_ON_ENTER = "on_enter"
 CONF_ON_LEAVE = "on_leave"
 CONF_ON_NEXT = "on_next"
 CONF_ON_PREV = "on_prev"
+CONF_SUBTYPE = "subtype"
+CONF_PREFIX = "prefix"
+CONF_BASE = "base"
+CONF_GENERATE = "generate"
+CONF_NONE = "none"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 
@@ -99,6 +106,7 @@ MENU_MODES = {
     CONF_JOYSTICK: MenuMode.MENU_MODE_JOYSTICK,
 }
 
+
 DisplayMenuOnEnterTrigger = display_menu_base_ns.class_(
     "DisplayMenuOnEnterTrigger", automation.Trigger
 )
@@ -127,6 +135,14 @@ def validate_format(format):
         )
 
     return format
+
+
+def validate_items_groups_in_menu(config):
+    if CONF_ITEMS not in config and CONF_GROUPS not in config:
+        raise cv.Invalid(
+            "Menu item should have at least one of the keys: groups, items"
+        )
+    return config
 
 
 # Use a simple indirection to circumvent the recursion limitation
@@ -195,13 +211,16 @@ MENU_ITEM_SCHEMA = cv.typed_schema(
                 cv.GenerateID(CONF_ID): cv.declare_id(MenuItem),
             }
         ),
-        CONF_MENU: MENU_ITEM_ENTER_LEAVE_SCHEMA.extend(
-            {
-                cv.GenerateID(CONF_ID): cv.declare_id(MenuItemMenu),
-                cv.Required(CONF_ITEMS): cv.All(
-                    cv.ensure_list(menu_item_schema), cv.Length(min=1)
-                ),
-            }
+        CONF_MENU: cv.All(
+            MENU_ITEM_ENTER_LEAVE_SCHEMA.extend(
+                {
+                    cv.GenerateID(CONF_ID): cv.declare_id(MenuItemMenu),
+                    cv.Optional(CONF_ITEMS): cv.All(
+                        cv.ensure_list(menu_item_schema), cv.Length(min=1)
+                    ),
+                }
+            ).extend(groups.LIST_OF_GROUPS_SCHEMA),
+            validate_items_groups_in_menu,
         ),
         CONF_SELECT: MENU_ITEM_ENTER_LEAVE_VALUE_SCHEMA.extend(
             {
@@ -405,6 +424,11 @@ async def menu_item_to_code(menu, config, parent):
         cg.add(item.set_switch_variable(var))
         cg.add(item.set_on_text(config[CONF_ON_TEXT]))
         cg.add(item.set_off_text(config[CONF_OFF_TEXT]))
+    if config[CONF_TYPE] == CONF_MENU:
+        if (groups := config.get(CONF_GROUPS)) is not None:
+            for group in groups:
+                group_var = await cg.get_variable(group[CONF_ID])
+                cg.add(item.add_group(group_var))
     for conf in config.get(CONF_ON_ENTER, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], item)
         await automation.build_automation(trigger, [(MenuItemConstPtr, "it")], conf)
