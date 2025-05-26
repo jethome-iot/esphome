@@ -19,14 +19,36 @@ SEARCH_MODE = {
     "address_map": search_mode.ADDRESS_MAP,
 }
 
-CONFIG_SCHEMA = cv.Schema(
-    {
-        cv.GenerateID(): cv.declare_id(DallasTempSearcherComponent),
-        cv.Optional(CONF_UPDATE_INTERVAL, default="60s"): cv.update_interval,
-        cv.Optional(CONF_MAX_SENSORS_NUM, default=6): cv.int_range(0, 32),
-        cv.Optional(CONF_MODE, default="all"): cv.enum(SEARCH_MODE, lower=True),
-    }
-).extend(one_wire.one_wire_device_schema())
+MAX_SENSOR_NUM_SCHEMA = cv.All(
+    cv.Schema(
+        {cv.Required(CONF_MAX_SENSORS_NUM): cv.int_range(0, 32)}, extra=cv.ALLOW_EXTRA
+    )
+)
+
+
+def check_mode(config):
+    if CONF_MODE in config:
+        if config[CONF_MODE] == "address_map":
+            MAX_SENSOR_NUM_SCHEMA(config)
+        elif config[CONF_MODE] == "all":
+            if CONF_MAX_SENSORS_NUM in config:
+                raise cv.Invalid(
+                    f"{CONF_MAX_SENSORS_NUM} param is needed only in address_map mode"
+                )
+    return config
+
+
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(DallasTempSearcherComponent),
+            cv.Optional(CONF_UPDATE_INTERVAL, default="60s"): cv.update_interval,
+            cv.Optional(CONF_MODE, default="all"): cv.enum(SEARCH_MODE, lower=True),
+            cv.Optional(CONF_MAX_SENSORS_NUM): cv.int_,
+        }
+    ).extend(one_wire.one_wire_device_schema()),
+    check_mode,
+)
 
 
 async def to_code(config):
@@ -34,5 +56,6 @@ async def to_code(config):
     await cg.register_component(var, config)
     await one_wire.register_one_wire_device(var, config)
 
-    cg.add(var.set_max_sensors_num(config[CONF_MAX_SENSORS_NUM]))
+    if CONF_MAX_SENSORS_NUM in config:
+        cg.add(var.set_max_sensors_num(config[CONF_MAX_SENSORS_NUM]))
     cg.add(var.set_search_mode(config[CONF_MODE]))
