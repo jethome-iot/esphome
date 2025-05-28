@@ -269,7 +269,6 @@ DISPLAY_MENU_BASE_SCHEMA = cv.Schema(
         cv.Optional(CONF_ACTIVE, default=True): cv.boolean,
         cv.GenerateID(CONF_ROOT_ITEM_ID): cv.declare_id(MenuItemMenu),
         cv.Optional(CONF_MODE, default=CONF_ROTARY): cv.enum(MENU_MODES),
-        cv.Optional(CONF_MODE, default=CONF_ROTARY): cv.enum(MENU_MODES),
         cv.Optional(CONF_RIGHT_FOR_MENU_ENTER, default=True): cv.boolean,
         cv.Optional(CONF_ON_ENTER): automation.validate_automation(
             {
