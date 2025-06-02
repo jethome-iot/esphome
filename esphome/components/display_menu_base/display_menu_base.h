@@ -65,6 +65,8 @@ class DisplayMenuComponent : public Component {
 
   bool is_active() const { return this->active_; }
 
+  void add_renderer(MenuRenderInterface *renderer) { this->renderers_.push_back(renderer); }
+
  protected:
   void reset_();
   void process_initial_();

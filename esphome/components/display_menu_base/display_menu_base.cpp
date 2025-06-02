@@ -1,13 +1,11 @@
 #include "display_menu_base.h"
 #include <algorithm>
 #include "esphome/core/application.h"
-#include "esphome/components/display_menu_base/display_menu_renderers.h"
 
 namespace esphome {
 namespace display_menu_base {
 
 void DisplayMenuComponent::setup() {
-  renderers_.push_back(new SwitchMenuRender());
 #ifdef USE_GROUPS
   recurse_menu_items_(this->root_item_);
 #endif
