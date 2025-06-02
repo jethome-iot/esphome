@@ -46,26 +46,25 @@ void DallasTemperatureSearcher::setup() {
     return;
   }
 
-  // if (this->search_mode_ == SearchMode::ADDRESS_MAP)
+  // Below code for SearchMode::ADDRESS_MAP
 
   this->sensors_params_.reserve(this->max_sensors_num_);
   this->sensors_.reserve(this->max_sensors_num_);
   this->saved_addresses_.reserve(this->max_sensors_num_);
   this->addresses_pref_.reserve(this->max_sensors_num_);
 
+  // Restore sensors count
   uint32_t hash = fnv1_hash(std::string("_dallas_temp_searcher_"));
   this->sensors_count_pref_ = global_preferences->make_preference<uint8_t>(hash, true);
   this->restore_sensors_count_();
 
-  // need restore addresses
-
-  // Создаем ESPPreferenceObject по максимальному количеству
+  // Create ESPPreferenceObjects
   for (uint8_t i = 0; i != this->max_sensors_num_; i++) {
     ESPPreferenceObject address_data_perf = global_preferences->make_preference<uint64_t>(hash + i + 1, true);
     this->addresses_pref_.push_back(address_data_perf);
   }
 
-  // Восстанавливаем сколько сохранено адресов
+  // Restore addresses
   for (uint8_t i = 0; i != std::min(this->saved_sensors_num_, this->max_sensors_num_); i++) {
     if (!restore_address_data_(addresses_pref_[i])) {
       this->saved_sensors_num_ = i;
@@ -73,7 +72,7 @@ void DallasTemperatureSearcher::setup() {
     }
   }
 
-  // Первый проход - добавление всех адресов из сохраненных и добавление nullptr отсутствующих
+  // The first pass is to add all addresses from the saved addresses and add nullptr of the missing ones
   for (uint8_t i = 0; i < this->saved_addresses_.size(); i++) {
     const uint64_t &address = this->saved_addresses_[i];
     auto it = std::find(addresses.begin(), addresses.end(), address);
@@ -87,14 +86,14 @@ void DallasTemperatureSearcher::setup() {
     }
   }
 
-  // Второй проход - попытка привязать новые адреса по возможности
+  // The second pass is an attempt to bind new addresses if possible
   for (const uint64_t &address : addresses) {
-    // Те, что уже есть - мимо
+    // The ones that are already there are gone
     auto it = std::find(this->saved_addresses_.begin(), this->saved_addresses_.end(), address);
     if (it != this->saved_addresses_.end())
       continue;
 
-    // Если есть еще места - добавляем в конец
+    // If there are more places at the end - add to the end
     if (this->saved_addresses_.size() < this->max_sensors_num_) {
       ESP_LOGW(TAG, "New sensor was added. Address 0x%s", format_hex(address).c_str());
       this->saved_addresses_.push_back(address);
@@ -103,19 +102,18 @@ void DallasTemperatureSearcher::setup() {
       continue;
     }
 
-    // Пытаемся найти lost и их заменить
-    auto it2 = std::find(sensors_.begin(), sensors_.end(), nullptr);
+    // Trying to find lost and replace them
+    auto it_lost = std::find(sensors_.begin(), sensors_.end(), nullptr);
 
-    // Нашелся lost - заменяем
-    if (it2 != this->sensors_.end()) {
-      size_t index = it2 - sensors_.begin();
+    if (it_lost != this->sensors_.end()) {
+      size_t index = it_lost - sensors_.begin();
       ESP_LOGW(TAG, "Replacing the lost sensor 0x%s with a new one with an address 0x%s",
                format_hex(this->saved_addresses_[index]).c_str(), format_hex(address).c_str());
-      *it2 = make_sensor_with_number_(address, index + 1);
+      *it_lost = make_sensor_with_number_(address, index + 1);
       this->saved_addresses_[index] = address;
 
     } else {
-      // Достигли максимального значения ничего сделать не можем
+      // Reached the maximum number of sensor and can't do nothing
       break;
     }
   }
@@ -127,7 +125,7 @@ void DallasTemperatureSearcher::setup() {
     }
   }
 
-  // Синхронизировать найденное
+  // Sync memory
   this->saved_sensors_num_ = this->saved_addresses_.size();
   if (!this->sensors_count_pref_.save(&this->saved_sensors_num_)) {
     ESP_LOGE(TAG, "Error saving registered sensor count");
