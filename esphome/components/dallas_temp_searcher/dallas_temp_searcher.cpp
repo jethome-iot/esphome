@@ -188,10 +188,10 @@ dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_bas
 }
 
 bool DallasTemperatureSearcher::restore_address_data_(ESPPreferenceObject &obj) {
-  uint64_t temp;
-  if (obj.load(&temp)) {
-    ESP_LOGD(TAG, "Loaded save address from memory 0x%s", format_hex(temp).c_str());
-    saved_addresses_.push_back(temp);
+  uint64_t address;
+  if (obj.load(&address)) {
+    ESP_LOGD(TAG, "Loaded save address from memory 0x%s", format_hex(address).c_str());
+    saved_addresses_.push_back(address);
     return true;
   }
   return false;
