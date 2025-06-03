@@ -55,10 +55,12 @@ CONF_BASE = "base"
 CONF_GENERATE = "generate"
 CONF_NONE = "none"
 CONF_RENDERERS = "renderers"
+CONF_DALLAS_TEMP = "dallas_temp"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 SwitchMenuRender = display_menu_base_ns.class_("SwitchMenuRender")
 SensorMenuRender = display_menu_base_ns.class_("SensorMenuRender")
+DallasTempMenuRender = display_menu_base_ns.class_("DallasTempMenuRender")
 
 MenuItem = display_menu_base_ns.class_("MenuItem")
 MenuItemConstPtr = MenuItem.operator("ptr").operator("const")
@@ -112,7 +114,11 @@ MENU_MODES = {
     CONF_JOYSTICK: MenuMode.MENU_MODE_JOYSTICK,
 }
 
-MENU_ITEMS_RENDERERS = {CONF_SWITCH: SwitchMenuRender, CONF_SENSOR: SensorMenuRender}
+MENU_ITEMS_RENDERERS = {
+    CONF_SWITCH: SwitchMenuRender,
+    CONF_SENSOR: SensorMenuRender,
+    CONF_DALLAS_TEMP: DallasTempMenuRender,
+}
 
 DisplayMenuOnEnterTrigger = display_menu_base_ns.class_(
     "DisplayMenuOnEnterTrigger", automation.Trigger
