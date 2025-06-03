@@ -16,20 +16,6 @@ size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityI
   return 1;
 }
 
-auto SensorMenuRender::getRenderLambda(sensor::Sensor *sensor_obj) {
-  auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
-    char buf[50];
-    char format_buf[10];
-    sprintf(format_buf, "%%s %%0.%df", 2);
-    if (sensor_obj->has_state())
-      sprintf(buf, format_buf, sensor_obj->get_name().c_str(), sensor_obj->state);
-    else
-      sprintf(buf, "%s Nan", sensor_obj->get_name().c_str());
-    return buf;
-  };
-  return lambda;
-}
-
 size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(info.entity);
   MenuItem *item = new MenuItem(MENU_ITEM_LABEL);
