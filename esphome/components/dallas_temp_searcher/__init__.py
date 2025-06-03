@@ -1,7 +1,7 @@
 import esphome.codegen as cg
-from esphome.components import one_wire
+from esphome.components import groups, one_wire
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_MODE, CONF_UPDATE_INTERVAL
+from esphome.const import CONF_GROUPS, CONF_ID, CONF_MODE, CONF_UPDATE_INTERVAL
 
 AUTO_LOAD = ["dallas_temp"]
 
@@ -46,7 +46,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_MODE, default="all"): cv.enum(SEARCH_MODE, lower=True),
             cv.Optional(CONF_MAX_SENSORS_NUM): cv.int_,
         }
-    ).extend(one_wire.one_wire_device_schema()),
+    ).extend(one_wire.one_wire_device_schema().extend(groups.LIST_OF_GROUPS_SCHEMA)),
     check_mode,
 )
 
@@ -59,3 +59,8 @@ async def to_code(config):
     if CONF_MAX_SENSORS_NUM in config:
         cg.add(var.set_max_sensors_num(config[CONF_MAX_SENSORS_NUM]))
     cg.add(var.set_search_mode(config[CONF_MODE]))
+
+    if (group_list := config.get(CONF_GROUPS)) is not None:
+        for group in group_list:
+            group_var = await cg.get_variable(group[CONF_ID])
+            cg.add(var.add_group(group_var))
