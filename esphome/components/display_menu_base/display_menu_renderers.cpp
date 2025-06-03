@@ -40,15 +40,35 @@ size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::Ent
 }
 
 void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::DallasTemperatureSensor *sensor_obj) {
-  MenuItem *internal_info1 = new MenuItem(MENU_ITEM_LABEL);
-  internal_info1->set_text("Address:");
-  MenuItem *internal_info2 = new MenuItem(MENU_ITEM_LABEL);
+  MenuItem *name_label = new MenuItem(MENU_ITEM_LABEL);
+  name_label->set_text("Name:");
 
-  auto lambda2 = [=](const display_menu_base::MenuItem *it) -> std::string { return sensor_obj->get_address_name(); };
+  MenuItem *name_info = new MenuItem(MENU_ITEM_LABEL);
+  name_info->set_text(sensor_obj->get_name());
 
-  internal_info2->set_text(lambda2);
-  menu->add_item(internal_info1);
-  menu->add_item(internal_info2);
+  MenuItem *temp_label = new MenuItem(MENU_ITEM_LABEL);
+  temp_label->set_text("Temperature:");
+
+  MenuItem *temp_info = new MenuItem(MENU_ITEM_LABEL);
+  temp_info->set_text(SensorMenuRender::get_value_lambda(sensor_obj));
+
+  MenuItem *address_label = new MenuItem(MENU_ITEM_LABEL);
+  address_label->set_text("Address:");
+
+  MenuItem *address_info = new MenuItem(MENU_ITEM_LABEL);
+  auto address_lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
+    return sensor_obj->get_address_name();
+  };
+  address_info->set_text(address_lambda);
+
+  menu->add_item(name_label);
+  menu->add_item(name_info);
+
+  menu->add_item(temp_label);
+  menu->add_item(temp_info);
+
+  menu->add_item(address_label);
+  menu->add_item(address_info);
 }
 
 }  // namespace display_menu_base

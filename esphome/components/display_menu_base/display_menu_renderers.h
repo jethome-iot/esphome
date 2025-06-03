@@ -32,6 +32,20 @@ class SensorMenuRender : public MenuRenderInterface {
     };
     return lambda;
   }
+
+  static auto get_value_lambda(sensor::Sensor *sensor_obj) {
+    auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
+      char buf[16];
+      char format_buf[10];
+      sprintf(format_buf, "%%0.%df", 2);
+      if (sensor_obj->has_state())
+        sprintf(buf, format_buf, sensor_obj->state);
+      else
+        sprintf(buf, "Nan");
+      return buf;
+    };
+    return lambda;
+  }
 };
 
 class DallasTempMenuRender : public MenuRenderInterface {
