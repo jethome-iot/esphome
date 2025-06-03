@@ -20,6 +20,7 @@ from esphome.const import (
     CONF_MODE,
     CONF_NUMBER,
     CONF_ON_VALUE,
+    CONF_SENSOR,
     CONF_TEXT,
     CONF_TRIGGER_ID,
     CONF_TYPE,
@@ -57,6 +58,7 @@ CONF_RENDERERS = "renderers"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 SwitchMenuRender = display_menu_base_ns.class_("SwitchMenuRender")
+SensorMenuRender = display_menu_base_ns.class_("SensorMenuRender")
 
 MenuItem = display_menu_base_ns.class_("MenuItem")
 MenuItemConstPtr = MenuItem.operator("ptr").operator("const")
@@ -110,7 +112,7 @@ MENU_MODES = {
     CONF_JOYSTICK: MenuMode.MENU_MODE_JOYSTICK,
 }
 
-MENU_ITEMS_RENDERERS = {CONF_SWITCH: SwitchMenuRender}
+MENU_ITEMS_RENDERERS = {CONF_SWITCH: SwitchMenuRender, CONF_SENSOR: SensorMenuRender}
 
 DisplayMenuOnEnterTrigger = display_menu_base_ns.class_(
     "DisplayMenuOnEnterTrigger", automation.Trigger
