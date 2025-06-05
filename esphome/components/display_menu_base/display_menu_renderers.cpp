@@ -19,7 +19,7 @@ size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityI
 size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(info.entity);
   MenuItem *item = new MenuItem(MENU_ITEM_LABEL);
-  auto lambda = get_render_lambda(sensor_obj);
+  auto lambda = get_render_lambda(sensor_obj, true);
   item->set_text(lambda);
 
   menu->add_generated_items(item);
@@ -30,7 +30,7 @@ size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::Ent
   dallas_temp::DallasTemperatureSensor *sensor_obj = static_cast<dallas_temp::DallasTemperatureSensor *>(info.entity);
 
   MenuItemMenu *item = new MenuItemMenu();
-  auto lambda = SensorMenuRender::get_render_lambda(sensor_obj);
+  auto lambda = SensorMenuRender::get_render_lambda(sensor_obj, true);
   item->set_text(lambda);
 
   proccess_submenu(item, sensor_obj);
@@ -40,20 +40,15 @@ size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::Ent
 }
 
 void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::DallasTemperatureSensor *sensor_obj) {
-  MenuItem *name_label = new MenuItem(MENU_ITEM_LABEL);
-  name_label->set_text("Name:");
-
   MenuItem *name_info = new MenuItem(MENU_ITEM_LABEL);
   name_info->set_text(sensor_obj->get_name());
-
-  MenuItem *temp_label = new MenuItem(MENU_ITEM_LABEL);
-  temp_label->set_text("Temperature:");
+  auto internal_lambda = SensorMenuRender::get_render_lambda(sensor_obj, false);
 
   MenuItem *temp_info = new MenuItem(MENU_ITEM_LABEL);
-  temp_info->set_text(SensorMenuRender::get_value_lambda(sensor_obj));
-
-  MenuItem *address_label = new MenuItem(MENU_ITEM_LABEL);
-  address_label->set_text("Address:");
+  auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
+    return "Temp: " + internal_lambda(nullptr);
+  };
+  temp_info->set_text(lambda);
 
   MenuItem *address_info = new MenuItem(MENU_ITEM_LABEL);
   auto address_lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
@@ -61,13 +56,8 @@ void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::Dal
   };
   address_info->set_text(address_lambda);
 
-  menu->add_item(name_label);
   menu->add_item(name_info);
-
-  menu->add_item(temp_label);
   menu->add_item(temp_info);
-
-  menu->add_item(address_label);
   menu->add_item(address_info);
 }
 
