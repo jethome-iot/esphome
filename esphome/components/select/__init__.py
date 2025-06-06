@@ -1,11 +1,10 @@
 from esphome import automation
 import esphome.codegen as cg
-from esphome.components import groups, mqtt, web_server
+from esphome.components import mqtt, web_server
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_CYCLE,
     CONF_ENTITY_CATEGORY,
-    CONF_GROUPS,
     CONF_ICON,
     CONF_ID,
     CONF_INDEX,
@@ -51,7 +50,6 @@ SELECT_OPERATION_OPTIONS = {
 
 _SELECT_SCHEMA = (
     cv.ENTITY_BASE_SCHEMA.extend(web_server.WEBSERVER_SORTING_SCHEMA)
-    .extend(groups.LIST_OF_GROUPS_SCHEMA)
     .extend(cv.MQTT_COMMAND_COMPONENT_SCHEMA)
     .extend(
         {
@@ -107,9 +105,6 @@ async def setup_select_core_(var, config, *, options: list[str]):
 
     if web_server_config := config.get(CONF_WEB_SERVER):
         await web_server.add_entity_config(var, web_server_config)
-
-    if group_config := config.get(CONF_GROUPS):
-        await groups.add_entity_config(var, group_config)
 
 
 async def register_select(var, config, *, options: list[str]):
