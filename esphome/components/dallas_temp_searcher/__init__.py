@@ -64,5 +64,3 @@ async def to_code(config):
         for group in group_list:
             group_var = await cg.get_variable(group[CONF_ID])
             cg.add(var.add_group(group_var))
-
-    cg.add_define("USE_DALLAS")
