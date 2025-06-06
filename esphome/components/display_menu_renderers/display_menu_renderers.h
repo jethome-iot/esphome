@@ -2,21 +2,33 @@
 
 #include "esphome/components/display_menu_base/display_menu_base.h"
 #include "esphome/components/groups/entity_types.h"
+#ifdef USE_SWITCH
 #include "esphome/components/switch/switch.h"
+#endif
+
+#ifdef USE_SENSOR
 #include "esphome/components/sensor/sensor.h"
+#endif
+
+#ifdef USE_DALLAS
 #include "esphome/components/dallas_temp/dallas_temp.h"
+#endif
 
 namespace esphome {
 namespace display_menu_renderers {
 
 using namespace display_menu_base;
 
+#ifdef USE_SWITCH
+
 class SwitchMenuRender : public MenuRenderInterface {
  public:
   SwitchMenuRender() : MenuRenderInterface(groups::EntityType::SWITCH) {}
   size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) override;
 };
+#endif
 
+#ifdef USE_SENSOR
 class SensorMenuRender : public MenuRenderInterface {
  public:
   SensorMenuRender() : MenuRenderInterface(groups::EntityType::SENSOR) {}
@@ -53,7 +65,9 @@ class SensorMenuRender : public MenuRenderInterface {
     return lambda;
   }
 };
+#endif
 
+#ifdef USE_DALLAS
 class DallasTempMenuRender : public MenuRenderInterface {
  public:
   DallasTempMenuRender() : MenuRenderInterface(groups::EntityType::SENSOR, groups::EntitySubtype::DALLAS) {}
@@ -62,6 +76,7 @@ class DallasTempMenuRender : public MenuRenderInterface {
  protected:
   void proccess_submenu(MenuItemMenu *menu, dallas_temp::DallasTemperatureSensor *sensor_obj);
 };
+#endif
 
 }  // namespace display_menu_renderers
 }  // namespace esphome

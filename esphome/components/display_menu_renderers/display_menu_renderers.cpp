@@ -3,6 +3,7 @@
 namespace esphome {
 namespace display_menu_renderers {
 
+#ifdef USE_SWITCH
 size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   switch_::Switch *switch_obj = static_cast<switch_::Switch *>(info.entity);
   MenuItemSwitch *n_switch = new MenuItemSwitch();
@@ -15,7 +16,9 @@ size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityI
   menu->add_generated_items(n_switch);
   return 1;
 }
+#endif
 
+#ifdef USE_SENSOR
 size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(info.entity);
   MenuItem *item = new MenuItem(MENU_ITEM_LABEL);
@@ -25,7 +28,9 @@ size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityI
   menu->add_generated_items(item);
   return 1;
 }
+#endif
 
+#ifdef USE_DALLAS
 size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   dallas_temp::DallasTemperatureSensor *sensor_obj = static_cast<dallas_temp::DallasTemperatureSensor *>(info.entity);
 
@@ -60,6 +65,7 @@ void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::Dal
   menu->add_item(temp_info);
   menu->add_item(address_info);
 }
+#endif
 
 }  // namespace display_menu_renderers
 }  // namespace esphome

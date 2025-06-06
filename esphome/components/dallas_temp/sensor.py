@@ -43,3 +43,5 @@ async def to_code(config):
     await one_wire.register_one_wire_device(var, config)
 
     cg.add(var.set_resolution(config[CONF_RESOLUTION]))
+
+    cg.add_define("USE_DALLAS")
