@@ -7,7 +7,9 @@
 #include "esphome/components/dallas_temp/dallas_temp.h"
 
 namespace esphome {
-namespace display_menu_base {
+namespace display_menu_renderers {
+
+using namespace display_menu_base;
 
 class SwitchMenuRender : public MenuRenderInterface {
  public:
@@ -61,5 +63,5 @@ class DallasTempMenuRender : public MenuRenderInterface {
   void proccess_submenu(MenuItemMenu *menu, dallas_temp::DallasTemperatureSensor *sensor_obj);
 };
 
-}  // namespace display_menu_base
+}  // namespace display_menu_renderers
 }  // namespace esphome

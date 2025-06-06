@@ -10,7 +10,6 @@ from esphome.components.switch import Switch
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ACTIVE,
-    CONF_ALL,
     CONF_COMMAND,
     CONF_CUSTOM,
     CONF_FORMAT,
@@ -20,12 +19,10 @@ from esphome.const import (
     CONF_MODE,
     CONF_NUMBER,
     CONF_ON_VALUE,
-    CONF_SENSOR,
     CONF_TEXT,
     CONF_TRIGGER_ID,
     CONF_TYPE,
 )
-import esphome.core as CORE
 
 CODEOWNERS = ["@numo68"]
 
@@ -49,18 +46,8 @@ CONF_ON_ENTER = "on_enter"
 CONF_ON_LEAVE = "on_leave"
 CONF_ON_NEXT = "on_next"
 CONF_ON_PREV = "on_prev"
-CONF_SUBTYPE = "subtype"
-CONF_PREFIX = "prefix"
-CONF_BASE = "base"
-CONF_GENERATE = "generate"
-CONF_NONE = "none"
-CONF_RENDERERS = "renderers"
-CONF_DALLAS_TEMP = "dallas_temp"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
-SwitchMenuRender = display_menu_base_ns.class_("SwitchMenuRender")
-SensorMenuRender = display_menu_base_ns.class_("SensorMenuRender")
-DallasTempMenuRender = display_menu_base_ns.class_("DallasTempMenuRender")
 
 MenuItem = display_menu_base_ns.class_("MenuItem")
 MenuItemConstPtr = MenuItem.operator("ptr").operator("const")
@@ -112,12 +99,6 @@ MenuMode = display_menu_base_ns.enum("MenuMode")
 MENU_MODES = {
     CONF_ROTARY: MenuMode.MENU_MODE_ROTARY,
     CONF_JOYSTICK: MenuMode.MENU_MODE_JOYSTICK,
-}
-
-MENU_ITEMS_RENDERERS = {
-    CONF_SWITCH: SwitchMenuRender,
-    CONF_SENSOR: SensorMenuRender,
-    CONF_DALLAS_TEMP: DallasTempMenuRender,
 }
 
 DisplayMenuOnEnterTrigger = display_menu_base_ns.class_(
@@ -319,10 +300,6 @@ DISPLAY_MENU_BASE_SCHEMA = cv.Schema(
         cv.Required(CONF_ITEMS): cv.All(
             cv.ensure_list(MENU_ITEM_SCHEMA), cv.Length(min=1)
         ),
-        cv.Optional(CONF_RENDERERS): cv.All(
-            cv.ensure_list(cv.one_of(*MENU_ITEMS_RENDERERS, CONF_ALL, lower=True)),
-            cv.Length(min=1),
-        ),
     }
 ).extend(cv.COMPONENT_SCHEMA)
 
@@ -463,13 +440,6 @@ async def menu_item_to_code(menu, config, parent):
         await automation.build_automation(trigger, [(MenuItemConstPtr, "it")], conf)
 
 
-def renderer_to_code(menu, key):
-    render_id = CORE.ID(key + "_renderer_id")
-    render_id.type = MENU_ITEMS_RENDERERS[key]
-    item = cg.new_Pvariable(render_id)
-    cg.add(menu.add_renderer(item))
-
-
 async def display_menu_to_code(menu, config):
     cg.add(menu.set_active(config[CONF_ACTIVE]))
     root_item = cg.new_Pvariable(config[CONF_ROOT_ITEM_ID])
@@ -484,11 +454,3 @@ async def display_menu_to_code(menu, config):
     for conf in config.get(CONF_ON_LEAVE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], root_item)
         await automation.build_automation(trigger, [(MenuItemConstPtr, "it")], conf)
-
-    if CONF_RENDERERS in config:
-        if config[CONF_RENDERERS][0] == CONF_ALL:
-            for key in MENU_ITEMS_RENDERERS.keys():
-                renderer_to_code(menu, key)
-        else:
-            for renderer in config[CONF_RENDERERS]:
-                renderer_to_code(menu, renderer)

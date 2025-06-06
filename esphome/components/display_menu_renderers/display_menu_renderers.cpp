@@ -1,7 +1,7 @@
 #include "display_menu_renderers.h"
 
 namespace esphome {
-namespace display_menu_base {
+namespace display_menu_renderers {
 
 size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   switch_::Switch *switch_obj = static_cast<switch_::Switch *>(info.entity);
@@ -61,5 +61,5 @@ void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::Dal
   menu->add_item(address_info);
 }
 
-}  // namespace display_menu_base
+}  // namespace display_menu_renderers
 }  // namespace esphome

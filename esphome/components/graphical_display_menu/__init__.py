@@ -6,6 +6,11 @@ from esphome.components.display_menu_base import (
     DisplayMenuComponent,
     display_menu_to_code,
 )
+from esphome.components.display_menu_renderers import (
+    CONF_RENDERERS,
+    DISPLAY_MENU_RENDERERS_SCHEMA,
+    renderers_to_code,
+)
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_BACKGROUND_COLOR,
@@ -34,7 +39,7 @@ GraphicalDisplayMenuOnRedrawTrigger = graphical_display_menu_ns.class_(
 
 CODEOWNERS = ["@MrMDavidson"]
 
-AUTO_LOAD = ["display_menu_base"]
+AUTO_LOAD = ["display_menu_base", "display_menu_renderers"]
 
 MULTI_CONF = True
 
@@ -56,7 +61,7 @@ CONFIG_SCHEMA = DISPLAY_MENU_BASE_SCHEMA.extend(
             ),
         }
     )
-)
+).extend(DISPLAY_MENU_RENDERERS_SCHEMA)
 
 
 async def to_code(config):
@@ -96,5 +101,8 @@ async def to_code(config):
         )
 
     await display_menu_to_code(var, config)
+
+    if render_config := config.get(CONF_RENDERERS):
+        renderers_to_code(var, render_config)
 
     cg.add_define("USE_GRAPHICAL_DISPLAY_MENU")
