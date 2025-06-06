@@ -19,25 +19,18 @@ void DisplayMenuComponent::recurse_menu_items_(MenuItemMenu *parent_menu) {
     if (item->get_type() == MENU_ITEM_MENU) {
       MenuItemMenu *menu = static_cast<MenuItemMenu *>(item);
       recurse_menu_items_(menu);
-      if (menu->groups().size() > 0 || menu->group_names().size() > 0) {
-        generate_to_menu_items_(menu);
-      }
+      generate_to_menu_items_(menu);
     }
   }
 }
 
 void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
-  size_t num_added = 0;
+  size_t num_items = menu->items_size();
   for (groups::Group *group : menu->groups()) {
-    num_added += process_group(menu, group);
+    num_items += process_group(menu, group);
   }
 
-  for (const std::string &name : menu->group_names()) {
-    groups::Group *group = groups::global_groups_storage.find_group(name.c_str());
-    num_added += process_group(menu, group);
-  }
-
-  if (num_added == 0 && menu->items_size() == 0) {
+  if (num_items == 0) {
     display_menu_base::MenuItem *back_item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_BACK);
     back_item->set_text("No items in menu. Back");
     menu->add_item(back_item);
@@ -53,7 +46,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
   for (const groups::EntityInfo &info : group->items()) {
     MenuRenderInterface *render = nullptr;
 
-    // Проход раз
+    // Firstly find equality type and subtype
     for (auto render_variant : this->renderers_) {
       if (render_variant->type() == info.type && render_variant->subtype() == info.subtype) {
         render = render_variant;
@@ -61,7 +54,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
       }
     }
 
-    // Проход два
+    // Secondly find equality only type
     if (render == nullptr) {
       for (auto render_variant : this->renderers_) {
         if (render_variant->type() == info.type) {
@@ -77,18 +70,6 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
   }
   return added;
 }
-
-#ifdef USE_SWITCH
-MenuItemSwitch *DisplayMenuComponent::create_switch(switch_::Switch *switch_obj) {
-  MenuItemSwitch *n_switch = new display_menu_base::MenuItemSwitch();
-  n_switch->set_text(switch_obj->get_name());
-  n_switch->set_immediate_edit(true);
-  n_switch->set_switch_variable(switch_obj);
-  n_switch->set_on_text("On");
-  n_switch->set_off_text("Off");
-  return n_switch;
-}
-#endif
 
 #endif
 

@@ -19,6 +19,8 @@ enum MenuMode {
 class MenuItem;
 class MenuItemMenu;
 
+#ifdef USE_GROUPS
+// Render interface for menu with groups
 class MenuRenderInterface {
  public:
   MenuRenderInterface(groups::EntityType type, groups::EntitySubtype subtype = groups::EntitySubtype::NONE)
@@ -27,10 +29,14 @@ class MenuRenderInterface {
   groups::EntityType type() { return type_; }
   groups::EntitySubtype subtype() { return subtype_; }
 
+  // Add needed items in menu with entity_info
+  virtual size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) = 0;
+
+ protected:
   groups::EntityType type_;
   groups::EntitySubtype subtype_;
-  virtual size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) = 0;
 };
+#endif
 
 /** Class to display a hierarchical menu.
  *
@@ -89,12 +95,6 @@ class DisplayMenuComponent : public Component {
   void recurse_menu_items_(MenuItemMenu *parent_menu);
   void generate_to_menu_items_(MenuItemMenu *menu);
   size_t process_group(MenuItemMenu *menu, groups::Group *group);
-
-#ifdef USE_SWITCH
-  void check_switches_in_generated_menu_(MenuItemMenu *menu);
-  MenuItemSwitch *create_switch(switch_::Switch *);
-#endif
-
 #endif
 
   virtual void on_before_show(){};
