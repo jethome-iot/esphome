@@ -5,7 +5,7 @@
 #include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
-namespace display_menu_renderers {
+namespace display_menu_render_sensor {
 
 using namespace display_menu_base;
 
@@ -46,5 +46,5 @@ class SensorMenuRender : public MenuRenderInterface {
   }
 };
 
-}  // namespace display_menu_renderers
+}  // namespace display_menu_render_sensor
 }  // namespace esphome

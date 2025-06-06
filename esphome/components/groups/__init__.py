@@ -1,8 +1,7 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_NAME
+from esphome.const import CONF_GROUPS, CONF_ID, CONF_NAME
 
-CONF_GROUPS = "groups"
 CONF_GROUPS_STORAGE_ID = "groups_storage_id"
 CONF_LIST = "list"
 

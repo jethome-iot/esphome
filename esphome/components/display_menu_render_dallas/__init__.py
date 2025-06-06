@@ -1,12 +1,11 @@
 import esphome.codegen as cg
 from esphome.components.graphical_display_menu import GraphicalDisplayMenu
 import esphome.config_validation as cv
-from esphome.const import CONF_ID
+from esphome.const import CONF_ID, CONF_MENU_ID
 
-display_menu_renderers_ns = cg.esphome_ns.namespace("display_menu_renderers")
+display_menu_renderers_ns = cg.esphome_ns.namespace("display_menu_render_dallas")
 DallasTempMenuRender = display_menu_renderers_ns.class_("DallasTempMenuRender")
 
-CONF_MENU_ID = "menu_id"
 
 AUTOLOAD = ["display_menu_render_sensor"]
 

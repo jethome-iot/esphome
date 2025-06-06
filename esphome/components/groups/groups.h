@@ -17,7 +17,7 @@ struct EntityInfo {
 // Class for single group
 class Group {
  public:
-  void set_group_name(std::string group_name) { this->group_name_ = group_name; }
+  void set_group_name(std::string group_name) { this->group_name_ = std::move(group_name); }
   void add_entity(EntityBase *entity, EntityType type, EntitySubtype subtype = EntitySubtype::NONE) {
     entities_.push_back({entity, type, subtype});
   }

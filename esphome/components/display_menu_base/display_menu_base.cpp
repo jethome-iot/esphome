@@ -5,13 +5,8 @@
 namespace esphome {
 namespace display_menu_base {
 
-void DisplayMenuComponent::setup() {
-#ifdef USE_GROUPS
-  recurse_menu_items_(this->root_item_);
-#endif
-}
+void DisplayMenuComponent::setup() { recurse_menu_items_(this->root_item_); }
 
-#ifdef USE_GROUPS
 void DisplayMenuComponent::recurse_menu_items_(MenuItemMenu *parent_menu) {
   // Find menu items with groups and generate_items
   for (size_t i = 0; i < parent_menu->items_size(); i++) {
@@ -70,8 +65,6 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
   }
   return added;
 }
-
-#endif
 
 void DisplayMenuComponent::up() {
   if (this->check_healthy_and_active_()) {

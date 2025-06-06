@@ -3,7 +3,7 @@ import re
 from esphome import automation, core
 from esphome.automation import maybe_simple_id
 import esphome.codegen as cg
-from esphome.components import groups
+from esphome.components import groups as gp
 from esphome.components.number import Number
 from esphome.components.select import Select
 from esphome.components.switch import Switch
@@ -213,7 +213,7 @@ MENU_ITEM_SCHEMA = cv.typed_schema(
                         cv.ensure_list(menu_item_schema), cv.Length(min=1)
                     ),
                 }
-            ).extend(groups.LIST_OF_GROUPS_SCHEMA),
+            ).extend(gp.LIST_OF_GROUPS_SCHEMA),
             validate_items_groups_in_menu,
         ),
         CONF_SELECT: MENU_ITEM_ENTER_LEAVE_VALUE_SCHEMA.extend(

@@ -1,7 +1,7 @@
 #include "display_menu_render_sensor.h"
 
 namespace esphome {
-namespace display_menu_renderers {
+namespace display_menu_render_sensor {
 
 size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(info.entity);
@@ -13,5 +13,5 @@ size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityI
   return 1;
 }
 
-}  // namespace display_menu_renderers
+}  // namespace display_menu_render_sensor
 }  // namespace esphome

@@ -5,7 +5,7 @@
 #include "esphome/components/switch/switch.h"
 
 namespace esphome {
-namespace display_menu_renderers {
+namespace display_menu_render_switch {
 
 using namespace display_menu_base;
 
@@ -14,5 +14,5 @@ class SwitchMenuRender : public MenuRenderInterface {
   SwitchMenuRender() : MenuRenderInterface(groups::EntityType::SWITCH) {}
   size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) override;
 };
-}  // namespace display_menu_renderers
+}  // namespace display_menu_render_switch
 }  // namespace esphome

@@ -1,7 +1,7 @@
 #include "display_menu_render_switch.h"
 
 namespace esphome {
-namespace display_menu_renderers {
+namespace display_menu_render_switch {
 
 size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   switch_::Switch *switch_obj = static_cast<switch_::Switch *>(info.entity);
@@ -16,5 +16,5 @@ size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityI
   return 1;
 }
 
-}  // namespace display_menu_renderers
+}  // namespace display_menu_render_switch
 }  // namespace esphome

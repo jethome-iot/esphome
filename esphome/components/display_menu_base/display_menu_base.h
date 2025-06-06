@@ -19,7 +19,6 @@ enum MenuMode {
 class MenuItem;
 class MenuItemMenu;
 
-#ifdef USE_GROUPS
 // Render interface for menu with groups
 class MenuRenderInterface {
  public:
@@ -36,7 +35,6 @@ class MenuRenderInterface {
   groups::EntityType type_;
   groups::EntitySubtype subtype_;
 };
-#endif
 
 /** Class to display a hierarchical menu.
  *
@@ -91,11 +89,9 @@ class DisplayMenuComponent : public Component {
     update();
   }
 
-#ifdef USE_GROUPS
   void recurse_menu_items_(MenuItemMenu *parent_menu);
   void generate_to_menu_items_(MenuItemMenu *menu);
   size_t process_group(MenuItemMenu *menu, groups::Group *group);
-#endif
 
   virtual void on_before_show(){};
   virtual void on_after_show(){};
@@ -114,7 +110,6 @@ class DisplayMenuComponent : public Component {
   std::forward_list<std::pair<uint8_t, uint8_t>> selection_stack_{};
   bool editing_{false};
   bool root_on_enter_called_{false};
-  std::vector<MenuItem *> generated_items_;
 
   std::vector<MenuRenderInterface *> renderers_;
 };

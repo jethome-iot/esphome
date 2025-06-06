@@ -3,13 +3,13 @@
 #include "esphome/components/display_menu_render_sensor/display_menu_render_sensor.h"
 
 namespace esphome {
-namespace display_menu_renderers {
+namespace display_menu_render_dallas {
 
 size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
   dallas_temp::DallasTemperatureSensor *sensor_obj = static_cast<dallas_temp::DallasTemperatureSensor *>(info.entity);
 
   MenuItemMenu *item = new MenuItemMenu();
-  auto lambda = SensorMenuRender::get_render_lambda(sensor_obj, true);
+  auto lambda = display_menu_render_sensor::SensorMenuRender::get_render_lambda(sensor_obj, true);
   item->set_text(lambda);
 
   proccess_submenu(item, sensor_obj);
@@ -21,7 +21,7 @@ size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::Ent
 void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::DallasTemperatureSensor *sensor_obj) {
   MenuItem *name_info = new MenuItem(MENU_ITEM_LABEL);
   name_info->set_text(sensor_obj->get_name());
-  auto internal_lambda = SensorMenuRender::get_render_lambda(sensor_obj, false);
+  auto internal_lambda = display_menu_render_sensor::SensorMenuRender::get_render_lambda(sensor_obj, false);
 
   MenuItem *temp_info = new MenuItem(MENU_ITEM_LABEL);
   auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
@@ -40,5 +40,5 @@ void DallasTempMenuRender::proccess_submenu(MenuItemMenu *menu, dallas_temp::Dal
   menu->add_item(address_info);
 }
 
-}  // namespace display_menu_renderers
+}  // namespace display_menu_render_dallas
 }  // namespace esphome
