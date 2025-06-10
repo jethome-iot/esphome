@@ -1,13 +1,13 @@
 #pragma once
 
-#include "esphome/components/display_menu_base/display_menu_base.h"
-#include "esphome/components/groups/entity_types.h"
+#include "esphome/components/display_menu_render_base/display_menu_render_base.h"
 #include "esphome/components/switch/switch.h"
 
 namespace esphome {
 namespace display_menu_render_switch {
 
 using namespace display_menu_base;
+using namespace display_menu_render_base;
 
 class SwitchMenuRender : public MenuRenderInterface {
  public:

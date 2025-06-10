@@ -7,7 +7,7 @@ display_menu_renderers_ns = cg.esphome_ns.namespace("display_menu_render_dallas"
 DallasTempMenuRender = display_menu_renderers_ns.class_("DallasTempMenuRender")
 
 
-AUTOLOAD = ["display_menu_render_sensor"]
+AUTO_LOAD = ["display_menu_render_sensor", "dallas_temp"]
 
 CONFIG_SCHEMA = cv.Schema(
     {
