@@ -41,15 +41,27 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
   for (const groups::EntityInfo &info : group->items()) {
     MenuRenderInterface *render = nullptr;
 
-    // Firstly find equality type and subtype
-    for (auto render_variant : this->renderers_) {
-      if (render_variant->type() == info.type && render_variant->subtype() == info.subtype) {
-        render = render_variant;
-        break;
+    // 1. Find special render
+    if (render == nullptr) {
+      for (auto render_variant : this->renderers_) {
+        if (render_variant->has_entity(info.entity)) {
+          render = render_variant;
+          break;
+        }
       }
     }
 
-    // Secondly find equality only type
+    // 2. Find equality type and subtype
+    if (render == nullptr) {
+      for (auto render_variant : this->renderers_) {
+        if (render_variant->type() == info.type && render_variant->subtype() == info.subtype) {
+          render = render_variant;
+          break;
+        }
+      }
+    }
+
+    // 3. Find equality only type
     if (render == nullptr) {
       for (auto render_variant : this->renderers_) {
         if (render_variant->type() == info.type) {
