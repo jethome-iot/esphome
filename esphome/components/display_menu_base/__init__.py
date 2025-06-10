@@ -423,7 +423,7 @@ async def menu_item_to_code(menu, config, parent):
     if config[CONF_TYPE] == CONF_MENU:
         if (groups := config.get(CONF_GROUPS)) is not None:
             for group in groups:
-                group_var = await cg.get_variable(group[CONF_ID])
+                group_var = await cg.get_variable(group)
                 cg.add(item.add_group(group_var))
     for conf in config.get(CONF_ON_ENTER, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], item)

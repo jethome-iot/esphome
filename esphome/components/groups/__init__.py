@@ -23,12 +23,12 @@ EntityType = groups_ns.enum("EntityType", is_class=True)
 EntitySubtype = groups_ns.enum("EntitySubtype", is_class=True)
 
 
-def group_id(value):
-    return GROUP_ID_SCHEMA(value)
-
-
 LIST_OF_GROUPS_SCHEMA = cv.Schema(
-    {cv.Optional(CONF_GROUPS): cv.All(cv.ensure_list(group_id), cv.Length(min=1))}
+    {
+        cv.Optional(CONF_GROUPS): cv.All(
+            cv.ensure_list(cv.use_id(GroupClass)), cv.Length(min=1)
+        )
+    }
 )
 
 CONFIG_SCHEMA = cv.All(cv.ensure_list(GROUP_BASE_SCHEMA), cv.Length(min=1))
@@ -38,13 +38,13 @@ async def add_entity_config(
     entity, config, entity_type=EntityType.NONE, entity_subtype=EntitySubtype.NONE
 ):
     for group in config:
-        group_var = await cg.get_variable(group[CONF_ID])
+        group_var = await cg.get_variable(group)
         cg.add(group_var.add_entity(entity, entity_type, entity_subtype))
 
 
 async def add_groups_to_storage(storage_var, config):
     for group_config in config:
-        group_var = await cg.get_variable(group_config[CONF_ID])
+        group_var = await cg.get_variable(group_config)
         cg.add(storage_var.add_group(group_var))
 
 

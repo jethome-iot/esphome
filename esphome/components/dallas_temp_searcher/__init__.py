@@ -62,5 +62,5 @@ async def to_code(config):
 
     if (group_list := config.get(CONF_GROUPS)) is not None:
         for group in group_list:
-            group_var = await cg.get_variable(group[CONF_ID])
+            group_var = await cg.get_variable(group)
             cg.add(var.add_group(group_var))
