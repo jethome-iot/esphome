@@ -24,6 +24,11 @@ class Group {
   const std::vector<EntityInfo> &items() { return entities_; }
   const std::string &get_name() { return group_name_; }
 
+  bool has_entity(EntityBase *entity) {
+    auto lambda = [entity](const EntityInfo &info) { return info.entity == entity; };
+    return std::find_if(entities_.begin(), entities_.end(), lambda) != entities_.end();
+  }
+
  protected:
   std::string group_name_;
   std::vector<EntityInfo> entities_;
@@ -39,6 +44,7 @@ class GroupsStorage {
     return it != groups_.end() ? *it : nullptr;
   }
   void add_group(Group *group) { groups_.push_back(group); }
+  bool has_group(Group *group) { return std::find(groups_.begin(), groups_.end(), group) != groups_.end(); }
 
  protected:
   std::vector<Group *> groups_;
