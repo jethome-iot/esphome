@@ -1,7 +1,7 @@
 import esphome.codegen as cg
-from esphome.components.graphical_display_menu import GraphicalDisplayMenu
+import esphome.components.display_menu_render_base as render_base
 import esphome.config_validation as cv
-from esphome.const import CONF_ID, CONF_MENU_ID
+from esphome.const import CONF_ID
 
 display_menu_renderers_ns = cg.esphome_ns.namespace("display_menu_render_sensor")
 SensorMenuRender = display_menu_renderers_ns.class_("SensorMenuRender")
@@ -10,12 +10,10 @@ SensorMenuRender = display_menu_renderers_ns.class_("SensorMenuRender")
 CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_ID): cv.declare_id(SensorMenuRender),
-        cv.Required(CONF_MENU_ID): cv.use_id(GraphicalDisplayMenu),
     }
-)
+).extend(render_base.DISPLAY_MENU_RENDER_BASE_SCHEMA)
 
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-    menu_var = await cg.get_variable(config[CONF_MENU_ID])
-    cg.add(menu_var.add_renderer(var))
+    await render_base.render_to_code(var, config)
