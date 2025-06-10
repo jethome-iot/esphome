@@ -20,15 +20,7 @@ GROUP_ID_SCHEMA = cv.Schema(
 )
 
 EntityType = groups_ns.enum("EntityType", is_class=True)
-
-ENTITY_TYPE_ENUM = {
-    "none": EntityType.NONE,
-    "switch": EntityType.SWITCH,
-    "sensor": EntityType.SENSOR,
-}
-
 EntitySubtype = groups_ns.enum("EntitySubtype", is_class=True)
-ENTITY_SUBTYPE_ENUM = {"none": EntitySubtype.NONE, "dallas": EntitySubtype.DALLAS}
 
 
 def group_id(value):
