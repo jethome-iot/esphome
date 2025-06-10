@@ -2,8 +2,7 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_GROUPS, CONF_ID, CONF_NAME
 
-CONF_GROUPS_STORAGE_ID = "groups_storage_id"
-CONF_LIST = "list"
+GROUPS_STORAGE_ID = "groups_storage_id"
 
 groups_ns = cg.esphome_ns.namespace("groups")
 GroupClass = groups_ns.class_("Group")
@@ -40,21 +39,7 @@ LIST_OF_GROUPS_SCHEMA = cv.Schema(
     {cv.Optional(CONF_GROUPS): cv.All(cv.ensure_list(group_id), cv.Length(min=1))}
 )
 
-CONFIG_SCHEMA = cv.All(
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(GroupStorage),
-            cv.Optional(CONF_LIST): cv.ensure_list(GROUP_BASE_SCHEMA),
-        }
-    ),
-)
-
-
-def add_groups(storage_var, config):
-    for group_config in config:
-        group_var = cg.new_Pvariable(group_config[CONF_ID])
-        cg.add(group_var.set_group_name(group_config[CONF_NAME]))
-        cg.add(storage_var.add_group(group_var))
+CONFIG_SCHEMA = cv.All(cv.ensure_list(GROUP_BASE_SCHEMA), cv.Length(min=1))
 
 
 async def add_entity_config(
@@ -65,8 +50,17 @@ async def add_entity_config(
         cg.add(group_var.add_entity(entity, entity_type, entity_subtype))
 
 
+async def add_groups_to_storage(storage_var, config):
+    for group_config in config:
+        group_var = await cg.get_variable(group_config[CONF_ID])
+        cg.add(storage_var.add_group(group_var))
+
+
 async def to_code(config):
-    if (group_config := config.get(CONF_LIST)) is not None:
-        var = cg.new_Pvariable(config[CONF_ID], len(group_config))
-        add_groups(var, group_config)
-        cg.add_define("USE_GROUPS")
+    var = cg.new_Pvariable(cv.declare_id(GroupStorage)(GROUPS_STORAGE_ID))
+
+    for group_config in config:
+        group_var = cg.new_Pvariable(group_config[CONF_ID])
+        cg.add(group_var.set_group_name(group_config[CONF_NAME]))
+        cg.add(var.add_group(group_var))
+    cg.add_define("USE_GROUPS")
