@@ -26,7 +26,7 @@ from esphome.const import (
 
 CODEOWNERS = ["@numo68"]
 
-AUTO_LOAD = ["display_menu_render_base"]
+AUTO_LOAD = ["display_menu_render_base", "groups"]
 
 display_menu_base_ns = cg.esphome_ns.namespace("display_menu_base")
 
