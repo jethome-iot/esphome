@@ -10,7 +10,7 @@ using namespace display_menu_base;
 // Render interface for menu with groups
 class MenuRenderInterface : public groups::GroupsStorage {
  public:
-  MenuRenderInterface(EntityType type) : type_(type){};
+  MenuRenderInterface(EntityType type = EntityType::NONE) : type_(type){};
 
   EntityType type() const { return type_; }
 

@@ -52,7 +52,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
     }
 
     // 2. Find equality type
-    if (render == nullptr) {
+    if (render == nullptr && entity->type() != EntityType::NONE) {
       for (auto render_variant : this->renderers_) {
         if (render_variant->type() == entity->type()) {
           render = render_variant;
