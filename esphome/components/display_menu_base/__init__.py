@@ -52,8 +52,10 @@ CONF_ON_PREV = "on_prev"
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 
 MenuItem = display_menu_base_ns.class_("MenuItem")
+MenuItemPtr = MenuItem.operator("ptr")
 MenuItemConstPtr = MenuItem.operator("ptr").operator("const")
 MenuItemMenu = display_menu_base_ns.class_("MenuItemMenu")
+MenuItemMenuPtr = MenuItemMenu.operator("ptr")
 MenuItemSelect = display_menu_base_ns.class_("MenuItemSelect")
 MenuItemNumber = display_menu_base_ns.class_("MenuItemNumber")
 MenuItemSwitch = display_menu_base_ns.class_("MenuItemSwitch")
