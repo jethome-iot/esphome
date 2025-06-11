@@ -60,7 +60,5 @@ async def to_code(config):
         cg.add(var.set_max_sensors_num(config[CONF_MAX_SENSORS_NUM]))
     cg.add(var.set_search_mode(config[CONF_MODE]))
 
-    if (group_list := config.get(CONF_GROUPS)) is not None:
-        for group in group_list:
-            group_var = await cg.get_variable(group)
-            cg.add(var.add_group(group_var))
+    if group_config := config.get(CONF_GROUPS):
+        await groups.add_groups_to_storage(var, group_config)
