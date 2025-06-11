@@ -10,10 +10,5 @@ enum class EntityType : uint8_t {
   SENSOR,
 };
 
-enum class EntitySubtype : uint8_t {
-  NONE,
-  DALLAS,
-};
-
 }  // namespace groups
 }  // namespace esphome

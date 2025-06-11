@@ -11,16 +11,13 @@ namespace groups {
 struct EntityInfo {
   EntityBase *entity;
   EntityType type;
-  EntitySubtype subtype;
 };
 
 // Class for single group
 class Group {
  public:
   void set_group_name(std::string group_name) { this->group_name_ = std::move(group_name); }
-  void add_entity(EntityBase *entity, EntityType type, EntitySubtype subtype = EntitySubtype::NONE) {
-    entities_.push_back({entity, type, subtype});
-  }
+  void add_entity(EntityBase *entity, EntityType type) { entities_.push_back({entity, type}); }
   const std::vector<EntityInfo> &items() { return entities_; }
   const std::string &get_name() { return group_name_; }
 

@@ -11,11 +11,9 @@ using namespace display_menu_base;
 // Render interface for menu with groups
 class MenuRenderInterface : public groups::GroupsStorage {
  public:
-  MenuRenderInterface(groups::EntityType type, groups::EntitySubtype subtype = groups::EntitySubtype::NONE)
-      : type_(type), subtype_(subtype){};
+  MenuRenderInterface(groups::EntityType type) : type_(type){};
 
   groups::EntityType type() { return type_; }
-  groups::EntitySubtype subtype() { return subtype_; }
 
   // Add needed items in menu with entity_info
   virtual size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) = 0;
@@ -30,7 +28,6 @@ class MenuRenderInterface : public groups::GroupsStorage {
 
  protected:
   groups::EntityType type_;
-  groups::EntitySubtype subtype_;
 };
 
 }  // namespace display_menu_render_base

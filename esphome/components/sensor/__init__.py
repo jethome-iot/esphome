@@ -18,7 +18,6 @@ from esphome.const import (
     CONF_FORCE_UPDATE,
     CONF_FROM,
     CONF_GROUPS,
-    CONF_GROUPS_SUBTYPE,
     CONF_ICON,
     CONF_ID,
     CONF_IGNORE_OUT_OF_RANGE,
@@ -829,12 +828,7 @@ async def setup_sensor_core_(var, config):
         await web_server.add_entity_config(var, web_server_config)
 
     if group_config := config.get(CONF_GROUPS):
-        group_subtype = groups.EntitySubtype.NONE
-        if CONF_GROUPS_SUBTYPE in config:
-            group_subtype = config[CONF_GROUPS_SUBTYPE]
-        await groups.add_entity_config(
-            var, group_config, groups.EntityType.SENSOR, group_subtype
-        )
+        await groups.add_entity_config(var, group_config, groups.EntityType.SENSOR)
 
 
 async def register_sensor(var, config):

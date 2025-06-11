@@ -11,7 +11,7 @@ using namespace display_menu_render_base;
 
 class DallasTempMenuRender : public MenuRenderInterface {
  public:
-  DallasTempMenuRender() : MenuRenderInterface(groups::EntityType::SENSOR, groups::EntitySubtype::DALLAS) {}
+  DallasTempMenuRender() : MenuRenderInterface(groups::EntityType::SENSOR) {}
   size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) override;
 
  protected:

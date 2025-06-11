@@ -20,7 +20,6 @@ GROUP_ID_SCHEMA = cv.Schema(
 )
 
 EntityType = groups_ns.enum("EntityType", is_class=True)
-EntitySubtype = groups_ns.enum("EntitySubtype", is_class=True)
 
 
 LIST_OF_GROUPS_SCHEMA = cv.Schema(
@@ -34,12 +33,10 @@ LIST_OF_GROUPS_SCHEMA = cv.Schema(
 CONFIG_SCHEMA = cv.All(cv.ensure_list(GROUP_BASE_SCHEMA), cv.Length(min=1))
 
 
-async def add_entity_config(
-    entity, config, entity_type=EntityType.NONE, entity_subtype=EntitySubtype.NONE
-):
+async def add_entity_config(entity, config, entity_type=EntityType.NONE):
     for group in config:
         group_var = await cg.get_variable(group)
-        cg.add(group_var.add_entity(entity, entity_type, entity_subtype))
+        cg.add(group_var.add_entity(entity, entity_type))
 
 
 async def add_groups_to_storage(storage_var, config):

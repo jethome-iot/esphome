@@ -51,17 +51,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
       }
     }
 
-    // 2. Find equality type and subtype
-    if (render == nullptr) {
-      for (auto render_variant : this->renderers_) {
-        if (render_variant->type() == info.type && render_variant->subtype() == info.subtype) {
-          render = render_variant;
-          break;
-        }
-      }
-    }
-
-    // 3. Find equality only type
+    // 2. Find equality type
     if (render == nullptr) {
       for (auto render_variant : this->renderers_) {
         if (render_variant->type() == info.type) {

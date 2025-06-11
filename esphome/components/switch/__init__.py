@@ -7,7 +7,6 @@ from esphome.const import (
     CONF_DEVICE_CLASS,
     CONF_ENTITY_CATEGORY,
     CONF_GROUPS,
-    CONF_GROUPS_SUBTYPE,
     CONF_ICON,
     CONF_ID,
     CONF_INVERTED,
@@ -153,12 +152,7 @@ async def setup_switch_core_(var, config):
         await web_server.add_entity_config(var, web_server_config)
 
     if group_config := config.get(CONF_GROUPS):
-        group_subtype = groups.EntitySubtype.NONE
-        if CONF_GROUPS_SUBTYPE in config:
-            group_subtype = config[CONF_GROUPS_SUBTYPE]
-        await groups.add_entity_config(
-            var, group_config, groups.EntityType.SWITCH, group_subtype
-        )
+        await groups.add_entity_config(var, group_config, groups.EntityType.SWITCH)
 
     if (device_class := config.get(CONF_DEVICE_CLASS)) is not None:
         cg.add(var.set_device_class(device_class))
