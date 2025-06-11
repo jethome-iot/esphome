@@ -6,14 +6,16 @@ from esphome.const import CONF_ID
 display_menu_renderers_ns = cg.esphome_ns.namespace("display_menu_render_sensor")
 SensorMenuRender = display_menu_renderers_ns.class_("SensorMenuRender")
 
-
-CONFIG_SCHEMA = cv.Schema(
+SENSOR_RENDER_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_ID): cv.declare_id(SensorMenuRender),
     }
 ).extend(render_base.DISPLAY_MENU_RENDER_BASE_SCHEMA)
 
+CONFIG_SCHEMA = cv.All(cv.ensure_list(SENSOR_RENDER_SCHEMA), cv.Length(min=1))
+
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
-    await render_base.render_to_code(var, config)
+    for render in config:
+        var = cg.new_Pvariable(render[CONF_ID])
+        await render_base.render_to_code(var, render)

@@ -9,13 +9,16 @@ DallasTempMenuRender = display_menu_renderers_ns.class_("DallasTempMenuRender")
 
 AUTO_LOAD = ["display_menu_render_sensor", "dallas_temp"]
 
-CONFIG_SCHEMA = cv.Schema(
+DALLAS_TEMP_RENDER_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_ID): cv.declare_id(DallasTempMenuRender),
     }
 ).extend(render_base.DISPLAY_MENU_RENDER_BASE_SCHEMA)
 
+CONFIG_SCHEMA = cv.All(cv.ensure_list(DALLAS_TEMP_RENDER_SCHEMA), cv.Length(min=1))
+
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[CONF_ID])
-    await render_base.render_to_code(var, config)
+    for render in config:
+        var = cg.new_Pvariable(render[CONF_ID])
+        await render_base.render_to_code(var, render)
