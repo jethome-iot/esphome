@@ -3,32 +3,25 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "entity_types.h"
 
 namespace esphome {
 namespace groups {
-
-struct EntityInfo {
-  EntityBase *entity;
-  EntityType type;
-};
 
 // Class for single group
 class Group {
  public:
   void set_group_name(std::string group_name) { this->group_name_ = std::move(group_name); }
-  void add_entity(EntityBase *entity, EntityType type) { entities_.push_back({entity, type}); }
-  const std::vector<EntityInfo> &items() { return entities_; }
+  void add_entity(EntityBase *entity) { entities_.push_back(entity); }
+  const std::vector<EntityBase *> &items() { return entities_; }
   const std::string &get_name() { return group_name_; }
 
   bool has_entity(EntityBase *entity) {
-    auto lambda = [entity](const EntityInfo &info) { return info.entity == entity; };
-    return std::find_if(entities_.begin(), entities_.end(), lambda) != entities_.end();
+    return std::find(entities_.begin(), entities_.end(), entity) != entities_.end();
   }
 
  protected:
   std::string group_name_;
-  std::vector<EntityInfo> entities_;
+  std::vector<EntityBase *> entities_;
 };
 
 class GroupsStorage {

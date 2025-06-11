@@ -5,8 +5,8 @@
 namespace esphome {
 namespace display_menu_render_dallas {
 
-size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
-  dallas_temp::DallasTemperatureSensor *sensor_obj = static_cast<dallas_temp::DallasTemperatureSensor *>(info.entity);
+size_t DallasTempMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
+  dallas_temp::DallasTemperatureSensor *sensor_obj = static_cast<dallas_temp::DallasTemperatureSensor *>(entity);
 
   MenuItemMenu *item = new MenuItemMenu();
   auto lambda = display_menu_render_sensor::SensorMenuRender::get_render_lambda(sensor_obj, true);

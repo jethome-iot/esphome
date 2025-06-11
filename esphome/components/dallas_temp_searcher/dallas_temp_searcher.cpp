@@ -163,7 +163,7 @@ void DallasTemperatureSearcher::set_default_parameters_(dallas_temp::DallasTempe
   sensor->set_resolution(12);
 
   for (groups::Group *group : this->groups_) {
-    group->add_entity(sensor, groups::EntityType::SENSOR);
+    group->add_entity(sensor);
   }
 }
 

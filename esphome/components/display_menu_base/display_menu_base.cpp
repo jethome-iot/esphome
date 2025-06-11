@@ -38,13 +38,13 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
     return added;
   }
 
-  for (const groups::EntityInfo &info : group->items()) {
+  for (EntityBase *entity : group->items()) {
     MenuRenderInterface *render = nullptr;
 
     // 1. Find special render
     if (render == nullptr) {
       for (auto render_variant : this->renderers_) {
-        if (render_variant->has_entity(info.entity)) {
+        if (render_variant->has_entity(entity)) {
           render = render_variant;
           break;
         }
@@ -54,7 +54,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
     // 2. Find equality type
     if (render == nullptr) {
       for (auto render_variant : this->renderers_) {
-        if (render_variant->type() == info.type) {
+        if (render_variant->type() == entity->type()) {
           render = render_variant;
           break;
         }
@@ -62,7 +62,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
     }
 
     if (render != nullptr) {
-      added += render->render_entity(menu, info);
+      added += render->render_entity(menu, entity);
     }
   }
   return added;

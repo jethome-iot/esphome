@@ -11,8 +11,8 @@ using namespace display_menu_render_base;
 
 class SensorMenuRender : public MenuRenderInterface {
  public:
-  SensorMenuRender() : MenuRenderInterface(groups::EntityType::SENSOR) {}
-  size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) override;
+  SensorMenuRender() : MenuRenderInterface(EntityType::SENSOR) {}
+  size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
   static auto get_render_lambda(sensor::Sensor *sensor_obj, bool with_name) {
     auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
       char buf[50];

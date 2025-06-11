@@ -3,8 +3,8 @@
 namespace esphome {
 namespace display_menu_render_sensor {
 
-size_t SensorMenuRender::render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) {
-  sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(info.entity);
+size_t SensorMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
+  sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(entity);
   MenuItem *item = new MenuItem(MENU_ITEM_LABEL);
   auto lambda = get_render_lambda(sensor_obj, true);
   item->set_text(lambda);

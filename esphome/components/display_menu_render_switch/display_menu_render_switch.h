@@ -11,8 +11,8 @@ using namespace display_menu_render_base;
 
 class SwitchMenuRender : public MenuRenderInterface {
  public:
-  SwitchMenuRender() : MenuRenderInterface(groups::EntityType::SWITCH) {}
-  size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) override;
+  SwitchMenuRender() : MenuRenderInterface(EntityType::SWITCH) {}
+  size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
 };
 }  // namespace display_menu_render_switch
 }  // namespace esphome

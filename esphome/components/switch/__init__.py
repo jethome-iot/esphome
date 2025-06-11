@@ -152,7 +152,7 @@ async def setup_switch_core_(var, config):
         await web_server.add_entity_config(var, web_server_config)
 
     if group_config := config.get(CONF_GROUPS):
-        await groups.add_entity_config(var, group_config, groups.EntityType.SWITCH)
+        await groups.add_entity_config(var, group_config)
 
     if (device_class := config.get(CONF_DEVICE_CLASS)) is not None:
         cg.add(var.set_device_class(device_class))

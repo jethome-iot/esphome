@@ -2,7 +2,6 @@
 #include <stdint.h>
 
 namespace esphome {
-namespace groups {
 
 enum class EntityType : uint8_t {
   NONE,
@@ -10,5 +9,4 @@ enum class EntityType : uint8_t {
   SENSOR,
 };
 
-}  // namespace groups
 }  // namespace esphome

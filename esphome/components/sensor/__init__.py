@@ -828,7 +828,7 @@ async def setup_sensor_core_(var, config):
         await web_server.add_entity_config(var, web_server_config)
 
     if group_config := config.get(CONF_GROUPS):
-        await groups.add_entity_config(var, group_config, groups.EntityType.SENSOR)
+        await groups.add_entity_config(var, group_config)
 
 
 async def register_sensor(var, config):

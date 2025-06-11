@@ -11,8 +11,8 @@ using namespace display_menu_render_base;
 
 class DallasTempMenuRender : public MenuRenderInterface {
  public:
-  DallasTempMenuRender() : MenuRenderInterface(groups::EntityType::SENSOR) {}
-  size_t render_entity(MenuItemMenu *menu, const groups::EntityInfo &info) override;
+  DallasTempMenuRender() : MenuRenderInterface(EntityType::SENSOR) {}
+  size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
 
  protected:
   void proccess_submenu(MenuItemMenu *menu, dallas_temp::DallasTemperatureSensor *sensor_obj);
