@@ -13,6 +13,7 @@ class MenuRenderInterface : public groups::GroupsStorage {
   MenuRenderInterface(EntityType type = EntityType::NONE) : type_(type){};
 
   EntityType type() const { return type_; }
+  void set_type(EntityType type) { this->type_ = type; }
 
   // Add needed items in menu with entity_info
   virtual size_t render_entity(MenuItemMenu *menu, EntityBase *entity) = 0;

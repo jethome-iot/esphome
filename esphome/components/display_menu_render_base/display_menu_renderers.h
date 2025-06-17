@@ -1,0 +1,66 @@
+#pragma once
+
+#include "display_menu_render_base.h"
+
+#ifdef USE_SENSOR
+#include "esphome/components/sensor/sensor.h"
+#endif
+
+#ifdef USE_SWITCH
+#include "esphome/components/switch/switch.h"
+#endif
+
+namespace esphome {
+namespace display_menu_render_base {
+
+using namespace display_menu_base;
+
+#ifdef USE_SENSOR
+class SensorMenuRender : public MenuRenderInterface {
+ public:
+  SensorMenuRender() : MenuRenderInterface(EntityType::SENSOR) {}
+  size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
+  static auto get_render_lambda(sensor::Sensor *sensor_obj, bool with_name) {
+    auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
+      char buf[50];
+      char format_buf[10];
+      int symb_nums = 0;
+      if (with_name)
+        symb_nums += sprintf(buf, "%s: ", sensor_obj->get_name().c_str());
+      sprintf(format_buf, "%%0.%df", static_cast<int>(sensor_obj->get_accuracy_decimals()));
+
+      if (sensor_obj->has_state())
+        sprintf(buf + symb_nums, format_buf, sensor_obj->state);
+      else
+        sprintf(buf + symb_nums, "Nan");
+      return buf;
+    };
+    return lambda;
+  }
+};
+#endif
+
+#ifdef USE_SWITCH
+class SwitchMenuRender : public MenuRenderInterface {
+ public:
+  SwitchMenuRender() : MenuRenderInterface(EntityType::SWITCH) {}
+  size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
+};
+#endif
+
+using render_lambda_t = std::function<size_t(MenuItemMenu *menu, EntityBase *entity)>;
+
+class LambdaMenuRender : public MenuRenderInterface {
+ public:
+  LambdaMenuRender() : MenuRenderInterface(EntityType::NONE) {}
+  size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override {
+    if (lambda_)
+      return lambda_(menu, entity);
+    return 0;
+  }
+  void set_lambda(render_lambda_t &&lambda) { this->lambda_ = lambda; }
+  render_lambda_t lambda_;
+};
+
+}  // namespace display_menu_render_base
+}  // namespace esphome
