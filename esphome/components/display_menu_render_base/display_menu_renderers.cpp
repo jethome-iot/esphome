@@ -7,7 +7,8 @@ namespace display_menu_render_base {
 size_t SensorMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
   sensor::Sensor *sensor_obj = static_cast<sensor::Sensor *>(entity);
   MenuItem *item = new MenuItem(MENU_ITEM_LABEL);
-  auto lambda = get_render_lambda(sensor_obj, true);
+
+  auto lambda = make_sensor_lambda<true>(sensor_obj, this->no_data_text_.c_str(), this->accuracy_);
   item->set_text(lambda);
 
   menu->add_generated_items(item);

@@ -3,6 +3,7 @@ from esphome.components import display_menu_base, groups
 from esphome.components.graphical_display_menu import GraphicalDisplayMenu
 import esphome.config_validation as cv
 from esphome.const import (
+    CONF_ACCURACY,
     CONF_CUSTOM,
     CONF_GROUPS,
     CONF_ID,
@@ -23,6 +24,7 @@ LambdaMenuRender = display_menu_render_ns.class_("LambdaMenuRender")
 
 CONF_ON_TEXT = "on_text"
 CONF_OFF_TEXT = "off_text"
+CONF_NO_DATA_TEXT = "no_data_text"
 
 DISPLAY_MENU_RENDER_BASE_SCHEMA = cv.Schema(
     {
@@ -44,6 +46,8 @@ BASE_RENDER_SCHEMA = cv.typed_schema(
         CONF_SENSOR: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
             {
                 cv.GenerateID(CONF_ID): cv.declare_id(SensorMenuRender),
+                cv.Optional(CONF_NO_DATA_TEXT, default="Nan"): cv.string_strict,
+                cv.Optional(CONF_ACCURACY, default=-1): cv.int_,
             }
         ),
         CONF_CUSTOM: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
@@ -80,6 +84,10 @@ async def render_to_code(var, config):
     if config.get(CONF_TYPE) == CONF_SWITCH:
         cg.add(var.set_on_text(config[CONF_ON_TEXT]))
         cg.add(var.set_off_text(config[CONF_OFF_TEXT]))
+
+    if config.get(CONF_TYPE) == CONF_SENSOR:
+        cg.add(var.set_no_data_text(config[CONF_NO_DATA_TEXT]))
+        cg.add(var.set_accuracy(config[CONF_ACCURACY]))
 
     if group_config := config.get(CONF_GROUPS):
         await groups.add_groups_to_storage(var, group_config)

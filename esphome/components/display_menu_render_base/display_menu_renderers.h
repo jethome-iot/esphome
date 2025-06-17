@@ -16,27 +16,38 @@ namespace display_menu_render_base {
 using namespace display_menu_base;
 
 #ifdef USE_SENSOR
+template<bool with_name>
+auto make_sensor_lambda(sensor::Sensor *sensor_obj, const char *no_data_text, int8_t accuracy = -1) {
+  auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
+    char buf[50];
+    char format_buf[10];
+    int symb_nums = 0;
+    if (with_name)
+      symb_nums += sprintf(buf, "%s: ", sensor_obj->get_name().c_str());
+
+    int8_t int_accuracy = (accuracy >= 0) ? accuracy : sensor_obj->get_accuracy_decimals();
+    sprintf(format_buf, "%%0.%df", int_accuracy);
+
+    if (sensor_obj->has_state())
+      sprintf(buf + symb_nums, format_buf, sensor_obj->state);
+    else
+      sprintf(buf + symb_nums, no_data_text);
+    return buf;
+  };
+  return lambda;
+};
+
 class SensorMenuRender : public MenuRenderInterface {
  public:
   SensorMenuRender() : MenuRenderInterface(EntityType::SENSOR) {}
   size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
-  static auto get_render_lambda(sensor::Sensor *sensor_obj, bool with_name) {
-    auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
-      char buf[50];
-      char format_buf[10];
-      int symb_nums = 0;
-      if (with_name)
-        symb_nums += sprintf(buf, "%s: ", sensor_obj->get_name().c_str());
-      sprintf(format_buf, "%%0.%df", static_cast<int>(sensor_obj->get_accuracy_decimals()));
 
-      if (sensor_obj->has_state())
-        sprintf(buf + symb_nums, format_buf, sensor_obj->state);
-      else
-        sprintf(buf + symb_nums, "Nan");
-      return buf;
-    };
-    return lambda;
-  }
+  void set_accuracy(int accuracy) { this->accuracy_ = accuracy; }
+  void set_no_data_text(const char *text) { this->no_data_text_ = StringRef(text); }
+
+ protected:
+  int accuracy_;
+  StringRef no_data_text_;
 };
 #endif
 
