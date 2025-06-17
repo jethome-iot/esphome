@@ -10,6 +10,7 @@ from esphome.const import (
     CONF_MENU_ID,
     CONF_SENSOR,
     CONF_SWITCH,
+    CONF_TYPE,
 )
 from esphome.core.entity_types import ENTITY_TYPES
 import esphome.cpp_types as core_types
@@ -19,6 +20,9 @@ SensorMenuRender = display_menu_render_ns.class_("SensorMenuRender")
 SwitchMenuRender = display_menu_render_ns.class_("SwitchMenuRender")
 LambdaMenuRender = display_menu_render_ns.class_("LambdaMenuRender")
 
+
+CONF_ON_TEXT = "on_text"
+CONF_OFF_TEXT = "off_text"
 
 DISPLAY_MENU_RENDER_BASE_SCHEMA = cv.Schema(
     {
@@ -33,6 +37,8 @@ BASE_RENDER_SCHEMA = cv.typed_schema(
         CONF_SWITCH: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
             {
                 cv.GenerateID(CONF_ID): cv.declare_id(SwitchMenuRender),
+                cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
+                cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
             }
         ),
         CONF_SENSOR: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
@@ -70,6 +76,10 @@ async def render_to_code(var, config):
 
     if ent_type := config.get(CONF_ENT_TYPE):
         cg.add(var.set_type(ent_type))
+
+    if config.get(CONF_TYPE) == CONF_SWITCH:
+        cg.add(var.set_on_text(config[CONF_ON_TEXT]))
+        cg.add(var.set_off_text(config[CONF_OFF_TEXT]))
 
     if group_config := config.get(CONF_GROUPS):
         await groups.add_groups_to_storage(var, group_config)

@@ -45,6 +45,13 @@ class SwitchMenuRender : public MenuRenderInterface {
  public:
   SwitchMenuRender() : MenuRenderInterface(EntityType::SWITCH) {}
   size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override;
+
+  void set_on_text(const char *text) { this->on_text_ = StringRef(text); }
+  void set_off_text(const char *text) { this->off_text_ = StringRef(text); }
+
+ protected:
+  StringRef on_text_;
+  StringRef off_text_;
 };
 #endif
 

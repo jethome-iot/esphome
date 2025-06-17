@@ -18,14 +18,14 @@ size_t SensorMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
 #ifdef USE_SWITCH
 size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
   switch_::Switch *switch_obj = static_cast<switch_::Switch *>(entity);
-  MenuItemSwitch *n_switch = new MenuItemSwitch();
-  n_switch->set_text(switch_obj->get_name());
-  n_switch->set_immediate_edit(true);
-  n_switch->set_switch_variable(switch_obj);
-  n_switch->set_on_text("On");
-  n_switch->set_off_text("Off");
+  MenuItemSwitch *menu_switch = new MenuItemSwitch();
+  menu_switch->set_text(switch_obj->get_name());
+  menu_switch->set_immediate_edit(true);
+  menu_switch->set_switch_variable(switch_obj);
+  menu_switch->set_on_text(this->on_text_.c_str());
+  menu_switch->set_off_text(this->off_text_.c_str());
 
-  menu->add_generated_items(n_switch);
+  menu->add_generated_items(menu_switch);
   return 1;
 }
 #endif
