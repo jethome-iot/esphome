@@ -1,4 +1,4 @@
-#include "display_menu_renderers.h"
+#include "display_menu_render.h"
 
 namespace esphome {
 namespace display_menu_render_base {

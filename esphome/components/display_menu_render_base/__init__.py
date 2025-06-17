@@ -65,7 +65,7 @@ CONFIG_SCHEMA = cv.All(cv.ensure_list(BASE_RENDER_SCHEMA), cv.Length(min=1))
 
 async def render_to_code(var, config):
     menu_var = await cg.get_variable(config[CONF_MENU_ID])
-    cg.add(menu_var.add_renderer(var))
+    cg.add(menu_var.add_render(var))
 
     if lambda_config := config.get(CONF_LAMBDA):
         lambda_ = await cg.process_lambda(

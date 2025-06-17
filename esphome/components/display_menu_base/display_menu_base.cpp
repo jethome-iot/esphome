@@ -43,7 +43,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
 
     // 1. Find special render
     if (render == nullptr) {
-      for (auto render_variant : this->renderers_) {
+      for (auto render_variant : this->renders_) {
         if (render_variant->has_entity(entity)) {
           render = render_variant;
           break;
@@ -53,7 +53,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
 
     // 2. Find equality type
     if (render == nullptr && entity->type() != EntityType::NONE) {
-      for (auto render_variant : this->renderers_) {
+      for (auto render_variant : this->renders_) {
         if (render_variant->type() == entity->type()) {
           render = render_variant;
           break;

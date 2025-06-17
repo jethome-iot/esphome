@@ -52,7 +52,7 @@ class DisplayMenuComponent : public Component {
 
   bool is_active() const { return this->active_; }
 
-  void add_renderer(MenuRenderInterface *renderer) { this->renderers_.push_back(renderer); }
+  void add_render(MenuRenderInterface *render) { this->renders_.push_back(render); }
 
  protected:
   void reset_();
@@ -94,7 +94,7 @@ class DisplayMenuComponent : public Component {
   bool editing_{false};
   bool root_on_enter_called_{false};
 
-  std::vector<MenuRenderInterface *> renderers_;
+  std::vector<MenuRenderInterface *> renders_;
 };
 
 }  // namespace display_menu_base
