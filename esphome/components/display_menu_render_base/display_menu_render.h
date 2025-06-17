@@ -16,6 +16,8 @@ namespace display_menu_render_base {
 using namespace display_menu_base;
 
 #ifdef USE_SENSOR
+
+// Create lambda to generate text for menu_item
 template<bool with_name>
 auto make_sensor_lambda(sensor::Sensor *sensor_obj, const char *no_data_text, int8_t accuracy = -1) {
   auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
@@ -37,6 +39,7 @@ auto make_sensor_lambda(sensor::Sensor *sensor_obj, const char *no_data_text, in
   return lambda;
 };
 
+// Default render for sensor objects
 class SensorMenuRender : public MenuRenderInterface {
  public:
   SensorMenuRender() : MenuRenderInterface(EntityType::SENSOR) {}
@@ -52,6 +55,8 @@ class SensorMenuRender : public MenuRenderInterface {
 #endif
 
 #ifdef USE_SWITCH
+
+// Default render for switch objects
 class SwitchMenuRender : public MenuRenderInterface {
  public:
   SwitchMenuRender() : MenuRenderInterface(EntityType::SWITCH) {}
@@ -66,10 +71,10 @@ class SwitchMenuRender : public MenuRenderInterface {
 };
 #endif
 
-using render_lambda_t = std::function<size_t(MenuItemMenu *menu, EntityBase *entity)>;
-
+// Render with lambda
 class LambdaMenuRender : public MenuRenderInterface {
  public:
+  using render_lambda_t = std::function<size_t(MenuItemMenu *menu, EntityBase *entity)>;
   LambdaMenuRender() : MenuRenderInterface(EntityType::NONE) {}
   size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override {
     if (lambda_)

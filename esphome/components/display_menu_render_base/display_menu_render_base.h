@@ -7,7 +7,7 @@ namespace display_menu_render_base {
 
 using namespace display_menu_base;
 
-// Render interface for menu with groups
+// Render interface for menu with groups or by entity type
 class MenuRenderInterface : public groups::GroupsStorage {
  public:
   MenuRenderInterface(EntityType type = EntityType::NONE) : type_(type){};
