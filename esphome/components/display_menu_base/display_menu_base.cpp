@@ -22,7 +22,7 @@ void DisplayMenuComponent::recurse_menu_items_(MenuItemMenu *parent_menu) {
 void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
   size_t num_items = menu->items_size();
   for (groups::Group *group : menu->groups()) {
-    num_items += process_group(menu, group);
+    num_items += process_group_(menu, group);
   }
 
   if (num_items == 0) {
@@ -32,7 +32,7 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
   }
 }
 
-size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *group) {
+size_t DisplayMenuComponent::process_group_(MenuItemMenu *menu, groups::Group *group) {
   size_t added = 0;
   if (group == nullptr) {
     return added;
@@ -43,7 +43,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
 
     // 1. Find special render
     if (render == nullptr) {
-      for (auto render_variant : this->renders_) {
+      for (auto *render_variant : this->renders_) {
         if (render_variant->has_entity(entity)) {
           render = render_variant;
           break;
@@ -53,7 +53,7 @@ size_t DisplayMenuComponent::process_group(MenuItemMenu *menu, groups::Group *gr
 
     // 2. Find equality type
     if (render == nullptr && entity->type() != EntityType::NONE) {
-      for (auto render_variant : this->renders_) {
+      for (auto *render_variant : this->renders_) {
         if (render_variant->type() == entity->type()) {
           render = render_variant;
           break;

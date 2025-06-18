@@ -30,10 +30,11 @@ auto make_sensor_lambda(sensor::Sensor *sensor_obj, const char *no_data_text, in
     int8_t int_accuracy = (accuracy >= 0) ? accuracy : sensor_obj->get_accuracy_decimals();
     sprintf(format_buf, "%%0.%df", int_accuracy);
 
-    if (sensor_obj->has_state())
+    if (sensor_obj->has_state()) {
       sprintf(buf + symb_nums, format_buf, sensor_obj->state);
-    else
+    } else {
       sprintf(buf + symb_nums, no_data_text);
+    }
     return buf;
   };
   return lambda;

@@ -40,7 +40,7 @@ class GroupsStorage {
   std::vector<Group *> groups_;
 };
 
-extern GroupsStorage global_groups_storage;
+extern GroupsStorage global_groups_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace groups
 }  // namespace esphome

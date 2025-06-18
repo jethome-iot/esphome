@@ -74,7 +74,7 @@ class DisplayMenuComponent : public Component {
 
   void recurse_menu_items_(MenuItemMenu *parent_menu);
   void generate_to_menu_items_(MenuItemMenu *menu);
-  size_t process_group(MenuItemMenu *menu, groups::Group *group);
+  size_t process_group_(MenuItemMenu *menu, groups::Group *group);
 
   virtual void on_before_show(){};
   virtual void on_after_show(){};
