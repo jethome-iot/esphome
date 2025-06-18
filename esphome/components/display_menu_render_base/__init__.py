@@ -28,7 +28,7 @@ CONF_NO_DATA_TEXT = "no_data_text"
 
 DISPLAY_MENU_RENDER_BASE_SCHEMA = cv.Schema(
     {
-        cv.Required(CONF_MENU_ID): cv.use_id(GraphicalDisplayMenu),
+        cv.GenerateID(CONF_MENU_ID): cv.use_id(GraphicalDisplayMenu),
     }
 ).extend(groups.LIST_OF_GROUPS_SCHEMA)
 
