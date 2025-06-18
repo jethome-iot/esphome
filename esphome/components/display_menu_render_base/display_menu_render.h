@@ -75,7 +75,9 @@ class SwitchMenuRender : public MenuRenderInterface {
 // Render with lambda
 class LambdaMenuRender : public MenuRenderInterface {
  public:
+  // Render lambda should return num of added elements in menu args
   using render_lambda_t = std::function<size_t(MenuItemMenu *menu, EntityBase *entity)>;
+
   LambdaMenuRender() : MenuRenderInterface(EntityType::NONE) {}
   size_t render_entity(MenuItemMenu *menu, EntityBase *entity) override {
     if (lambda_)
