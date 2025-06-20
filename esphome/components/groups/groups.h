@@ -40,6 +40,7 @@ class GroupsStorage {
   std::vector<Group *> groups_;
 };
 
+// TODO: for future use
 extern GroupsStorage global_groups_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace groups
