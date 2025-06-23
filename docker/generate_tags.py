@@ -8,6 +8,7 @@ CHANNEL_RELEASE = "release"
 
 GHCR = "ghcr"
 DOCKERHUB = "dockerhub"
+CR = "cr"
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -64,7 +65,7 @@ def main():
 
     suffix = f"-{args.suffix}" if args.suffix else ""
 
-    image_name = f"esphome/esphome{suffix}"
+    image_name = f"jethome-iot/esphome{suffix}"
 
     print(f"channel={channel}")
 
@@ -75,6 +76,8 @@ def main():
             print(f"image=ghcr.io/{image_name}")
         if DOCKERHUB in args.registry:
             print(f"image=docker.io/{image_name}")
+        if CR in args.registry:
+            print(f"image=cr.jethome.work/{image_name}")
 
     print(f"image_name={image_name}")
 
@@ -85,6 +88,8 @@ def main():
             full_tags += [f"ghcr.io/{image_name}:{tag}"]
         if DOCKERHUB in args.registry:
             full_tags += [f"docker.io/{image_name}:{tag}"]
+        if CR in args.registry:
+            full_tags += [f"cr.jethome.work/{image_name}:{tag}"]
     print(f"tags={','.join(full_tags)}")
 
 
