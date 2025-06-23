@@ -3,12 +3,13 @@ requires = ["setuptools==80.8.0", "wheel>=0.43,<0.46"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name        = "esphome"
+name        = "espjhome"
 license     = {text = "MIT"}
-description = "ESPHome is a system to configure your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems."
+description = "ESPJHome is a system to configure your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems. Extended by JetHome"
 readme      = "README.md"
 authors     = [
-  {name = "The ESPHome Authors", email = "esphome@openhomefoundation.org"}
+  {name = "The ESPHome Authors", email = "esphome@openhomefoundation.org"},
+  {name = "The JetHome Authors", email = "dev@jethome.com"}
 ]
 keywords    = ["home", "automation"]
 classifiers = [
@@ -26,7 +27,7 @@ dynamic = ["dependencies", "optional-dependencies", "version"]
 
 [project.urls]
 "Documentation"           = "https://esphome.io"
-"Source Code"             = "https://github.com/esphome/esphome"
+"Source Code"             = "https://github.com/jethome-iot/esphome"
 "Bug Tracker"             = "https://github.com/esphome/issues/issues"
 "Feature Request Tracker" = "https://github.com/esphome/feature-requests/issues"
 "Discord"                 = "https://discord.gg/KhAMKrd"
@@ -34,7 +35,7 @@ dynamic = ["dependencies", "optional-dependencies", "version"]
 "Twitter"                 = "https://twitter.com/esphome_"
 
 [project.scripts]
-esphome = "esphome.__main__:main"
+espjhome = "espjhome.__main__:main"
 
 [tool.setuptools]
 platforms            = ["any"]
@@ -43,21 +44,21 @@ include-package-data = true
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
-version = {attr = "esphome.const.__version__"}
+version = {attr = "espjhome.const.__version__"}
 
 [tool.setuptools.dynamic.optional-dependencies]
 dev = { file = ["requirements_dev.txt"] }
 test = { file = ["requirements_test.txt"] }
 
 [tool.setuptools.packages.find]
-include = ["esphome*"]
+include = ["espjhome*"]
 
 [tool.pytest.ini_options]
 testpaths = [
   "tests",
 ]
 addopts = [
-  "--cov=esphome",
+  "--cov=espjhome",
   "--cov-branch",
 ]
 
@@ -131,7 +132,7 @@ ignore = [
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
 known-first-party = [
-  "esphome",
+  "espjhome",
 ]
 combine-as-imports = true
 split-on-trailing-comma = false
