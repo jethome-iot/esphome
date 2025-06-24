@@ -28,11 +28,8 @@ dynamic = ["dependencies", "optional-dependencies", "version"]
 [project.urls]
 "Documentation"           = "https://esphome.io"
 "Source Code"             = "https://github.com/jethome-iot/esphome"
-"Bug Tracker"             = "https://github.com/esphome/issues/issues"
-"Feature Request Tracker" = "https://github.com/esphome/feature-requests/issues"
-"Discord"                 = "https://discord.gg/KhAMKrd"
-"Forum"                   = "https://community.home-assistant.io/c/esphome"
-"Twitter"                 = "https://twitter.com/esphome_"
+"Bug Tracker"             = "https://github.com/jethome-iot/esphome/issues"
+"Feature Request Tracker" = "https://github.com/jethome-iot/esphome/issues"
 
 [project.scripts]
 espjhome = "espjhome.__main__:main"
