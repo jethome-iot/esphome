@@ -3,11 +3,11 @@ name: API Proto CI
 on:
   pull_request:
     paths:
-      - "esphome/components/api/api.proto"
-      - "esphome/components/api/api_pb2.cpp"
-      - "esphome/components/api/api_pb2.h"
-      - "esphome/components/api/api_pb2_service.cpp"
-      - "esphome/components/api/api_pb2_service.h"
+      - "espjhome/components/api/api.proto"
+      - "espjhome/components/api/api_pb2.cpp"
+      - "espjhome/components/api/api_pb2.h"
+      - "espjhome/components/api/api_pb2_service.cpp"
+      - "espjhome/components/api/api_pb2_service.h"
       - "script/api_protobuf/api_protobuf.py"
       - ".github/workflows/ci-api-proto.yml"
 
@@ -66,8 +66,8 @@ jobs:
         with:
           name: generated-proto-files
           path: |
-            esphome/components/api/api_pb2.*
-            esphome/components/api/api_pb2_service.*
+            espjhome/components/api/api_pb2.*
+            espjhome/components/api/api_pb2_service.*
       - if: success()
         name: Dismiss review
         uses: actions/github-script@v7.0.1

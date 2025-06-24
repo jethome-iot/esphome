@@ -34,7 +34,7 @@ jobs:
               ENVIRONMENT="production"
             fi
           else
-            TAG=$(cat esphome/const.py | sed -n -E "s/^__version__\s+=\s+\"(.+)\"$/\1/p")
+            TAG=$(cat espjhome/const.py | sed -n -E "s/^__version__\s+=\s+\"(.+)\"$/\1/p")
             today="$(date --utc '+%Y%m%d')"
             TAG="${TAG}${today}"
             BRANCH=${GITHUB_REF#refs/heads/}
@@ -54,7 +54,7 @@ jobs:
 
   deploy-pypi:
     name: Build and publish to PyPi
-    if: github.repository == 'esphome/esphome' && github.event_name == 'release'
+    if: github.repository == 'jethome-iot/esphome' && github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -76,7 +76,7 @@ jobs:
 
   deploy-docker:
     name: Build ESPHome ${{ matrix.platform.arch }}
-    if: github.repository == 'esphome/esphome'
+    if: github.repository == 'jethome-iot/esphome'
     permissions:
       contents: read
       packages: write
@@ -145,12 +145,12 @@ jobs:
           retention-days: 1
 
   deploy-manifest:
-    name: Publish ESPHome ${{ matrix.image.build_type }} to ${{ matrix.registry }}
+    name: Publish ESPJHome ${{ matrix.image.build_type }} to ${{ matrix.registry }}
     runs-on: ubuntu-latest
     needs:
       - init
       - deploy-docker
-    if: github.repository == 'esphome/esphome'
+    if: github.repository == 'jethome-iot/esphome'
     permissions:
       contents: read
       packages: write
@@ -166,7 +166,7 @@ jobs:
             #   suffix: "lint"
         registry:
           - ghcr
-          - dockerhub
+          - cr
     steps:
       - uses: actions/checkout@v4.1.7
 
@@ -213,7 +213,7 @@ jobs:
             $(printf '${{ steps.tags.outputs.image }}@sha256:%s ' *)
 
   deploy-ha-addon-repo:
-    if: github.repository == 'esphome/esphome' && needs.init.outputs.branch_build == 'false'
+    if: 0 #TODO: github.repository == 'jethome-iot/esphome' && needs.init.outputs.branch_build == 'false'
     runs-on: ubuntu-latest
     needs:
       - init
@@ -240,7 +240,7 @@ jobs:
             })
 
   deploy-esphome-schema:
-    if: github.repository == 'esphome/esphome' && needs.init.outputs.branch_build == 'false'
+    if: 0 #TODO: github.repository == 'esphome/esphome' && needs.init.outputs.branch_build == 'false'
     runs-on: ubuntu-latest
     needs: [init]
     environment: ${{ needs.init.outputs.deploy_env }}
