@@ -78,6 +78,26 @@ class SwitchMenuRender : public MenuRenderInterface {
 
 #ifdef USE_BINARY_SENSOR
 
+template<bool with_name>
+auto make_binary_sensor_lambda(binary_sensor::BinarySensor *sensor_obj, const char *on_text, const char *off_text,
+                               const char *no_data_text) {
+  auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
+    char buf[50];
+
+    int symb_nums = 0;
+    if (with_name)
+      symb_nums += sprintf(buf, "%s: ", sensor_obj->get_name().c_str());
+
+    if (sensor_obj->has_state()) {
+      sprintf(buf + symb_nums, "(%s)", sensor_obj->state ? on_text : off_text);
+    } else {
+      sprintf(buf + symb_nums, "(%s)", no_data_text);
+    }
+    return buf;
+  };
+  return lambda;
+};
+
 // Default render for binary sensor objects
 class BinarySensorMenuRender : public MenuRenderInterface {
  public:
