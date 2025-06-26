@@ -31,5 +31,9 @@ size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
 }
 #endif
 
+#ifdef USE_BINARY_SENSOR
+size_t BinarySensorMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) { return 1; }
+#endif
+
 }  // namespace display_menu_render_base
 }  // namespace esphome
