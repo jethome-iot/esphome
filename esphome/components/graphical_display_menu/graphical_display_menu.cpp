@@ -229,9 +229,10 @@ inline void GraphicalDisplayMenu::draw_item(display::Display *display, const dis
   display->filled_rectangle(bounds->x, bounds->y, background_width, bounds->h, background_color);
 
   std::string label = item->get_text();
+  std::string value;
   if (item->has_value()) {
     MenuItemValueArguments args(item, selected, this->editing_);
-    label.append(this->menu_item_value_.value(&args));
+    value = this->menu_item_value_.value(&args);
   }
 
   display->print(bounds->x, bounds->y, this->font_, foreground_color, display::TextAlign::TOP_LEFT, label.c_str(),
