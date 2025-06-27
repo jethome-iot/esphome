@@ -4,12 +4,14 @@ from esphome import automation, core
 from esphome.automation import maybe_simple_id
 import esphome.codegen as cg
 from esphome.components import groups as gp
+from esphome.components.binary_sensor import BinarySensor
 from esphome.components.number import Number
 from esphome.components.select import Select
 from esphome.components.switch import Switch
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ACTIVE,
+    CONF_BINARY_SENSOR,
     CONF_COMMAND,
     CONF_CUSTOM,
     CONF_FORMAT,
@@ -19,6 +21,7 @@ from esphome.const import (
     CONF_MODE,
     CONF_NUMBER,
     CONF_ON_VALUE,
+    CONF_SENSOR,
     CONF_SWITCH,
     CONF_TEXT,
     CONF_TRIGGER_ID,
@@ -41,6 +44,7 @@ CONF_BACK = "back"
 CONF_SELECT = "select"
 CONF_ON_TEXT = "on_text"
 CONF_OFF_TEXT = "off_text"
+CONF_NO_DATA_TEXT = "no_data_text"
 CONF_VALUE_LAMBDA = "value_lambda"
 CONF_IMMEDIATE_EDIT = "immediate_edit"
 CONF_ROOT_ITEM_ID = "root_item_id"
@@ -61,6 +65,7 @@ MenuItemNumber = display_menu_base_ns.class_("MenuItemNumber")
 MenuItemSwitch = display_menu_base_ns.class_("MenuItemSwitch")
 MenuItemCommand = display_menu_base_ns.class_("MenuItemCommand")
 MenuItemCustom = display_menu_base_ns.class_("MenuItemCustom")
+MenuItemBinarySensor = display_menu_base_ns.class_("MenuItemBinarySensor")
 
 UpAction = display_menu_base_ns.class_("UpAction", automation.Action)
 DownAction = display_menu_base_ns.class_("DownAction", automation.Action)
@@ -87,6 +92,7 @@ MENU_ITEM_TYPES = {
     CONF_SWITCH: MenuItemType.MENU_ITEM_SWITCH,
     CONF_COMMAND: MenuItemType.MENU_ITEM_COMMAND,
     CONF_CUSTOM: MenuItemType.MENU_ITEM_CUSTOM,
+    CONF_BINARY_SENSOR: MenuItemType.MENU_ITEM_BINARY_SENSOR,
 }
 
 MENU_ITEMS_WITH_SPECIALIZED_CLASSES = (
@@ -96,6 +102,7 @@ MENU_ITEMS_WITH_SPECIALIZED_CLASSES = (
     CONF_SWITCH,
     CONF_COMMAND,
     CONF_CUSTOM,
+    CONF_BINARY_SENSOR,
 )
 
 MenuMode = display_menu_base_ns.enum("MenuMode")
@@ -248,6 +255,15 @@ MENU_ITEM_SCHEMA = cv.typed_schema(
                 cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
                 cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
                 cv.Optional(CONF_VALUE_LAMBDA): cv.returning_lambda,
+            }
+        ),
+        CONF_BINARY_SENSOR: MENU_ITEM_ENTER_LEAVE_VALUE_SCHEMA.extend(
+            {
+                cv.GenerateID(CONF_ID): cv.declare_id(MenuItemBinarySensor),
+                cv.Required(CONF_SENSOR): cv.use_id(BinarySensor),
+                cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
+                cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
+                cv.Optional(CONF_NO_DATA_TEXT, default="Nan"): cv.string_strict,
             }
         ),
         CONF_COMMAND: MENU_ITEM_VALUE_SCHEMA.extend(
@@ -422,6 +438,12 @@ async def menu_item_to_code(menu, config, parent):
         cg.add(item.set_switch_variable(var))
         cg.add(item.set_on_text(config[CONF_ON_TEXT]))
         cg.add(item.set_off_text(config[CONF_OFF_TEXT]))
+    if config[CONF_TYPE] == CONF_BINARY_SENSOR:
+        var = await cg.get_variable(config[CONF_SENSOR])
+        cg.add(item.set_binary_sensor_variable(var))
+        cg.add(item.set_on_text(config[CONF_ON_TEXT]))
+        cg.add(item.set_off_text(config[CONF_OFF_TEXT]))
+        cg.add(item.set_no_data_text(config[CONF_OFF_TEXT]))
     if config[CONF_TYPE] == CONF_MENU:
         if (groups := config.get(CONF_GROUPS)) is not None:
             for group in groups:
