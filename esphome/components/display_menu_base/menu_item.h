@@ -49,8 +49,9 @@ using value_getter_t = std::function<std::string(const MenuItem *)>;
 class MenuItem {
  public:
   explicit MenuItem(MenuItemType t) : item_type_(t) {}
-  void set_parent(MenuItem *parent) { this->parent_ = parent; }
-  MenuItem *get_parent() { return this->parent_; }
+  virtual ~MenuItem() {}
+  void set_parent(MenuItemMenu *parent) { this->parent_ = parent; }
+  MenuItemMenu *get_parent() { return this->parent_; }
   MenuItemType get_type() const { return this->item_type_; }
   template<typename V> void set_text(V val) { this->text_ = val; }
   void add_on_enter_callback(std::function<void()> &&cb) { this->on_enter_callbacks_.add(std::move(cb)); }
@@ -74,6 +75,17 @@ class MenuItem {
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
+  bool is_generated() { return this->generated_; }
+  void set_was_generated(bool val) { this->generated_ = val; }
+
+  bool is_generate_on_enter() { return this->generate_on_enter; }
+  void set_generate_on_enter(bool val) { this->generate_on_enter_ = val; }
+
+  void clear_items() {
+    this->items_.clear();
+    this->need_generate_ = true;
+  }
+
   virtual bool select_next() { return false; }
   virtual bool select_prev() { return false; }
 
@@ -93,6 +105,8 @@ class MenuItem {
 
   std::vector<MenuItem *> items_;
   bool has_internal_items_{false};
+  bool generated_{false};
+  bool generate_on_enter_{false};
 };
 
 class MenuItemValueBase : public MenuItem {
