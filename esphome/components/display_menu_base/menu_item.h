@@ -49,7 +49,7 @@ using value_getter_t = std::function<std::string(const MenuItem *)>;
 class MenuItem {
  public:
   explicit MenuItem(MenuItemType t) : item_type_(t) {}
-  virtual ~MenuItem() {}
+  virtual ~MenuItem() { clear_items(); }
   void set_parent(MenuItemMenu *parent) { this->parent_ = parent; }
   MenuItemMenu *get_parent() { return this->parent_; }
   MenuItemType get_type() const { return this->item_type_; }
@@ -82,6 +82,9 @@ class MenuItem {
   void set_generate_on_enter(bool val) { this->generate_on_enter_ = val; }
 
   void clear_items() {
+    for (auto *item : this->items_) {
+      delete item;
+    }
     this->items_.clear();
     this->need_generate_ = true;
   }
