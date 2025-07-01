@@ -238,84 +238,14 @@ inline void GraphicalDisplayMenu::draw_item(display::Display *display, const dis
   int width_label = background_width;
 
   // Measure value size
-  int value_x1, value_y1, value_width, value_height;
+  int value_x1, value_y1, value_width = 0, value_height;
   if (value.size() > 0) {
     display->get_text_bounds(0, 0, value.c_str(), this->font_, display::TextAlign::TOP_LEFT, &value_x1, &value_y1,
                              &value_width, &value_height);
-    // display->print(background_width, bounds->y, this->font_, foreground_color, display::TextAlign::TOP_RIGHT,
-    // value.c_str());
-    width_label = background_width - value_width;
+    width_label -= value_width;
   }
 
-  int label_x1, label_y1, label_width, label_height;
-  display->get_text_bounds(0, 0, label.c_str(), this->font_, display::TextAlign::TOP_LEFT, &label_x1, &label_y1,
-                           &label_width, &label_height);
-
-  if (width_label < label_width) {
-    const char dots_str[] = "…";
-    char *mod_label_buff = new char[label.size() + sizeof(dots_str) + 1]{0};
-
-    size_t curr_size = label.size();
-    int mid_index = 0;
-    if (curr_size % 2 == 0) {
-      mid_index = curr_size / 2 - 1;
-      // strcpy(mod_label_buff + mid_index - 1, dots_str);
-      // strcpy(mod_label_buff + mid_index + 1, mod_label_buff + mid_index + 2);
-
-    } else {
-      mid_index = curr_size / 2;
-      // strcpy(mod_label_buff + mid_index - 1, dots_str);
-      // strcpy(mod_label_buff + mid_index + 1, mod_label_buff + mid_index + 2);
-    }
-
-    // int mid_index = label.size() / 2;
-    int to_left = mid_index;
-    int to_right = mid_index;
-    bool to_left_flag = false;
-
-    while (width_label <= label_width) {
-      std::string new_label;
-
-      if (to_left_flag)
-        to_left--;
-      else
-        to_right++;
-
-      to_left_flag = !to_left_flag;
-
-      memcpy(mod_label_buff, label.c_str(), to_left);
-      strcpy(mod_label_buff + to_left, dots_str);
-      strcat(mod_label_buff, label.c_str() + to_right);
-
-      // memcpy(mod_label_buff, label.c_str(), to_left);
-
-      // mod_label_buff[]
-
-      ESP_LOGD("Alex", "%s", mod_label_buff);
-      // int mid_index = 0;
-      // size_t curr_size = label.size();//strlen(mod_label_buff);
-      // if (curr_size % 2 == 0) {
-      //   mid_index = curr_size/ 2 - 1;
-      //   //strcpy(mod_label_buff + mid_index - 1, dots_str);
-      //   //strcpy(mod_label_buff + mid_index + 1, mod_label_buff + mid_index + 2);
-
-      // } else {
-      //   mid_index = curr_size / 2;
-      //   //strcpy(mod_label_buff + mid_index - 1, dots_str);
-      //   //strcpy(mod_label_buff + mid_index + 1, mod_label_buff + mid_index + 2);
-      // }
-
-      // new_label = label.substr(0, mid_index-2) + std::string(dots_str) + label.substr(mid_index + 2);
-      // label = new_label;
-
-      display->get_text_bounds(0, 0, mod_label_buff, this->font_, display::TextAlign::TOP_LEFT, &label_x1, &label_y1,
-                               &label_width, &label_height);
-      ESP_LOGD("Alex", "%s - %d %d", mod_label_buff, width_label, label_width);
-    }
-    label = std::string(mod_label_buff);
-    delete[] mod_label_buff;
-  }
-
+  label = this->display_->shrink_text_to_width(label, this->font_, width_label);
   std::string res = label + value;
 
   display->print(bounds->x, bounds->y, this->font_, foreground_color, display::TextAlign::TOP_LEFT, res.c_str());
