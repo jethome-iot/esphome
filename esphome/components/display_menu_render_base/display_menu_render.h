@@ -21,19 +21,20 @@ using namespace display_menu_base;
 template<bool with_name>
 auto make_sensor_lambda(sensor::Sensor *sensor_obj, const char *no_data_text, int8_t accuracy = -1) {
   auto lambda = [=](const display_menu_base::MenuItem *it) -> std::string {
-    char buf[50];
+    constexpr size_t buffsize = 50;
+    char buf[buffsize] = {0};
     char format_buf[10];
-    int symb_nums = 0;
+    size_t symb_nums = 0;
     if (with_name)
-      symb_nums += sprintf(buf, "%s: ", sensor_obj->get_name().c_str());
+      symb_nums += snprintf(buf, buffsize, "%s: ", sensor_obj->get_name().c_str());
 
     int8_t int_accuracy = (accuracy >= 0) ? accuracy : sensor_obj->get_accuracy_decimals();
-    sprintf(format_buf, "%%0.%df", int_accuracy);
+    snprintf(format_buf, sizeof(format_buf), "%%0.%df", int_accuracy);
 
     if (sensor_obj->has_state()) {
-      sprintf(buf + symb_nums, format_buf, sensor_obj->state);
+      snprintf(buf + symb_nums, buffsize - symb_nums, format_buf, sensor_obj->state);
     } else {
-      sprintf(buf + symb_nums, no_data_text);
+      snprintf(buf + symb_nums, buffsize - symb_nums, "%s", no_data_text ? no_data_text : "");
     }
     return buf;
   };
