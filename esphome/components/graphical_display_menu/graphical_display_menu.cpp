@@ -18,15 +18,18 @@ void GraphicalDisplayMenu::setup() {
 
   if (!this->menu_item_value_.has_value()) {
     this->menu_item_value_ = [](const MenuItemValueArguments *it) {
-      std::string label = " ";
+      std::string label;
       if (it->is_item_selected && it->is_menu_editing) {
-        label.append(">");
+        label.append(" >");
         label.append(it->item->get_value_text());
         label.append("<");
-      } else {
-        label.append("(");
+      } else if (it->item->get_type() == display_menu_base::MENU_ITEM_SWITCH) {
+        label.append(" (");
         label.append(it->item->get_value_text());
         label.append(")");
+      } else if (it->item->has_value()) {
+        label.append(": ");
+        label.append(it->item->get_value_text());
       }
       return label;
     };

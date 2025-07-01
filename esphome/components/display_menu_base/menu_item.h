@@ -32,6 +32,7 @@ enum MenuItemType {
   MENU_ITEM_SWITCH,
   MENU_ITEM_COMMAND,
   MENU_ITEM_CUSTOM,
+  MENU_ITEM_VALUE
 };
 
 /// @brief Returns a string representation of a menu item type suitable for logging
@@ -75,9 +76,19 @@ class MenuItem {
   CallbackManager<void()> on_value_callbacks_{};
 };
 
-class MenuItemMenu : public MenuItem {
+class MenuItemValueBase : public MenuItem {
  public:
-  explicit MenuItemMenu() : MenuItem(MENU_ITEM_MENU) {}
+  explicit MenuItemValueBase(MenuItemType t) : MenuItem(t) {}
+  void set_value_lambda(value_getter_t &&getter) { this->value_getter_ = getter; }
+  std::string get_value_text() const override;
+
+ protected:
+  optional<value_getter_t> value_getter_{};
+};
+
+class MenuItemMenu : public MenuItemValueBase {
+ public:
+  explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
   void add_item(MenuItem *item) {
     item->set_parent(this);
     this->items_.push_back(item);
@@ -90,6 +101,8 @@ class MenuItemMenu : public MenuItem {
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
+  bool has_value() const override { return this->value_getter_.has_value(); }
+
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const auto &groups() { return groups_; }
@@ -101,16 +114,14 @@ class MenuItemMenu : public MenuItem {
 #endif
 };
 
-class MenuItemEditable : public MenuItem {
+class MenuItemEditable : public MenuItemValueBase {
  public:
-  explicit MenuItemEditable(MenuItemType t) : MenuItem(t) {}
+  explicit MenuItemEditable(MenuItemType t) : MenuItemValueBase(t) {}
   void set_immediate_edit(bool val) { this->immediate_edit_ = val; }
   bool get_immediate_edit() const override { return this->immediate_edit_; }
-  void set_value_lambda(value_getter_t &&getter) { this->value_getter_ = getter; }
 
  protected:
   bool immediate_edit_{false};
-  optional<value_getter_t> value_getter_{};
 };
 
 #ifdef USE_SELECT
@@ -201,6 +212,12 @@ class MenuItemCustom : public MenuItemEditable {
 
   CallbackManager<void()> on_next_callbacks_{};
   CallbackManager<void()> on_prev_callbacks_{};
+};
+
+class MenuItemValue : public MenuItemValueBase {
+ public:
+  explicit MenuItemValue() : MenuItemValueBase(MENU_ITEM_VALUE) {}
+  bool has_value() const override { return true; }
 };
 
 }  // namespace display_menu_base
