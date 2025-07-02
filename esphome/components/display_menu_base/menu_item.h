@@ -105,7 +105,7 @@ class MenuItemMenu : public MenuItemValueBase {
 
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
-  const auto &groups() { return groups_; }
+  const std::vector<groups::Group *> &groups() { return groups_; }
 #endif
  protected:
   std::vector<MenuItem *> items_;
