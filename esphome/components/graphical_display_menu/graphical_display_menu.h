@@ -44,7 +44,8 @@ class GraphicalDisplayMenu : public display_menu_base::DisplayMenuComponent {
   void set_foreground_color(Color foreground_color);
   void set_background_color(Color background_color);
   void set_fill_row(bool val);
-  void set_restore_page(bool val) { this->restore_page_ = val; }
+  void set_shrink_label(bool val);
+  void set_restore_page(bool val);
 
   void add_on_redraw_callback(std::function<void()> &&cb) { this->on_redraw_callbacks_.add(std::move(cb)); }
 
@@ -73,6 +74,7 @@ class GraphicalDisplayMenu : public display_menu_base::DisplayMenuComponent {
   Color background_color_{COLOR_OFF};
   bool restore_page_;
   bool fill_row_;
+  bool shrink_label_;
 
   CallbackManager<void()> on_redraw_callbacks_{};
 };

@@ -66,6 +66,8 @@ void GraphicalDisplayMenu::set_font(display::BaseFont *font) { this->font_ = fon
 void GraphicalDisplayMenu::set_foreground_color(Color foreground_color) { this->foreground_color_ = foreground_color; }
 void GraphicalDisplayMenu::set_background_color(Color background_color) { this->background_color_ = background_color; }
 void GraphicalDisplayMenu::set_fill_row(bool val) { this->fill_row_ = val; }
+void GraphicalDisplayMenu::set_shrink_label(bool val) { this->shrink_label_ = val; }
+void GraphicalDisplayMenu::set_restore_page(bool val) { this->restore_page_ = val; }
 
 void GraphicalDisplayMenu::on_before_show() {
   if (this->display_ != nullptr) {
@@ -248,8 +250,9 @@ inline void GraphicalDisplayMenu::draw_item(display::Display *display, const dis
                              &value_width, &value_height);
     width_label -= value_width;
   }
-
-  label = this->display_->shrink_text_to_width(label, this->font_, width_label);
+  if (this->shrink_label_) {
+    label = this->display_->shrink_text_to_width(label, this->font_, width_label);
+  }
   std::string res = label + value;
 
   display->print(bounds->x, bounds->y, this->font_, foreground_color, display::TextAlign::TOP_LEFT, res.c_str());
