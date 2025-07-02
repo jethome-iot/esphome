@@ -65,6 +65,7 @@ void GraphicalDisplayMenu::set_font(display::BaseFont *font) { this->font_ = fon
 
 void GraphicalDisplayMenu::set_foreground_color(Color foreground_color) { this->foreground_color_ = foreground_color; }
 void GraphicalDisplayMenu::set_background_color(Color background_color) { this->background_color_ = background_color; }
+void GraphicalDisplayMenu::set_fill_row(bool val) { this->fill_row_ = val; }
 
 void GraphicalDisplayMenu::on_before_show() {
   if (this->display_ != nullptr) {
@@ -227,7 +228,7 @@ inline void GraphicalDisplayMenu::draw_item(display::Display *display, const dis
   const auto foreground_color = selected ? this->background_color_ : this->foreground_color_;
 
   // int background_width = std::max(bounds->width, available_width);
-  int background_width = this->display_->get_width() - bounds->x;
+  int background_width = this->fill_row_ ? (this->display_->get_width() - bounds->x) : bounds->w;
 
   display->filled_rectangle(bounds->x, bounds->y, background_width, bounds->h, background_color);
 
