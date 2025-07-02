@@ -135,7 +135,7 @@ class Sensor : public EntityBase, public EntityBase_DeviceClass, public EntityBa
     if (this->has_state()) {
       snprintf(buf, ARRAY_SIZE, format_buf, this->state);
     } else if (no_data_text != nullptr) {
-      snprintf(buf, ARRAY_SIZE, no_data_text);
+      snprintf(buf, ARRAY_SIZE, "%s", no_data_text);
     }
     return std::string(buf);
   }
