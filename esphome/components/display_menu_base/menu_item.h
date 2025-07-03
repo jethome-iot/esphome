@@ -81,6 +81,7 @@ class MenuItemValueBase : public MenuItem {
   explicit MenuItemValueBase(MenuItemType t) : MenuItem(t) {}
   void set_value_lambda(value_getter_t &&getter) { this->value_getter_ = getter; }
   std::string get_value_text() const override;
+  bool has_value() const override { return this->value_getter_.has_value(); }
 
  protected:
   optional<value_getter_t> value_getter_{};
@@ -100,8 +101,6 @@ class MenuItemMenu : public MenuItemValueBase {
   }
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
-
-  bool has_value() const override { return this->value_getter_.has_value(); }
 
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
@@ -217,7 +216,6 @@ class MenuItemCustom : public MenuItemEditable {
 class MenuItemValue : public MenuItemValueBase {
  public:
   explicit MenuItemValue() : MenuItemValueBase(MENU_ITEM_VALUE) {}
-  bool has_value() const override { return true; }
 };
 
 }  // namespace display_menu_base
