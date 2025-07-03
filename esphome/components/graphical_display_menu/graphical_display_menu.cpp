@@ -245,7 +245,7 @@ inline void GraphicalDisplayMenu::draw_item(display::Display *display, const dis
 
   // Measure value size
   int value_x1, value_y1, value_width = 0, value_height;
-  if (value.size() > 0) {
+  if (!value.empty()) {
     display->get_text_bounds(0, 0, value.c_str(), this->font_, display::TextAlign::TOP_LEFT, &value_x1, &value_y1,
                              &value_width, &value_height);
     width_label -= value_width;

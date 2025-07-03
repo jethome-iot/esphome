@@ -23,6 +23,7 @@ from esphome.const import (
     CONF_TEXT,
     CONF_TRIGGER_ID,
     CONF_TYPE,
+    CONF_VALUE,
 )
 
 CODEOWNERS = ["@numo68"]
@@ -48,7 +49,6 @@ CONF_ON_ENTER = "on_enter"
 CONF_ON_LEAVE = "on_leave"
 CONF_ON_NEXT = "on_next"
 CONF_ON_PREV = "on_prev"
-CONF_VALUE = "value"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 

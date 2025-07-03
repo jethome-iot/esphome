@@ -585,7 +585,7 @@ void Display::get_text_bounds(int x, int y, const char *text, BaseFont *font, Te
 }
 
 std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font, uint16_t max_width) {
-  static const char dots_str[] = "…";
+  static const char DOTS_STR[] = "…";
   const size_t str_size = str.size();
 
   if (str_size < 4)
@@ -598,7 +598,7 @@ std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font
     return str;
   }
 
-  std::unique_ptr<char[]> buffer_ptr(new char[str_size + sizeof(dots_str) + 1]({0}));
+  std::unique_ptr<char[]> buffer_ptr(new char[str_size + sizeof(DOTS_STR) + 1]{0});
   char *buffer = buffer_ptr.get();
 
   int mid_index = str_size / 2;
@@ -609,15 +609,12 @@ std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font
 
   while (max_width < str_width) {
     memcpy(buffer, str.c_str(), left_end);
-    strcpy(buffer + left_end, dots_str);
+    strcpy(buffer + left_end, DOTS_STR);
     strcat(buffer, str.c_str() + right_start);
 
     this->get_text_bounds(0, 0, buffer, font, TextAlign::TOP_LEFT, &str_x1, &str_y1, &str_width, &str_height);
 
-    if (direction_to_right)
-      left_end--;
-    else
-      right_start++;
+    direction_to_right ? left_end-- : right_start++;
 
     direction_to_right = !direction_to_right;
   }
