@@ -200,7 +200,6 @@ class MenuItemCustom : public MenuItemEditable {
   void add_on_prev_callback(std::function<void()> &&cb) { this->on_prev_callbacks_.add(std::move(cb)); }
 
   bool has_value() const override { return this->value_getter_.has_value(); }
-  std::string get_value_text() const override;
 
   bool select_next() override;
   bool select_prev() override;
