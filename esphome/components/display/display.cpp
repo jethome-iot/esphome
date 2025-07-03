@@ -610,7 +610,7 @@ std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font
 
   while (max_width < str_width) {
     memcpy(buffer, str.c_str(), left_end);
-    strlcpy(buffer + left_end, DOTS_STR, buffer_size);
+    strlcpy(buffer + left_end, DOTS_STR, buffer_size - left_end);
     strlcat(buffer, str.c_str() + right_start, buffer_size);
 
     this->get_text_bounds(0, 0, buffer, font, TextAlign::TOP_LEFT, &str_x1, &str_y1, &str_width, &str_height);
