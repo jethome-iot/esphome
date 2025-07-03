@@ -38,7 +38,7 @@ jobs:
             today="$(date --utc '+%Y%m%d')"
             TAG="${TAG}${today}"
             BRANCH=${GITHUB_REF#refs/heads/}
-            if [[ "$BRANCH" != "dev" ]]; then
+            if [[ "$BRANCH" != "dev-jethub" ]]; then
               TAG="${TAG}-${BRANCH}"
               BRANCH_BUILD="true"
               ENVIRONMENT=""
@@ -54,7 +54,7 @@ jobs:
 
   deploy-pypi:
     name: Build and publish to PyPi
-    if: github.repository == 'esphome/esphome' && github.event_name == 'release'
+    if: github.repository == 'jethome-iot/esphome' && github.event_name == 'release'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -76,7 +76,7 @@ jobs:
 
   deploy-docker:
     name: Build ESPHome ${{ matrix.platform.arch }}
-    if: github.repository == 'esphome/esphome'
+    if: github.repository == 'jethome-iot/esphome'
     permissions:
       contents: read
       packages: write
@@ -104,8 +104,10 @@ jobs:
       - name: Log in to docker hub
         uses: docker/login-action@v3.4.0
         with:
-          username: ${{ secrets.DOCKER_USER }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: cr.jethome.work
+          username: ${{ secrets.CR_USER }}
+          password: ${{ secrets.CR_TOKEN }}
+
       - name: Log in to the GitHub container registry
         uses: docker/login-action@v3.4.0
         with:
@@ -213,7 +215,7 @@ jobs:
             $(printf '${{ steps.tags.outputs.image }}@sha256:%s ' *)
 
   deploy-ha-addon-repo:
-    if: github.repository == 'esphome/esphome' && needs.init.outputs.branch_build == 'false'
+    if: false #TODO: github.repository == 'jethome-iot/esphome' && needs.init.outputs.branch_build == 'false'
     runs-on: ubuntu-latest
     needs:
       - init
@@ -224,7 +226,7 @@ jobs:
         with:
           github-token: ${{ secrets.DEPLOY_HA_ADDON_REPO_TOKEN }}
           script: |
-            let description = "ESPHome";
+            let description = "ESPJHome";
             if (context.eventName == "release") {
               description = ${{ toJSON(github.event.release.body) }};
             }
@@ -240,7 +242,7 @@ jobs:
             })
 
   deploy-esphome-schema:
-    if: github.repository == 'esphome/esphome' && needs.init.outputs.branch_build == 'false'
+    if: false #TODO: github.repository == 'esphome/esphome' && needs.init.outputs.branch_build == 'false'
     runs-on: ubuntu-latest
     needs: [init]
     environment: ${{ needs.init.outputs.deploy_env }}
