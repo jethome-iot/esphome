@@ -218,7 +218,7 @@ display::Rect GraphicalDisplayMenu::measure_item(display::Display *display, cons
   int height;
   display->get_text_bounds(0, 0, label.c_str(), this->font_, display::TextAlign::TOP_LEFT, &x1, &y1, &width, &height);
 
-  dimensions.w = std::min((int16_t) width, bounds->w);
+  dimensions.w = this->fill_row_ ? bounds->w : std::min((int16_t) width, bounds->w);
   dimensions.h = std::min((int16_t) height, bounds->h);
 
   return dimensions;
@@ -230,7 +230,7 @@ inline void GraphicalDisplayMenu::draw_item(display::Display *display, const dis
   const auto foreground_color = selected ? this->background_color_ : this->foreground_color_;
 
   // int background_width = std::max(bounds->width, available_width);
-  int background_width = this->fill_row_ ? (this->display_->get_width() - bounds->x) : bounds->w;
+  int background_width = bounds->w;
 
   display->filled_rectangle(bounds->x, bounds->y, background_width, bounds->h, background_color);
 
