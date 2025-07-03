@@ -23,7 +23,8 @@ void GraphicalDisplayMenu::setup() {
         label.append(" >");
         label.append(it->item->get_value_text());
         label.append("<");
-      } else if (it->item->get_type() == display_menu_base::MENU_ITEM_SWITCH) {
+      } else if (it->item->get_type() == display_menu_base::MENU_ITEM_SWITCH ||
+                 it->item->get_type() == display_menu_base::MENU_ITEM_BINARY_SENSOR) {
         label.append(" (");
         label.append(it->item->get_value_text());
         label.append(")");

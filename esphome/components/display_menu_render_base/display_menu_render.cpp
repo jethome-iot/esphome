@@ -34,11 +34,13 @@ size_t SwitchMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
 #ifdef USE_BINARY_SENSOR
 size_t BinarySensorMenuRender::render_entity(MenuItemMenu *menu, EntityBase *entity) {
   auto *sensor_obj = static_cast<binary_sensor::BinarySensor *>(entity);
-  MenuItem *item = new MenuItem(MENU_ITEM_LABEL);
+  MenuItemBinarySensor *item = new MenuItemBinarySensor();
 
-  auto lambda = make_binary_sensor_lambda<true>(sensor_obj, this->on_text_.c_str(), this->off_text_.c_str(),
-                                                this->no_data_text_.c_str());
-  item->set_text(lambda);
+  item->set_text(sensor_obj->get_name());
+  item->set_binary_sensor_variable(sensor_obj);
+  item->set_on_text(this->on_text_.c_str());
+  item->set_off_text(this->off_text_.c_str());
+  item->set_no_data_text(this->no_data_text_.c_str());
 
   menu->add_generated_items(item);
   return 1;
