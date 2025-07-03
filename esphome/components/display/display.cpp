@@ -598,7 +598,8 @@ std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font
     return str;
   }
 
-  std::unique_ptr<char[]> buffer_ptr(new char[str_size + sizeof(DOTS_STR) + 1]{0});
+  const size_t buffer_size = str_size + sizeof(DOTS_STR) + 1;
+  std::unique_ptr<char[]> buffer_ptr(new char[buffer_size]{0});
   char *buffer = buffer_ptr.get();
 
   int mid_index = str_size / 2;
@@ -609,8 +610,8 @@ std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font
 
   while (max_width < str_width) {
     memcpy(buffer, str.c_str(), left_end);
-    strcpy(buffer + left_end, DOTS_STR);
-    strcat(buffer, str.c_str() + right_start);
+    strlcpy(buffer + left_end, DOTS_STR, buffer_size);
+    strlcat(buffer, str.c_str() + right_start, buffer_size);
 
     this->get_text_bounds(0, 0, buffer, font, TextAlign::TOP_LEFT, &str_x1, &str_y1, &str_width, &str_height);
 
