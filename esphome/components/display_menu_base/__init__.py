@@ -453,7 +453,7 @@ async def menu_item_to_code(menu, config, parent):
         cg.add(item.set_binary_sensor_variable(var))
         cg.add(item.set_on_text(config[CONF_ON_TEXT]))
         cg.add(item.set_off_text(config[CONF_OFF_TEXT]))
-        cg.add(item.set_no_data_text(config[CONF_OFF_TEXT]))
+        cg.add(item.set_no_data_text(config[CONF_NO_DATA_TEXT]))
     if config[CONF_TYPE] == CONF_MENU:
         if (groups := config.get(CONF_GROUPS)) is not None:
             for group in groups:
