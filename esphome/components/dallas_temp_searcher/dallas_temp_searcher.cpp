@@ -174,10 +174,11 @@ void DallasTemperatureSearcher::set_default_parameters_(dallas_temp::DallasTempe
 dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_with_address_(const uint64_t &address) {
   EntityBaseInfo info;
   std::string address_str = format_hex(address);
-  address_str[this->name_stop_address_ * 2] = 0;
+  static const size_t HEX_CHARS_PER_BYTE = 2;
+  address_str[this->name_stop_address_ * HEX_CHARS_PER_BYTE] = 0;
 
-  info.name =
-      make_sensor_name(this->name_prefix_.c_str(), "%s", address_str.c_str() + (this->name_start_address_ - 1) * 2);
+  info.name = make_sensor_name(this->name_prefix_.c_str(), "%s",
+                               address_str.c_str() + (this->name_start_address_ - 1) * HEX_CHARS_PER_BYTE);
   info.object_id = make_sensor_object_id(address);
   return make_sensor_base_(address, info);
 }
