@@ -12,9 +12,9 @@ static const char *const TAG = "dallas.temp.searcher";
 template<typename... Args> std::string make_sensor_name(const char *prefix, const char *format, Args... args) {
   const size_t string_buffer_size = 64;
   char string_buff[string_buffer_size];
-
-  strcpy(string_buff, prefix);
-  snprintf(string_buff + strlen(string_buff), string_buffer_size, format, args...);
+  size_t prefix_size = strlen(prefix);
+  strlcpy(string_buff, prefix, string_buffer_size);
+  snprintf(string_buff + prefix_size, string_buffer_size - prefix_size, format, args...);
 
   return std::string(string_buff);
 }
@@ -24,7 +24,8 @@ std::string make_sensor_object_id(const uint64_t &address) {
   char string_buff[string_buffer_size];
 
   strcpy(string_buff, "dallas_searcher_temp_sensor_");
-  snprintf(string_buff + strlen(string_buff), string_buffer_size, "0x%s", format_hex(address).c_str());
+  size_t cur_len = strlen(string_buff);
+  snprintf(string_buff + cur_len, string_buffer_size - cur_len, "0x%s", format_hex(address).c_str());
 
   return std::string(string_buff);
 }
@@ -193,10 +194,10 @@ dallas_temp::DallasTemperatureSensor *DallasTemperatureSearcher::make_sensor_bas
                                                                                    const EntityBaseInfo &info) {
   auto *sensor = new dallas_temp::DallasTemperatureSensor();
   this->sensors_params_.push_back(info);
-  const auto &caсhed = this->sensors_params_.back();
+  const auto &saved_info = this->sensors_params_.back();
   sensor->set_one_wire_bus(bus_);
-  sensor->set_name(caсhed.name.c_str());
-  sensor->set_object_id(caсhed.object_id.c_str());
+  sensor->set_name(saved_info.name.c_str());
+  sensor->set_object_id(saved_info.object_id.c_str());
   sensor->set_address(address);
   set_default_parameters_(sensor);
 
