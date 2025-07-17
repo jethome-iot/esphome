@@ -111,6 +111,12 @@ void IDFOTABackend::abort() {
   this->update_handle_ = 0;
 }
 
+bool IDFOTABackend::is_rollback_available() { return esp_ota_check_rollback_is_possible(); }
+
+void IDFOTABackend::make_rollback() {}
+
+void IDFOTABackend::mark_app_valid() {}
+
 }  // namespace ota
 }  // namespace esphome
 #endif
