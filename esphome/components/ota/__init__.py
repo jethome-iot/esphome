@@ -20,11 +20,10 @@ CONF_ON_BEGIN = "on_begin"
 CONF_ON_END = "on_end"
 CONF_ON_PROGRESS = "on_progress"
 CONF_ON_STATE_CHANGE = "on_state_change"
-OTA_ROLLBACK_ID = "ota_rollback_id"
+
 
 ota_ns = cg.esphome_ns.namespace("ota")
 OTAComponent = ota_ns.class_("OTAComponent", cg.Component)
-OTARollback = ota_ns.class_("OTARollback", cg.Component)
 OTAState = ota_ns.enum("OTAState")
 OTAAbortTrigger = ota_ns.class_("OTAAbortTrigger", automation.Trigger.template())
 OTAEndTrigger = ota_ns.class_("OTAEndTrigger", automation.Trigger.template())
@@ -84,9 +83,6 @@ BASE_OTA_SCHEMA = cv.Schema(
 @coroutine_with_priority(54.0)
 async def to_code(config):
     cg.add_define("USE_OTA")
-
-    var = cg.new_Pvariable(cv.declare_id(OTARollback)(OTA_ROLLBACK_ID))
-    await cg.register_component(var, config)
 
     if CORE.is_esp32 and CORE.using_arduino:
         cg.add_library("Update", None)

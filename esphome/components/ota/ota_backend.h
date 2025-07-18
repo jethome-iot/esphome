@@ -58,8 +58,8 @@ class OTABackend {
   virtual void abort() = 0;
   virtual bool supports_compression() = 0;
   virtual bool is_rollback_available() { return false; }
-  virtual void make_rollback() = 0;
-  virtual void mark_app_valid() = 0;
+  virtual void make_rollback(){};
+  virtual void mark_app_valid(){};
 };
 
 class OTAComponent : public Component {
@@ -94,17 +94,6 @@ OTAGlobalCallback *get_global_ota_callback();
 void register_ota_platform(OTAComponent *ota_caller);
 #endif
 std::unique_ptr<ota::OTABackend> make_ota_backend();
-
-class OTARollback : public Component {
- public:
-  float get_setup_priority() const { return setup_priority::AFTER_WIFI; }
-  void setup() override {
-    std::unique_ptr<ota::OTABackend> backend = make_ota_backend();
-    backend->mark_app_valid();
-  }
-
- protected:
-};
 
 }  // namespace ota
 }  // namespace esphome
