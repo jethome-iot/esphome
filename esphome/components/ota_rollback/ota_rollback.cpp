@@ -2,7 +2,7 @@
 #include "esphome/core/log.h"
 
 namespace esphome {
-namespace ota {
+namespace ota_rollback {
 static const char *const TAG = "ota_rollback";
 
 void OTARollback::setup() {
@@ -19,5 +19,5 @@ void OTARollback::rollback() {
   backend->make_rollback();
 };
 
-}  // namespace ota
+}  // namespace ota_rollback
 }  // namespace esphome

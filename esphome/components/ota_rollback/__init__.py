@@ -5,7 +5,7 @@ from esphome.const import CONF_ID
 
 AUTO_LOAD = ["ota"]
 
-ota_ns = cg.esphome_ns.namespace("ota")
+ota_ns = cg.esphome_ns.namespace("ota_rollback")
 OTARollback = ota_ns.class_("OTARollback", cg.Component)
 
 CONFIG_SCHEMA = cv.All(

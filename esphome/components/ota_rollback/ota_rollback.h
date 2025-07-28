@@ -3,7 +3,7 @@
 #include "esphome/components/ota/ota_backend.h"
 
 namespace esphome {
-namespace ota {
+namespace ota_rollback {
 
 class OTARollback : public Component {
  public:
@@ -18,5 +18,5 @@ class OTARollback : public Component {
   bool rollback_available_;
 };
 
-}  // namespace ota
+}  // namespace ota_rollback
 }  // namespace esphome
