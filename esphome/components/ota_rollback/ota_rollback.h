@@ -7,22 +7,15 @@ namespace ota {
 
 class OTARollback : public Component {
  public:
-  float get_setup_priority() const { return setup_priority::AFTER_WIFI; }
+  float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
 
-  void setup() override {
-    std::unique_ptr<ota::OTABackend> backend = make_ota_backend();
-    backend->mark_app_valid();
-  }
+  void setup() override;
 
-  bool is_available() {
-    std::unique_ptr<ota::OTABackend> backend = make_ota_backend();
-    return backend->is_rollback_available();
-  }
+  bool is_available();
+  void rollback();
 
-  void rollback() {
-    std::unique_ptr<ota::OTABackend> backend = make_ota_backend();
-    backend->make_rollback();
-  };
+ protected:
+  bool rollback_available_;
 };
 
 }  // namespace ota

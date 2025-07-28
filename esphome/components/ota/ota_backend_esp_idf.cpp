@@ -113,9 +113,9 @@ void IDFOTABackend::abort() {
 
 bool IDFOTABackend::is_rollback_available() { return esp_ota_check_rollback_is_possible(); }
 
-void IDFOTABackend::make_rollback() {}
+void IDFOTABackend::make_rollback() { esp_ota_mark_app_invalid_rollback_and_reboot(); }
 
-void IDFOTABackend::mark_app_valid() {}
+void IDFOTABackend::mark_app_valid() { esp_ota_mark_app_valid_cancel_rollback(); }
 
 }  // namespace ota
 }  // namespace esphome

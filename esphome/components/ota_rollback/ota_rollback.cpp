@@ -1,5 +1,23 @@
 #include "ota_rollback.h"
+#include "esphome/core/log.h"
 
 namespace esphome {
-namespace ota {}  // namespace ota
+namespace ota {
+static const char *const TAG = "ota_rollback";
+
+void OTARollback::setup() {
+  std::unique_ptr<ota::OTABackend> backend = make_ota_backend();
+  backend->mark_app_valid();
+  this->rollback_available_ = backend->is_rollback_available();
+}
+
+bool OTARollback::is_available() { return this->rollback_available_; }
+
+void OTARollback::rollback() {
+  ESP_LOGI(TAG, "rollback process");
+  std::unique_ptr<ota::OTABackend> backend = make_ota_backend();
+  backend->make_rollback();
+};
+
+}  // namespace ota
 }  // namespace esphome
