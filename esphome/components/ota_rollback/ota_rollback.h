@@ -10,6 +10,7 @@ class OTARollback : public Component {
   float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
 
   void setup() override;
+  void dump_config() override;
 
   bool is_available();
   void rollback();

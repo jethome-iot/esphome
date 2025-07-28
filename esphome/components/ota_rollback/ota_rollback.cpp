@@ -11,6 +11,8 @@ void OTARollback::setup() {
   this->rollback_available_ = backend->is_rollback_available();
 }
 
+void OTARollback::dump_config() { ESP_LOGCONFIG(TAG, this->rollback_available_ ? "available" : "unavailable"); }
+
 bool OTARollback::is_available() { return this->rollback_available_; }
 
 void OTARollback::rollback() {
