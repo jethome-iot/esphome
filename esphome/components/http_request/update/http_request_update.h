@@ -14,6 +14,16 @@
 namespace esphome {
 namespace http_request {
 
+class UpdateManifestParserInterface {
+ public:
+  virtual bool parse(const StringRef &manifest_json, UpdateInfo &info) = 0;
+};
+
+class DefaultUpdateManifestParser : public UpdateManifestParserInterface {
+ public:
+  bool parse(const StringRef &manifest_json, UpdateInfo &info) override;
+};
+
 class HttpRequestUpdate : public update::UpdateEntity, public PollingComponent {
  public:
   void setup() override;
@@ -29,10 +39,13 @@ class HttpRequestUpdate : public update::UpdateEntity, public PollingComponent {
 
   float get_setup_priority() const override { return setup_priority::AFTER_WIFI; }
 
+  void set_manifest_parser(UpdateManifestParserInterface *parser) { this->parser_ = parser; }
+
  protected:
   HttpRequestComponent *request_parent_;
   OtaHttpRequestComponent *ota_parent_;
   std::string source_url_;
+  UpdateManifestParserInterface *parser_{nullptr};
 
   static void update_task(void *params);
 #ifdef USE_ESP32
