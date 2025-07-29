@@ -14,7 +14,13 @@ HttpRequestUpdate = http_request_ns.class_(
     "HttpRequestUpdate", update.UpdateEntity, cg.PollingComponent
 )
 
+UpdateManifestParserInterface = http_request_ns.class_("UpdateManifestParserInterface")
+DefaultUpdateManifestParser = http_request_ns.class_(
+    "DefaultUpdateManifestParser", UpdateManifestParserInterface
+)
+
 CONF_OTA_ID = "ota_id"
+CONF_PARSER_ID = "parser_id"
 
 CONFIG_SCHEMA = (
     update.update_schema(HttpRequestUpdate)
@@ -23,6 +29,7 @@ CONFIG_SCHEMA = (
             cv.GenerateID(CONF_OTA_ID): cv.use_id(OtaHttpRequestComponent),
             cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
             cv.Required(CONF_SOURCE): cv.url,
+            cv.Optional(CONF_PARSER_ID): cv.use_id(UpdateManifestParserInterface),
         }
     )
     .extend(cv.polling_component_schema("6h"))
@@ -41,3 +48,13 @@ async def to_code(config):
     cg.add_define("USE_OTA_STATE_CALLBACK")
 
     await cg.register_component(var, config)
+
+    parser = None
+    if parser_id := config.get(CONF_PARSER_ID):
+        parser = await cg.get_variable(parser_id)
+    else:
+        parser = cg.new_Pvariable(
+            cv.declare_id(DefaultUpdateManifestParser)("update_manifest_parser_id")
+        )
+
+    cg.add(var.set_manifest_parser(parser))

@@ -121,12 +121,10 @@ void HttpRequestUpdate::update_task(void *params) {
     container->end();
     container.reset();  // Release ownership of the container's shared_ptr
 
-    if (this_update->parser_ == nullptr) {
-      auto default_parser = std::make_unique<DefaultUpdateManifestParser>();
-      valid = default_parser->parse(response, this_update->update_info_);
-    } else {
-      valid = this_update->parser_->parse(response, this_update->update_info_);
-    }
+    if (this_update->parser_ == nullptr)
+      UPDATE_RETURN;
+
+    valid = this_update->parser_->parse(response, this_update->update_info_);
   }
 
   if (!valid) {
