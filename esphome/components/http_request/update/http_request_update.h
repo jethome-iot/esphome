@@ -16,12 +16,12 @@ namespace http_request {
 
 class UpdateManifestParserInterface {
  public:
-  virtual bool parse(const StringRef &manifest_json, UpdateInfo &info) = 0;
+  virtual bool parse(const std::string &data, update::UpdateInfo &info) = 0;
 };
 
 class DefaultUpdateManifestParser : public UpdateManifestParserInterface {
  public:
-  bool parse(const StringRef &manifest_json, UpdateInfo &info) override;
+  bool parse(const std::string &data, update::UpdateInfo &info) override;
 };
 
 class HttpRequestUpdate : public update::UpdateEntity, public PollingComponent {
