@@ -121,8 +121,10 @@ void HttpRequestUpdate::update_task(void *params) {
     container->end();
     container.reset();  // Release ownership of the container's shared_ptr
 
-    if (this_update->parser_ == nullptr)
+    if (this_update->parser_ == nullptr) {
+      ESP_LOGE(TAG, "Parser is null. Cannot process the update manifest");
       UPDATE_RETURN;
+    }
 
     valid = this_update->parser_->parse(response, this_update->update_info_);
   }

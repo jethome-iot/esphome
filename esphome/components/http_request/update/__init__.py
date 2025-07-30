@@ -54,7 +54,9 @@ async def to_code(config):
         parser = await cg.get_variable(parser_id)
     else:
         parser = cg.new_Pvariable(
-            cv.declare_id(DefaultUpdateManifestParser)("update_manifest_parser_id")
+            cv.declare_id(DefaultUpdateManifestParser)(
+                cv.GenerateID("update_manifest_parser_id")
+            )
         )
 
     cg.add(var.set_manifest_parser(parser))
