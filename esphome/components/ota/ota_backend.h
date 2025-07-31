@@ -57,6 +57,9 @@ class OTABackend {
   virtual OTAResponseTypes end() = 0;
   virtual void abort() = 0;
   virtual bool supports_compression() = 0;
+  virtual bool is_rollback_available() { return false; }
+  virtual void make_rollback(){};
+  virtual void mark_app_valid(){};
 };
 
 class OTAComponent : public Component {
