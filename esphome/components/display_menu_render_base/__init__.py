@@ -36,28 +36,42 @@ DISPLAY_MENU_RENDER_BASE_SCHEMA = cv.Schema(
 
 CONF_ENT_TYPE = "ent_type"
 
+SWITCH_BASE_RENDER_SCHEMA = DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
+    {
+        cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
+        cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
+    }
+)
+SENSOR_BASE_RENDER_SCHEMA = DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
+    {
+        cv.Optional(CONF_NO_DATA_TEXT, default="Nan"): cv.string_strict,
+        cv.Optional(CONF_ACCURACY, default=-1): cv.int_,
+    }
+)
+
+BINARY_SENSOR_BASE_RENDER_SCHEMA = DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
+    {
+        cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
+        cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
+        cv.Optional(CONF_NO_DATA_TEXT, default="Nan"): cv.string_strict,
+    }
+)
+
 BASE_RENDER_SCHEMA = cv.typed_schema(
     {
-        CONF_SWITCH: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
+        CONF_SWITCH: SWITCH_BASE_RENDER_SCHEMA.extend(
             {
                 cv.GenerateID(CONF_ID): cv.declare_id(SwitchMenuRender),
-                cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
-                cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
             }
         ),
-        CONF_SENSOR: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
+        CONF_SENSOR: SENSOR_BASE_RENDER_SCHEMA.extend(
             {
                 cv.GenerateID(CONF_ID): cv.declare_id(SensorMenuRender),
-                cv.Optional(CONF_NO_DATA_TEXT, default="Nan"): cv.string_strict,
-                cv.Optional(CONF_ACCURACY, default=-1): cv.int_,
             }
         ),
-        CONF_BINARY_SENSOR: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(
+        CONF_BINARY_SENSOR: BINARY_SENSOR_BASE_RENDER_SCHEMA.extend(
             {
                 cv.GenerateID(CONF_ID): cv.declare_id(BinarySensorMenuRender),
-                cv.Optional(CONF_ON_TEXT, default="On"): cv.string_strict,
-                cv.Optional(CONF_OFF_TEXT, default="Off"): cv.string_strict,
-                cv.Optional(CONF_NO_DATA_TEXT, default="Nan"): cv.string_strict,
             }
         ),
         CONF_CUSTOM: DISPLAY_MENU_RENDER_BASE_SCHEMA.extend(

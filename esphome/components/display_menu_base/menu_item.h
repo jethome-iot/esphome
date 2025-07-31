@@ -49,8 +49,8 @@ using value_getter_t = std::function<std::string(const MenuItem *)>;
 class MenuItem {
  public:
   explicit MenuItem(MenuItemType t) : item_type_(t) {}
-  void set_parent(MenuItemMenu *parent) { this->parent_ = parent; }
-  MenuItemMenu *get_parent() { return this->parent_; }
+  void set_parent(MenuItem *parent) { this->parent_ = parent; }
+  MenuItem *get_parent() { return this->parent_; }
   MenuItemType get_type() const { return this->item_type_; }
   template<typename V> void set_text(V val) { this->text_ = val; }
   void add_on_enter_callback(std::function<void()> &&cb) { this->on_enter_callbacks_.add(std::move(cb)); }
@@ -59,8 +59,24 @@ class MenuItem {
 
   std::string get_text() const { return const_cast<MenuItem *>(this)->text_.value(this); }
   virtual bool get_immediate_edit() const { return false; }
+
   virtual bool has_value() const { return false; }
   virtual std::string get_value_text() const { return ""; }
+
+  void set_internal_items_flag(bool val) { this->has_internal_items_ = val; }
+  bool has_internal_items() { return this->has_internal_items_; }
+
+  void add_item(MenuItem *item) {
+    item->set_parent(this);
+    this->items_.push_back(item);
+  }
+
+  void add_generated_items(MenuItem *item) {
+    item->set_parent(this);
+    this->items_.push_back(item);
+  }
+  size_t items_size() const { return this->items_.size(); }
+  MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
   virtual bool select_next() { return false; }
   virtual bool select_prev() { return false; }
@@ -72,12 +88,15 @@ class MenuItem {
   void on_value_();
 
   MenuItemType item_type_;
-  MenuItemMenu *parent_{nullptr};
+  MenuItem *parent_{nullptr};
   TemplatableValue<std::string, const MenuItem *> text_;
 
   CallbackManager<void()> on_enter_callbacks_{};
   CallbackManager<void()> on_leave_callbacks_{};
   CallbackManager<void()> on_value_callbacks_{};
+
+  std::vector<MenuItem *> items_;
+  bool has_internal_items_{false};
 };
 
 class MenuItemValueBase : public MenuItem {
@@ -94,24 +113,11 @@ class MenuItemValueBase : public MenuItem {
 class MenuItemMenu : public MenuItemValueBase {
  public:
   explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
-  void add_item(MenuItem *item) {
-    item->set_parent(this);
-    this->items_.push_back(item);
-  }
-
-  void add_generated_items(MenuItem *item) {
-    item->set_parent(this);
-    this->items_.push_back(item);
-  }
-  size_t items_size() const { return this->items_.size(); }
-  MenuItem *get_item(size_t i) const { return this->items_[i]; }
-
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const std::vector<groups::Group *> &groups() { return groups_; }
 #endif
  protected:
-  std::vector<MenuItem *> items_;
 #ifdef USE_GROUPS
   std::vector<groups::Group *> groups_;
 #endif
