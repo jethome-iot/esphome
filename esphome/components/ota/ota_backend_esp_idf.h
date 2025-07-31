@@ -18,6 +18,9 @@ class IDFOTABackend : public OTABackend {
   OTAResponseTypes end() override;
   void abort() override;
   bool supports_compression() override { return false; }
+  bool is_rollback_available() override;
+  void make_rollback() override;
+  void mark_app_valid() override;
 
  private:
   esp_ota_handle_t update_handle_{0};
