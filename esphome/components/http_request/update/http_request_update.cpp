@@ -20,7 +20,8 @@ static const char *const TAG = "http_request.update";
 
 static const size_t MAX_READ_SIZE = 256;
 
-bool DefaultUpdateManifestParser::parse(const std::string &data, update::UpdateInfo &info) {
+bool DefaultUpdateManifestParser::parse(const std::string &data, update::UpdateInfo &info,
+                                        const std::string &source_url) {
   bool result = json::parse_json(data, [&info](JsonObject root) -> bool {
     if (!root.containsKey("name") || !root.containsKey("version") || !root.containsKey("builds")) {
       ESP_LOGE(TAG, "Manifest does not contain required fields");
@@ -126,7 +127,7 @@ void HttpRequestUpdate::update_task(void *params) {
       UPDATE_RETURN;
     }
 
-    valid = this_update->parser_->parse(response, this_update->update_info_);
+    valid = this_update->parser_->parse(response, this_update->update_info_, this_update->source_url_);
   }
 
   if (!valid) {
