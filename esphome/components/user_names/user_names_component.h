@@ -37,6 +37,8 @@ class UserNamesComponent : public Component {
 
   void make_record(EntityBase *entity, const char *name);
 
+  void reset_all();
+
  protected:
   void restore_records_count_();
   bool restore_record_data_(ESPPreferenceObject &obj);
@@ -49,7 +51,8 @@ class UserNamesComponent : public Component {
   uint32_t base_hash_;
 };
 
-extern UserNamesComponent *global_user_names;
-
 }  // namespace user_names
+
+extern user_names::UserNamesComponent *global_user_names;
+
 }  // namespace esphome

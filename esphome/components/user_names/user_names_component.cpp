@@ -4,11 +4,11 @@
 #include <cstring>
 
 namespace esphome {
+user_names::UserNamesComponent *global_user_names =
+    nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 namespace user_names {
 
 static const char *const TAG = "user.names.component";
-
-UserNamesComponent *global_user_names = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 UserNamesComponent::UserNamesComponent() { global_user_names = this; }
 
@@ -78,6 +78,13 @@ void UserNamesComponent::make_record(EntityBase *entity, const char *name) {
   this->records_.push_back(record);
 
   this->records_pref_[this->records_num_++].save(record);
+  this->records_num_pref_.save(&this->records_num_);
+
+  global_preferences->sync();
+}
+
+void UserNamesComponent::reset_all() {
+  this->records_num_ = 0;
   this->records_num_pref_.save(&this->records_num_);
 
   global_preferences->sync();
