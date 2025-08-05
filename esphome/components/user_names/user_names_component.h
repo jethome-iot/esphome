@@ -18,33 +18,38 @@ struct UserNamesRecord {
 // Class for setting user names for entities
 class UserNamesComponent : public Component {
  public:
+  UserNamesComponent();
+
   void setup() override;
 
   // setup should be called before api connected
-  float get_setup_priority() const override { return setup_priority::HARDWARE_LATE; }
+  float get_setup_priority() const override { return setup_priority::DATA; }
 
   void dump_config() override;
 
   uint16_t record_size() { return this->records_.size(); }
 
   UserNamesRecord *record(uint16_t index) {
-    if (index >= this->sensors_.size())
+    if (index >= this->records_.size())
       return nullptr;
-    return this->record_[index];
+    return this->records_[index];
   }
 
-  void add_record(const EntityBase *entity, const char *name);
+  void make_record(EntityBase *entity, const char *name);
 
  protected:
   void restore_records_count_();
-  bool restore_address_data_(ESPPreferenceObject &obj);
+  bool restore_record_data_(ESPPreferenceObject &obj);
 
-  uint16_t saved_records_num_ = 0;
+  uint16_t records_num_ = 0;
   std::vector<UserNamesRecord *> records_;
 
-  ESPPreferenceObject records_count_pref_;
+  ESPPreferenceObject records_num_pref_;
   std::vector<ESPPreferenceObject> records_pref_;
+  uint32_t base_hash_;
 };
+
+extern UserNamesComponent *global_user_names;
 
 }  // namespace user_names
 }  // namespace esphome

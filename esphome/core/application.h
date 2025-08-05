@@ -550,6 +550,25 @@ class Application {
   }
 #endif
 
+  EntityBase *get_entity_by_key(EntityType type, uint32_t key, bool include_internal = false) {
+    switch (type) {
+#ifdef USE_BINARY_SENSOR
+      case EntityType::BINARY_SENSOR:
+        return get_binary_sensor_by_key(key, include_internal);
+#endif
+#ifdef USE_SENSOR
+      case EntityType::SENSOR:
+        return get_sensor_by_key(key, include_internal);
+#endif
+#ifdef USE_SWITCH
+      case EntityType::SWITCH:
+        return get_switch_by_key(key, include_internal);
+#endif
+      default:
+        return nullptr;
+    }
+  }
+
   Scheduler scheduler;
 
   /// Register/unregister a socket file descriptor to be monitored for read events.
