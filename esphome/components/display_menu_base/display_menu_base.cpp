@@ -225,7 +225,9 @@ void DisplayMenuComponent::enter() {
         case MENU_ITEM_SELECT:
         case MENU_ITEM_SWITCH:
         case MENU_ITEM_CUSTOM:
-          if (item->get_immediate_edit()) {
+          if (item->has_internal_items()) {
+            changed = this->enter_menu_();
+          } else if (item->get_immediate_edit()) {
             changed = item->select_next();
           } else {
             this->editing_ = true;
@@ -395,7 +397,7 @@ bool DisplayMenuComponent::cursor_down_() {
 
 bool DisplayMenuComponent::enter_menu_() {
   this->displayed_item_->on_leave();
-  this->displayed_item_ = static_cast<MenuItemMenu *>(this->get_selected_item_());
+  this->displayed_item_ = this->get_selected_item_();
   this->selection_stack_.emplace_front(this->top_index_, this->cursor_index_);
   this->cursor_index_ = this->top_index_ = 0;
   this->displayed_item_->on_enter();
