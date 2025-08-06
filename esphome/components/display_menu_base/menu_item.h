@@ -71,10 +71,6 @@ class MenuItem {
     this->items_.push_back(item);
   }
 
-  void add_generated_items(MenuItem *item) {
-    item->set_parent(this);
-    this->items_.push_back(item);
-  }
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
@@ -113,6 +109,10 @@ class MenuItemValueBase : public MenuItem {
 class MenuItemMenu : public MenuItemValueBase {
  public:
   explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
+  void add_generated_items(MenuItem *item) {
+    item->set_parent(this);
+    this->items_.push_back(item);
+  }
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const std::vector<groups::Group *> &groups() { return groups_; }
