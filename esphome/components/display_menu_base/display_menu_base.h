@@ -93,7 +93,7 @@ class DisplayMenuComponent : public Component {
   bool right_for_menu_enter_opt_{true};
   MenuItemMenu *root_item_{nullptr};
 
-  MenuItemMenu *displayed_item_{nullptr};
+  MenuItem *displayed_item_{nullptr};
   uint8_t top_index_{0};
   uint8_t cursor_index_{0};
   std::forward_list<std::pair<uint8_t, uint8_t>> selection_stack_{};
