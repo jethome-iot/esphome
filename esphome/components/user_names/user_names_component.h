@@ -62,6 +62,6 @@ class UserNamesComponent : public Component {
 
 }  // namespace user_names
 
-extern user_names::UserNamesComponent *global_user_names;
+extern user_names::UserNamesComponent *global_user_names;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace esphome
