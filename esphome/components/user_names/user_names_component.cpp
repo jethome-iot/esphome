@@ -56,9 +56,10 @@ void UserNamesComponent::make_record(EntityBase *entity, const char *name) {
   for (uint16_t i = 0; i < this->records_num_; i++) {
     UserNamesRecord *record = this->records_[i];
     if (record == nullptr) {
-      UserNamesRecord *record = new UserNamesRecord;
+      record = new UserNamesRecord;
       record->fill(entity, name);
       entity->set_name(record->name);
+      this->records_[i] = record;
       records_pref_[i].save(record);
       global_preferences->sync();
       return;
