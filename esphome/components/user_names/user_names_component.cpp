@@ -4,8 +4,8 @@
 #include <cstring>
 
 namespace esphome {
-user_names::UserNamesComponent *global_user_names =
-    nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+user_names::UserNamesComponent *global_user_names =  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+    nullptr;
 namespace user_names {
 
 static const char *const TAG = "user.names.component";
