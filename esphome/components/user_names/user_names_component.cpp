@@ -37,11 +37,14 @@ void UserNamesComponent::setup() {
 }
 
 void UserNamesComponent::make_record(EntityBase *entity, const char *name) {
+  if (entity == nullptr || name == nullptr)
+    return;
+
   // Try to find existing id
   for (uint16_t i = 0; i < this->records_num_; i++) {
     UserNamesRecord *record = this->records_[i];
     if (entity->get_object_id_hash() == record->key) {
-      strncpy(record->name, name, 33);
+      record->fill(entity, name);
       entity->set_name(record->name);
       records_pref_[i].save(record);
       global_preferences->sync();
@@ -54,11 +57,8 @@ void UserNamesComponent::make_record(EntityBase *entity, const char *name) {
     UserNamesRecord *record = this->records_[i];
     if (record == nullptr) {
       UserNamesRecord *record = new UserNamesRecord;
-      record->type = entity->type();
-      record->key = entity->get_object_id_hash();
-      strncpy(record->name, name, 33);
+      record->fill(entity, name);
       entity->set_name(record->name);
-      this->records_[i] = record;
       records_pref_[i].save(record);
       global_preferences->sync();
       return;
@@ -71,9 +71,7 @@ void UserNamesComponent::make_record(EntityBase *entity, const char *name) {
   this->records_pref_.push_back(record_perf);
 
   UserNamesRecord *record = new UserNamesRecord;
-  record->type = entity->type();
-  record->key = entity->get_object_id_hash();
-  strncpy(record->name, name, 33);
+  record->fill(entity, name);
   entity->set_name(record->name);
   this->records_.push_back(record);
 

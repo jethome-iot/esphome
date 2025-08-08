@@ -10,9 +10,18 @@ namespace esphome {
 namespace user_names {
 
 struct UserNamesRecord {
-  uint32_t key;
-  char name[33];
-  EntityType type;
+  static const size_t MAX_NAME_SIZE = 32;
+  uint32_t key = 0;
+  char name[MAX_NAME_SIZE + 1] = {0};
+  EntityType type = EntityType::NONE;
+
+  void fill(EntityBase *entity, const char *name) {
+    if (entity == nullptr || name == nullptr)
+      return;
+    this->type = entity->type();
+    this->key = entity->get_object_id_hash();
+    strncpy(this->name, name, MAX_NAME_SIZE);
+  }
 };
 
 // Class for setting user names for entities
