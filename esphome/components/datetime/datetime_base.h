@@ -13,6 +13,7 @@ namespace datetime {
 
 class DateTimeBase : public EntityBase {
  public:
+  DateTimeBase(EntityType type) : EntityBase(type) {}
   virtual ESPTime state_as_esptime() const = 0;
 
   void add_on_state_callback(std::function<void()> &&callback) { this->state_callback_.add(std::move(callback)); }

@@ -9,7 +9,7 @@ namespace light {
 
 static const char *const TAG = "light";
 
-LightState::LightState(LightOutput *output) : output_(output) {}
+LightState::LightState(LightOutput *output) : EntityBase(EntityType::LIGHT), output_(output) {}
 
 LightTraits LightState::get_traits() { return this->output_->get_traits(); }
 LightCall LightState::turn_on() { return this->make_call().set_state(true); }

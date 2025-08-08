@@ -35,6 +35,7 @@ struct DateEntityRestoreState {
 
 class DateEntity : public DateTimeBase {
  protected:
+  DateEntity() : DateTimeBase(EntityType::DATETIME_DATE) {}
   uint16_t year_;
   uint8_t month_;
   uint8_t day_;

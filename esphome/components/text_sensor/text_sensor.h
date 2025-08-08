@@ -24,7 +24,7 @@ void log_text_sensor(const char *tag, const char *prefix, const char *type, Text
 
 class TextSensor : public EntityBase, public EntityBase_DeviceClass {
  public:
-  TextSensor() = default;
+  TextSensor() : EntityBase(EntityType::TEXT_SENSOR) {}
 
   /// Getter-syntax for .state.
   std::string get_state() const;

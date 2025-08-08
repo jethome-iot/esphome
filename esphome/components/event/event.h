@@ -23,6 +23,7 @@ namespace event {
 
 class Event : public EntityBase, public EntityBase_DeviceClass {
  public:
+  Event() : EntityBase(EntityType::EVENT) {}
   const std::string *last_event_type;
 
   void trigger(const std::string &event_type);

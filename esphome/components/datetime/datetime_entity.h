@@ -46,6 +46,7 @@ class DateTimeEntity : public DateTimeBase {
   uint8_t second_;
 
  public:
+  DateTimeEntity() : DateTimeBase(EntityType::DATETIME_DATETIME) {}
   void publish_state();
   DateTimeCall make_call();
 

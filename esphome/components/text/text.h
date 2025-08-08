@@ -26,6 +26,7 @@ class Text : public EntityBase {
   std::string state;
   TextTraits traits;
 
+  Text() : EntityBase(EntityType::TEXT) {}
   void publish_state(const std::string &state);
 
   /// Instantiate a TextCall object to modify this text component's state.

@@ -32,7 +32,7 @@ const char *cover_operation_to_str(CoverOperation op) {
   }
 }
 
-Cover::Cover() : position{COVER_OPEN} {}
+Cover::Cover() : EntityBase(EntityType::COVER), position{COVER_OPEN} {}
 
 CoverCall::CoverCall(Cover *parent) : parent_(parent) {}
 CoverCall &CoverCall::set_command(const char *command) {
