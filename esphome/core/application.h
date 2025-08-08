@@ -8,6 +8,7 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/preferences.h"
 #include "esphome/core/scheduler.h"
+#include "esphome/core/entity_base.h"
 
 #ifdef USE_SOCKET_SELECT_SUPPORT
 #include <sys/select.h>
