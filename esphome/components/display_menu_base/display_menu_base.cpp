@@ -222,6 +222,7 @@ void DisplayMenuComponent::enter() {
         case MENU_ITEM_BACK:
           changed = this->leave_menu_();
           break;
+        case MENU_ITEM_BINARY_SENSOR:
         case MENU_ITEM_SELECT:
         case MENU_ITEM_SWITCH:
         case MENU_ITEM_CUSTOM:
