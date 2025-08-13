@@ -9,6 +9,7 @@ namespace esphome {
 
 class ESPPreferenceBackend {
  public:
+  virtual ~ESPPreferenceBackend() {}
   virtual bool save(const uint8_t *data, size_t len) = 0;
   virtual bool load(uint8_t *data, size_t len) = 0;
 };
@@ -30,8 +31,20 @@ class ESPPreferenceObject {
     return backend_->load(reinterpret_cast<uint8_t *>(dest), sizeof(T));
   }
 
+  void remove_backend() {
+    if (backend_)
+      delete backend_;
+  }
+
  protected:
   ESPPreferenceBackend *backend_{nullptr};
+};
+
+struct ESPPreferenceObjectManage {
+  ESPPreferenceObjectManage(ESPPreferenceObject obj) : obj_(obj) {}
+  ~ESPPreferenceObjectManage() { obj_.remove_backend(); }
+
+  ESPPreferenceObject &obj_;
 };
 
 class ESPPreferences {

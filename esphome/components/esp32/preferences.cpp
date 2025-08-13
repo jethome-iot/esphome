@@ -3,6 +3,7 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
+#include "esp32_preference_backend.h"
 #include <nvs_flash.h>
 #include <cstring>
 #include <cinttypes>
@@ -14,65 +15,7 @@ namespace esp32 {
 
 static const char *const TAG = "esp32.preferences";
 
-struct NVSData {
-  std::string key;
-  std::vector<uint8_t> data;
-};
-
 static std::vector<NVSData> s_pending_save;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
-
-class ESP32PreferenceBackend : public ESPPreferenceBackend {
- public:
-  std::string key;
-  uint32_t nvs_handle;
-  bool save(const uint8_t *data, size_t len) override {
-    // try find in pending saves and update that
-    for (auto &obj : s_pending_save) {
-      if (obj.key == key) {
-        obj.data.assign(data, data + len);
-        return true;
-      }
-    }
-    NVSData save{};
-    save.key = key;
-    save.data.assign(data, data + len);
-    s_pending_save.emplace_back(save);
-    ESP_LOGVV(TAG, "s_pending_save: key: %s, len: %d", key.c_str(), len);
-    return true;
-  }
-  bool load(uint8_t *data, size_t len) override {
-    // try find in pending saves and load from that
-    for (auto &obj : s_pending_save) {
-      if (obj.key == key) {
-        if (obj.data.size() != len) {
-          // size mismatch
-          return false;
-        }
-        memcpy(data, obj.data.data(), len);
-        return true;
-      }
-    }
-
-    size_t actual_len;
-    esp_err_t err = nvs_get_blob(nvs_handle, key.c_str(), nullptr, &actual_len);
-    if (err != 0) {
-      ESP_LOGV(TAG, "nvs_get_blob('%s'): %s - the key might not be set yet", key.c_str(), esp_err_to_name(err));
-      return false;
-    }
-    if (actual_len != len) {
-      ESP_LOGVV(TAG, "NVS length does not match (%u!=%u)", actual_len, len);
-      return false;
-    }
-    err = nvs_get_blob(nvs_handle, key.c_str(), data, &len);
-    if (err != 0) {
-      ESP_LOGV(TAG, "nvs_get_blob('%s') failed: %s", key.c_str(), esp_err_to_name(err));
-      return false;
-    } else {
-      ESP_LOGVV(TAG, "nvs_get_blob: key: %s, len: %d", key.c_str(), len);
-    }
-    return true;
-  }
-};
 
 class ESP32Preferences : public ESPPreferences {
  public:
@@ -98,7 +41,7 @@ class ESP32Preferences : public ESPPreferences {
     return make_preference(length, type);
   }
   ESPPreferenceObject make_preference(size_t length, uint32_t type) override {
-    auto *pref = new ESP32PreferenceBackend();  // NOLINT(cppcoreguidelines-owning-memory)
+    auto *pref = new ESP32PreferenceBackend(s_pending_save);  // NOLINT(cppcoreguidelines-owning-memory)
     pref->nvs_handle = nvs_handle;
 
     uint32_t keyval = type;
