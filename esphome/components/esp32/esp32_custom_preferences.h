@@ -10,12 +10,12 @@ namespace esp32 {
 
 class ESP32CustomPreferences {
  public:
-  uint32_t nvs_handle;
+  uint32_t nvs_handle{0};
   std::vector<NVSData> pending_save;
 
   void set_namespace(const char *name) { this->nvs_namespace_ = std::string(name); }
 
-  void open();
+  bool open();
 
   ESPPreferenceObject make_preference(std::string &&key) {
     auto *pref = new ESP32PreferenceBackend(pending_save);
@@ -28,7 +28,7 @@ class ESP32CustomPreferences {
   bool sync();
   bool is_changed(const uint32_t nvs_handle, const NVSData &to_save);
 
-  bool reset();
+  void reset();
 
  protected:
   std::string nvs_namespace_;

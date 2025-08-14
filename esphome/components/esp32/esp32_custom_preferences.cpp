@@ -9,15 +9,17 @@ namespace esp32 {
 
 static const char *const TAG = "esp32.custom.preferences";
 
-void ESP32CustomPreferences::open() {
+bool ESP32CustomPreferences::open() {
   if (this->nvs_namespace_.empty()) {
     ESP_LOGW(TAG, "namespace isn't set");
+    return false;
   }
   esp_err_t err = nvs_open(this->nvs_namespace_.c_str(), NVS_READWRITE, &nvs_handle);
-  if (err == 0)
-    return;
-
-  ESP_LOGW(TAG, "Space '%s': nvs_open failed: %s", this->nvs_namespace_.c_str(), esp_err_to_name(err));
+  if (err != 0) {
+    ESP_LOGW(TAG, "Space '%s': nvs_open failed: %s", this->nvs_namespace_.c_str(), esp_err_to_name(err));
+    return false;
+  }
+  return true;
 }
 
 bool ESP32CustomPreferences::sync() {
@@ -86,14 +88,11 @@ bool ESP32CustomPreferences::is_changed(const uint32_t nvs_handle, const NVSData
   return to_save.data != stored_data.data;
 }
 
-bool ESP32CustomPreferences::reset() {
-  ESP_LOGD(TAG, "Space '%s': erasing storage", this->nvs_namespace_.c_str());
+void ESP32CustomPreferences::reset() {
+  ESP_LOGD(TAG, "Space '%s': erasing", this->nvs_namespace_.c_str());
   pending_save.clear();
   nvs_erase_all(nvs_handle);
-
-  // Make the handle invalid to prevent any saves until restart
-  nvs_handle = 0;
-  return true;
+  nvs_commit(nvs_handle);
 }
 
 }  // namespace esp32
