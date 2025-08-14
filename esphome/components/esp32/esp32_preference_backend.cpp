@@ -52,6 +52,13 @@ bool ESP32PreferenceBackend::load(uint8_t *data, size_t len) {
   return true;
 }
 
+bool ESP32PreferenceBackend::remove() {
+  NVSData save{};
+  save.key = key;
+  pending_save.emplace_back(save);
+  return true;
+}
+
 }  // namespace esp32
 }  // namespace esphome
 
