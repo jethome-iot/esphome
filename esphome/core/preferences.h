@@ -12,6 +12,7 @@ class ESPPreferenceBackend {
   virtual ~ESPPreferenceBackend() {}
   virtual bool save(const uint8_t *data, size_t len) = 0;
   virtual bool load(uint8_t *data, size_t len) = 0;
+  virtual bool remove() { return false; };
 };
 
 class ESPPreferenceObject {
@@ -29,6 +30,12 @@ class ESPPreferenceObject {
     if (backend_ == nullptr)
       return false;
     return backend_->load(reinterpret_cast<uint8_t *>(dest), sizeof(T));
+  }
+
+  bool remove() {
+    if (backend_ == nullptr)
+      return false;
+    return backend_->remove();
   }
 
   void remove_backend() { delete this->backend_; }

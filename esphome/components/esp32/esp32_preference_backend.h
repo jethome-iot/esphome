@@ -22,6 +22,7 @@ class ESP32PreferenceBackend : public ESPPreferenceBackend {
   std::vector<NVSData> &pending_save;
   bool save(const uint8_t *data, size_t len) override;
   bool load(uint8_t *data, size_t len) override;
+  bool remove() override;
 };
 
 }  // namespace esp32

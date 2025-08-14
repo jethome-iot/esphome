@@ -64,6 +64,7 @@ bool ESP32CustomPreferences::sync() {
     }
     pending_save.erase(pending_save.begin() + i);
   }
+
   ESP_LOGD(TAG, "Space '%s': writing %d items: %d cached, %d written, %d failed", this->nvs_namespace_.c_str(),
            cached + written + failed, cached, written, failed);
   if (failed > 0) {
