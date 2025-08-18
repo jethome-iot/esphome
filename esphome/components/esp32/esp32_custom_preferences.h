@@ -26,7 +26,7 @@ class ESP32CustomPreferences {
   }
 
   bool sync();
-  bool is_changed(const uint32_t nvs_handle, const NVSData &to_save);
+  bool is_changed(const NVSData &to_save);
 
   void reset();
 
