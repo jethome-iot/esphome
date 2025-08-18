@@ -38,17 +38,14 @@ class ESPPreferenceObject {
     return backend_->remove();
   }
 
-  void remove_backend() {
-    if (backend_)
-      delete backend_;
-  }
+  void remove_backend() { delete this->backend_; }
 
  protected:
   ESPPreferenceBackend *backend_{nullptr};
 };
 
 struct ESPPreferenceObjectManage {
-  ESPPreferenceObjectManage(ESPPreferenceObject obj) : obj_(obj) {}
+  ESPPreferenceObjectManage(ESPPreferenceObject &obj) : obj_(obj) {}
   ~ESPPreferenceObjectManage() { obj_.remove_backend(); }
 
   ESPPreferenceObject &obj_;

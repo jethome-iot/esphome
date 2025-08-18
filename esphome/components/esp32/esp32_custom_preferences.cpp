@@ -7,7 +7,7 @@
 namespace esphome {
 namespace esp32 {
 
-static const char *const TAG = "esp32.custom.preferences";
+static const char *const TAG = "esp32.preferences";
 
 bool ESP32CustomPreferences::open() {
   if (this->nvs_namespace_.empty()) {
@@ -42,7 +42,7 @@ bool ESP32CustomPreferences::sync() {
       err = nvs_erase_key(nvs_handle, save.key.c_str());
       ESP_LOGV(TAG, "remove: key: %s", save.key.c_str());
       changed = true;
-    } else if (is_changed(nvs_handle, save)) {
+    } else if (is_changed(save)) {
       err = nvs_set_blob(nvs_handle, save.key.c_str(), save.data.data(), save.data.size());
       ESP_LOGV(TAG, "sync: key: %s, len: %d", save.key.c_str(), save.data.size());
       changed = true;
@@ -82,7 +82,7 @@ bool ESP32CustomPreferences::sync() {
   return failed == 0;
 }
 
-bool ESP32CustomPreferences::is_changed(const uint32_t nvs_handle, const NVSData &to_save) {
+bool ESP32CustomPreferences::is_changed(const NVSData &to_save) {
   NVSData stored_data{};
   size_t actual_len;
   esp_err_t err = nvs_get_blob(nvs_handle, to_save.key.c_str(), nullptr, &actual_len);
