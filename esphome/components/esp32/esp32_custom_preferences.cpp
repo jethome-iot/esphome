@@ -36,9 +36,19 @@ bool ESP32CustomPreferences::sync() {
   for (ssize_t i = pending_save.size() - 1; i >= 0; i--) {
     const auto &save = pending_save[i];
     ESP_LOGVV(TAG, "Checking if NVS data %s has changed", save.key.c_str());
-    if (is_changed(save)) {
-      esp_err_t err = nvs_set_blob(nvs_handle, save.key.c_str(), save.data.data(), save.data.size());
+    esp_err_t err;
+    bool changed = false;
+    if (save.data.size() == 0) {
+      err = nvs_erase_key(nvs_handle, save.key.c_str());
+      ESP_LOGV(TAG, "remove: key: %s", save.key.c_str());
+      changed = true;
+    } else if (is_changed(save)) {
+      err = nvs_set_blob(nvs_handle, save.key.c_str(), save.data.data(), save.data.size());
       ESP_LOGV(TAG, "sync: key: %s, len: %d", save.key.c_str(), save.data.size());
+      changed = true;
+    }
+
+    if (changed) {
       if (err != 0) {
         ESP_LOGV(TAG, "nvs_set_blob('%s', len=%u) failed: %s", save.key.c_str(), save.data.size(),
                  esp_err_to_name(err));
