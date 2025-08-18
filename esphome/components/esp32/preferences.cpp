@@ -4,6 +4,7 @@
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
 #include "esp32_preference_backend.h"
+#include "esp32_custom_preferences.h"
 #include <nvs_flash.h>
 #include <cstring>
 #include <cinttypes>
@@ -15,12 +16,8 @@ namespace esp32 {
 
 static const char *const TAG = "esp32.preferences";
 
-static std::vector<NVSData> s_pending_save;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
-
-class ESP32Preferences : public ESPPreferences {
+class ESP32Preferences : public ESPPreferences, protected ESP32CustomPreferences {
  public:
-  uint32_t nvs_handle;
-
   void open() {
     nvs_flash_init();
     esp_err_t err = nvs_open("esphome", NVS_READWRITE, &nvs_handle);
@@ -41,7 +38,7 @@ class ESP32Preferences : public ESPPreferences {
     return make_preference(length, type);
   }
   ESPPreferenceObject make_preference(size_t length, uint32_t type) override {
-    auto *pref = new ESP32PreferenceBackend(s_pending_save);  // NOLINT(cppcoreguidelines-owning-memory)
+    auto *pref = new ESP32PreferenceBackend(pending_save);  // NOLINT(cppcoreguidelines-owning-memory)
     pref->nvs_handle = nvs_handle;
 
     uint32_t keyval = type;
@@ -50,74 +47,11 @@ class ESP32Preferences : public ESPPreferences {
     return ESPPreferenceObject(pref);
   }
 
-  bool sync() override {
-    if (s_pending_save.empty())
-      return true;
-
-    ESP_LOGV(TAG, "Saving %d items...", s_pending_save.size());
-    // goal try write all pending saves even if one fails
-    int cached = 0, written = 0, failed = 0;
-    esp_err_t last_err = ESP_OK;
-    std::string last_key{};
-
-    // go through vector from back to front (makes erase easier/more efficient)
-    for (ssize_t i = s_pending_save.size() - 1; i >= 0; i--) {
-      const auto &save = s_pending_save[i];
-      ESP_LOGVV(TAG, "Checking if NVS data %s has changed", save.key.c_str());
-      if (is_changed(nvs_handle, save)) {
-        esp_err_t err = nvs_set_blob(nvs_handle, save.key.c_str(), save.data.data(), save.data.size());
-        ESP_LOGV(TAG, "sync: key: %s, len: %d", save.key.c_str(), save.data.size());
-        if (err != 0) {
-          ESP_LOGV(TAG, "nvs_set_blob('%s', len=%u) failed: %s", save.key.c_str(), save.data.size(),
-                   esp_err_to_name(err));
-          failed++;
-          last_err = err;
-          last_key = save.key;
-          continue;
-        }
-        written++;
-      } else {
-        ESP_LOGV(TAG, "NVS data not changed skipping %s  len=%u", save.key.c_str(), save.data.size());
-        cached++;
-      }
-      s_pending_save.erase(s_pending_save.begin() + i);
-    }
-    ESP_LOGD(TAG, "Writing %d items: %d cached, %d written, %d failed", cached + written + failed, cached, written,
-             failed);
-    if (failed > 0) {
-      ESP_LOGE(TAG, "Writing %d items failed. Last error=%s for key=%s", failed, esp_err_to_name(last_err),
-               last_key.c_str());
-    }
-
-    // note: commit on esp-idf currently is a no-op, nvs_set_blob always writes
-    esp_err_t err = nvs_commit(nvs_handle);
-    if (err != 0) {
-      ESP_LOGV(TAG, "nvs_commit() failed: %s", esp_err_to_name(err));
-      return false;
-    }
-
-    return failed == 0;
-  }
-  bool is_changed(const uint32_t nvs_handle, const NVSData &to_save) {
-    NVSData stored_data{};
-    size_t actual_len;
-    esp_err_t err = nvs_get_blob(nvs_handle, to_save.key.c_str(), nullptr, &actual_len);
-    if (err != 0) {
-      ESP_LOGV(TAG, "nvs_get_blob('%s'): %s - the key might not be set yet", to_save.key.c_str(), esp_err_to_name(err));
-      return true;
-    }
-    stored_data.data.resize(actual_len);
-    err = nvs_get_blob(nvs_handle, to_save.key.c_str(), stored_data.data.data(), &actual_len);
-    if (err != 0) {
-      ESP_LOGV(TAG, "nvs_get_blob('%s') failed: %s", to_save.key.c_str(), esp_err_to_name(err));
-      return true;
-    }
-    return to_save.data != stored_data.data;
-  }
+  bool sync() override { return ESP32CustomPreferences::sync(); }
 
   bool reset() override {
     ESP_LOGD(TAG, "Erasing storage");
-    s_pending_save.clear();
+    pending_save.clear();
 
     nvs_flash_deinit();
     nvs_flash_erase();

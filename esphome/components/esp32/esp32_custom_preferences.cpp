@@ -7,7 +7,7 @@
 namespace esphome {
 namespace esp32 {
 
-static const char *const TAG = "esp32.custom.preferences";
+static const char *const TAG = "esp32.preferences";
 
 bool ESP32CustomPreferences::open() {
   if (this->nvs_namespace_.empty()) {
