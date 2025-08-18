@@ -5,6 +5,8 @@
 namespace esphome {
 namespace esp32 {
 
+static const char *const TAG = "esp32.preferences";
+
 bool ESP32PreferenceBackend::save(const uint8_t *data, size_t len) {
   // try find in pending saves and update that
   for (auto &obj : pending_save) {
