@@ -17,7 +17,7 @@ class ESP32BasePreferences {
   ESPPreferenceObject make_preference(std::string &&key) {
     auto *pref = new ESP32PreferenceBackend(this->pending_save_);
     pref->nvs_handle = this->nvs_handle_;
-    pref->key = key;
+    pref->key = std::move(key);
 
     return ESPPreferenceObject(pref);
   }
