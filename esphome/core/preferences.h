@@ -38,7 +38,10 @@ class ESPPreferenceObject {
     return backend_->remove();
   }
 
-  void remove_backend() { delete this->backend_; }
+  void remove_backend() {
+    delete this->backend_;
+    this->backend_ = nullptr;
+  }
 
  protected:
   ESPPreferenceBackend *backend_{nullptr};
