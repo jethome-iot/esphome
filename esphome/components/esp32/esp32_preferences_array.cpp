@@ -1,5 +1,5 @@
 #ifdef USE_ESP32
-#include "preferences_array.h"
+#include "esp32_preferences_array.h"
 namespace esphome {
 namespace esp32 {
 namespace pref_array {
