@@ -8,7 +8,7 @@
 namespace esphome {
 namespace esp32 {
 
-class ESP32CustomPreferences {
+class ESP32BasePreferences {
  public:
   void set_namespace(const char *name) { this->nvs_namespace_ = std::string(name); }
   const char *get_namespace() { return this->nvs_namespace_.c_str(); }

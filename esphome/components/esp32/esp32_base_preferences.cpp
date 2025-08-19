@@ -1,6 +1,6 @@
 #ifdef USE_ESP32
 
-#include "esp32_custom_preferences.h"
+#include "esp32_base_preferences.h"
 
 #include <nvs_flash.h>
 
@@ -9,7 +9,7 @@ namespace esp32 {
 
 static const char *const TAG = "esp32.preferences";
 
-bool ESP32CustomPreferences::open() {
+bool ESP32BasePreferences::open() {
   if (this->nvs_namespace_.empty()) {
     ESP_LOGW(TAG, "namespace isn't set");
     return false;
@@ -22,7 +22,7 @@ bool ESP32CustomPreferences::open() {
   return true;
 }
 
-bool ESP32CustomPreferences::sync() {
+bool ESP32BasePreferences::sync() {
   if (this->pending_save_.empty())
     return true;
 
@@ -82,7 +82,7 @@ bool ESP32CustomPreferences::sync() {
   return failed == 0;
 }
 
-bool ESP32CustomPreferences::is_changed(const NVSData &to_save) {
+bool ESP32BasePreferences::is_changed(const NVSData &to_save) {
   NVSData stored_data{};
   size_t actual_len;
   esp_err_t err = nvs_get_blob(this->nvs_handle_, to_save.key.c_str(), nullptr, &actual_len);
@@ -99,7 +99,7 @@ bool ESP32CustomPreferences::is_changed(const NVSData &to_save) {
   return to_save.data != stored_data.data;
 }
 
-void ESP32CustomPreferences::reset() {
+void ESP32BasePreferences::reset() {
   ESP_LOGD(TAG, "Space '%s': erasing", this->nvs_namespace_.c_str());
   this->pending_save_.clear();
   nvs_erase_all(this->nvs_handle_);

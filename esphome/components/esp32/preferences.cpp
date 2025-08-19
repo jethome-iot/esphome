@@ -4,7 +4,7 @@
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
 #include "esp32_preference_backend.h"
-#include "esp32_custom_preferences.h"
+#include "esp32_base_preferences.h"
 #include <nvs_flash.h>
 #include <cstring>
 #include <cinttypes>
@@ -16,7 +16,7 @@ namespace esp32 {
 
 static const char *const TAG = "esp32.preferences";
 
-class ESP32Preferences : public ESPPreferences, protected ESP32CustomPreferences {
+class ESP32Preferences : public ESPPreferences, protected ESP32BasePreferences {
  public:
   void open() {
     nvs_flash_init();
@@ -47,7 +47,7 @@ class ESP32Preferences : public ESPPreferences, protected ESP32CustomPreferences
     return ESPPreferenceObject(pref);
   }
 
-  bool sync() override { return ESP32CustomPreferences::sync(); }
+  bool sync() override { return ESP32BasePreferences::sync(); }
 
   bool reset() override {
     ESP_LOGD(TAG, "Erasing storage");
