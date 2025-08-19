@@ -1,6 +1,6 @@
 #pragma once
 #ifdef USE_ESP32
-#include "esp32_custom_preferences.h"
+#include "esp32_base_preferences.h"
 
 namespace esphome {
 namespace esp32 {
@@ -143,7 +143,7 @@ template<typename RecordType> class ESP32PreferencesArray {
     return false;
   }
 
-  ESP32CustomPreferences preference_;
+  ESP32BasePreferences preference_;
 
   uint32_t records_num_{0};
   ESPPreferenceObject records_num_pref_;
