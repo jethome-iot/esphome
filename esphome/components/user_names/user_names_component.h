@@ -4,7 +4,13 @@
 #include "esphome/core/entity_base.h"
 #include "esphome/core/application.h"
 
-#include <vector>
+#ifdef USE_ESP32
+#include "esphome/components/esp32/esp32_preferences_array.h"
+template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArray<T>;
+#else
+#include "esphome/core/preferences_array.h"
+template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArray<T>;
+#endif
 
 namespace esphome {
 namespace user_names {
@@ -36,12 +42,13 @@ class UserNamesComponent : public Component {
 
   void dump_config() override;
 
-  uint16_t record_size() { return this->records_.size(); }
+  uint16_t record_size() { return this->preference_.get_size(); }
 
   UserNamesRecord *record(uint16_t index) {
-    if (index >= this->records_.size())
+    if (index >= this->preference_.get_size())
       return nullptr;
-    return this->records_[index];
+
+    return this->preference_.records()[index];
   }
 
   void make_record(EntityBase *entity, const char *name);
@@ -49,15 +56,7 @@ class UserNamesComponent : public Component {
   void reset_all();
 
  protected:
-  void restore_records_count_();
-  bool restore_record_data_(ESPPreferenceObject &obj);
-
-  uint16_t records_num_ = 0;
-  std::vector<UserNamesRecord *> records_;
-
-  ESPPreferenceObject records_num_pref_;
-  std::vector<ESPPreferenceObject> records_pref_;
-  uint32_t base_hash_;
+  PreferenceArrayType<UserNamesRecord> preference_;
 };
 
 }  // namespace user_names

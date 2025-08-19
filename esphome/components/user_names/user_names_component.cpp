@@ -13,21 +13,16 @@ static const char *const TAG = "user.names.component";
 UserNamesComponent::UserNamesComponent() { global_user_names = this; }
 
 void UserNamesComponent::setup() {
-  // Restore records count
-  this->base_hash_ = fnv1_hash(std::string("_user_name_component"));
-  this->records_num_pref_ = global_preferences->make_preference<uint16_t>(this->base_hash_, true);
-  this->restore_records_count_();
+#ifdef USE_ESP32
+  this->preference_.set_namespace("user_names");
+#else
+  this->preference_.set_base_hash(fnv1_hash(std::string("_user_name_component")));
+#endif
+  this->preference_.init();
 
-  // Create ESPPreferenceObjects
-  for (uint16_t i = 0; i < this->records_num_; i++) {
-    ESPPreferenceObject record_perf =
-        global_preferences->make_preference<UserNamesRecord>(this->base_hash_ + i + 1, true);
-    this->records_pref_.push_back(record_perf);
-    restore_record_data_(record_perf);
-  }
-
-  for (uint16_t i = 0; i < this->records_num_; i++) {
-    const UserNamesRecord *record = this->records_[i];
+  auto &records = this->preference_.records();
+  for (uint16_t i = 0; i < records.size(); i++) {
+    const UserNamesRecord *record = this->preference_.records()[i];
     if (record == nullptr)
       continue;
     EntityBase *entity = App.get_entity_by_key(record->type, record->key, false);
@@ -40,76 +35,18 @@ void UserNamesComponent::make_record(EntityBase *entity, const char *name) {
   if (entity == nullptr || name == nullptr)
     return;
 
-  // Try to find existing id
-  for (uint16_t i = 0; i < this->records_num_; i++) {
-    UserNamesRecord *record = this->records_[i];
-    if (entity->get_object_id_hash() == record->key) {
-      record->fill(entity, name);
-      entity->set_name(record->name);
-      records_pref_[i].save(record);
-      global_preferences->sync();
-      return;
-    }
-  }
+  UserNamesRecord rec;
+  rec.fill(entity, name);
+  UserNamesRecord *int_rec = this->preference_.make_record(rec);
 
-  // Try to find nullptr
-  for (uint16_t i = 0; i < this->records_num_; i++) {
-    UserNamesRecord *record = this->records_[i];
-    if (record == nullptr) {
-      record = new UserNamesRecord;
-      record->fill(entity, name);
-      entity->set_name(record->name);
-      this->records_[i] = record;
-      records_pref_[i].save(record);
-      global_preferences->sync();
-      return;
-    }
-  }
-
-  // If no free place - extend
-  ESPPreferenceObject record_perf =
-      global_preferences->make_preference<UserNamesRecord>(this->base_hash_ + this->records_num_ + 1, true);
-  this->records_pref_.push_back(record_perf);
-
-  UserNamesRecord *record = new UserNamesRecord;
-  record->fill(entity, name);
-  entity->set_name(record->name);
-  this->records_.push_back(record);
-
-  this->records_pref_[this->records_num_++].save(record);
-  this->records_num_pref_.save(&this->records_num_);
-
-  global_preferences->sync();
-}
-
-void UserNamesComponent::reset_all() {
-  this->records_num_ = 0;
-  this->records_num_pref_.save(&this->records_num_);
-
-  global_preferences->sync();
-}
-
-void UserNamesComponent::dump_config() { ESP_LOGCONFIG(TAG, "find %d records", this->records_num_); }
-
-bool UserNamesComponent::restore_record_data_(ESPPreferenceObject &obj) {
-  UserNamesRecord *record = new UserNamesRecord;
-  if (obj.load(record)) {
-    ESP_LOGD(TAG, "Loaded name %s from memory", record->name);
-    records_.push_back(record);
-    return true;
-  }
-  delete record;
-  records_.push_back(nullptr);
-  return false;
-}
-
-void UserNamesComponent::restore_records_count_() {
-  if (this->records_num_pref_.load(&this->records_num_)) {
-    ESP_LOGD(TAG, "Successfully restored records count from memory - %d", this->records_num_);
-  } else {
-    ESP_LOGW(TAG, "No stored records count found");
+  if (int_rec != nullptr) {
+    entity->set_name(int_rec->name);
   }
 }
+
+void UserNamesComponent::reset_all() { this->preference_.clear_all(); }
+
+void UserNamesComponent::dump_config() { ESP_LOGCONFIG(TAG, "find %d records", this->preference_.get_size()); }
 
 }  // namespace user_names
 }  // namespace esphome
