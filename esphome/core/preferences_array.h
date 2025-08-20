@@ -53,7 +53,7 @@ template<typename RecordType> class ESPPreferencesArray {
         *internal_record = record;
         this->records_[i] = internal_record;
         write_index_(i, internal_record);
-        sync();
+        this->sync();
         return internal_record;
       }
     }
@@ -66,7 +66,7 @@ template<typename RecordType> class ESPPreferencesArray {
     write_index_(this->records_num_++, internal_record);
     this->records_num_pref_.save(&this->records_num_);
 
-    sync();
+    this->sync();
     return internal_record;
   }
 
