@@ -55,6 +55,12 @@ bool ESP32PreferenceBackend::load(uint8_t *data, size_t len) {
 }
 
 bool ESP32PreferenceBackend::remove() {
+  for (auto it = pending_save.begin(); it != pending_save.end(); it++) {
+    if (it->key == key) {
+      it = pending_save.erase(it);
+      break;
+    }
+  }
   NVSData save{};
   save.key = key;
   pending_save.emplace_back(save);

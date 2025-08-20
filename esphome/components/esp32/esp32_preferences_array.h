@@ -6,10 +6,6 @@
 namespace esphome {
 namespace esp32 {
 
-namespace pref_array {
-extern const char *TAG;
-}
-
 template<typename RecordType> class ESP32PreferencesArray : public ESPPreferencesArray<RecordType> {
  public:
   using base_class = ESPPreferencesArray<RecordType>;
@@ -34,7 +30,7 @@ template<typename RecordType> class ESP32PreferencesArray : public ESPPreference
   ESP32BasePreferences preference_;
 };
 
-template<typename RecordType> class ESP32PreferencesArrayKey : public ESPPreferencesArrayKey<RecordType> {};
+template<typename RecordType> class ESP32PreferencesArrayKey : public esphome::ESPPreferencesArrayKey<RecordType> {};
 
 }  // namespace esp32
 }  // namespace esphome
