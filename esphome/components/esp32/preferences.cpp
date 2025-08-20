@@ -15,12 +15,14 @@ namespace esphome {
 namespace esp32 {
 
 static const char *const TAG = "esp32.preferences";
+static const char *const NAMESPACE = "esphome";
 
 class ESP32Preferences : public ESPPreferences, protected ESP32BasePreferences {
  public:
   void open() {
     nvs_flash_init();
-    esp_err_t err = nvs_open("esphome", NVS_READWRITE, &this->nvs_handle_);
+    this->set_namespace(NAMESPACE);
+    esp_err_t err = nvs_open(NAMESPACE, NVS_READWRITE, &this->nvs_handle_);
     if (err == 0)
       return;
 
@@ -29,7 +31,7 @@ class ESP32Preferences : public ESPPreferences, protected ESP32BasePreferences {
     nvs_flash_erase();
     nvs_flash_init();
 
-    err = nvs_open("esphome", NVS_READWRITE, &this->nvs_handle_);
+    err = nvs_open(NAMESPACE, NVS_READWRITE, &this->nvs_handle_);
     if (err != 0) {
       this->nvs_handle_ = 0;
     }
