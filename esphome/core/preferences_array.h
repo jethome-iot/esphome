@@ -7,7 +7,7 @@ template<typename RecordType> class ESPPreferencesArray {
  public:
   ~ESPPreferencesArray() {
     records_num_pref_.remove_backend();
-    clear_records_data_cache();
+    clear_records_data_cache_();
   }
 
   void set_base_hash(uint32_t hash) { this->base_hash_ = hash; }
@@ -94,15 +94,15 @@ template<typename RecordType> class ESPPreferencesArray {
   }
 
   void clear_all() {
-    clear_records_data_cache();
+    clear_records_data_cache_();
     this->records_num_ = 0;
     this->records_num_pref_.save(&this->records_num_);
     this->restored_state_ = true;
-    sync();
+    this->sync();
   }
 
  protected:
-  void clear_records_data_cache() {
+  void clear_records_data_cache_() {
     for (auto *record : this->records_) {
       delete record;
     }
@@ -110,16 +110,14 @@ template<typename RecordType> class ESPPreferencesArray {
     this->restored_state_ = false;
   }
 
-  bool write_index_(uint32_t index, RecordType *record) {
-    if (index >= this->records_.size() || record == nullptr) {
-      return false;
+  void write_index_(uint32_t index, RecordType *record) {
+    if (record == nullptr) {
+      return;
     }
 
     ESPPreferenceObject record_perf = make_index_pref(index);
     ESPPreferenceObjectManage perf_manage(record_perf);
     record_perf.save(record);
-
-    return true;
   }
 
   void restore_records_count_() { this->records_num_pref_.load(&this->records_num_); }
@@ -151,7 +149,7 @@ template<typename RecordType> class ESPPreferencesArrayKey : public ESPPreferenc
     // Try to find existing id
     for (uint32_t i = 0; i < this->records_num_; i++) {
       RecordType *internal_record = this->records_[i];
-      if (record.key() == internal_record->key()) {
+      if (internal_record != nullptr && record.key() == internal_record->key()) {
         *internal_record = record;
         write_index_(i, internal_record);
         sync();
