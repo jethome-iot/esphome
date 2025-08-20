@@ -10,6 +10,7 @@
 #include "esphome/core/helpers.h"
 #include "esphome/core/preferences.h"
 #include "esphome/core/scheduler.h"
+#include "esphome/core/entity_base.h"
 
 #ifdef USE_DEVICES
 #include "esphome/core/device.h"
@@ -474,6 +475,97 @@ class Application {
   const std::vector<update::UpdateEntity *> &get_updates() { return this->updates_; }
   GET_ENTITY_METHOD(update::UpdateEntity, update, updates)
 #endif
+
+  EntityBase *get_entity_by_key(EntityType type, uint32_t key, bool include_internal = false) {
+    switch (type) {
+#ifdef USE_BINARY_SENSOR
+      case EntityType::BINARY_SENSOR:
+        return get_binary_sensor_by_key(key, include_internal);
+#endif
+#ifdef USE_SWITCH
+      case EntityType::SWITCH:
+        return get_switch_by_key(key, include_internal);
+#endif
+#ifdef USE_BUTTON
+      case EntityType::BUTTON:
+        return get_button_by_key(key, include_internal);
+#endif
+#ifdef USE_SENSOR
+      case EntityType::SENSOR:
+        return get_sensor_by_key(key, include_internal);
+#endif
+#ifdef USE_TEXT_SENSOR
+      case EntityType::TEXT_SENSOR:
+        return get_text_sensor_by_key(key, include_internal);
+#endif
+#ifdef USE_FAN
+      case EntityType::FAN:
+        return get_fan_by_key(key, include_internal);
+#endif
+#ifdef USE_COVER
+      case EntityType::COVER:
+        return get_cover_by_key(key, include_internal);
+#endif
+#ifdef USE_LIGHT
+      case EntityType::LIGHT:
+        return get_light_by_key(key, include_internal);
+#endif
+#ifdef USE_CLIMATE
+      case EntityType::CLIMATE:
+        return get_climate_by_key(key, include_internal);
+#endif
+#ifdef USE_NUMBER
+      case EntityType::NUMBER:
+        return get_number_by_key(key, include_internal);
+#endif
+#ifdef USE_DATETIME_DATE
+      case EntityType::DATETIME_DATE:
+        return get_date_by_key(key, include_internal);
+#endif
+#ifdef USE_DATETIME_TIME
+      case EntityType::DATETIME_TIME:
+        return get_time_by_key(key, include_internal);
+#endif
+#ifdef USE_DATETIME_DATETIME
+      case EntityType::DATETIME_DATETIME:
+        return get_datetime_by_key(key, include_internal);
+#endif
+#ifdef USE_TEXT
+      case EntityType::TEXT:
+        return get_text_by_key(key, include_internal);
+#endif
+#ifdef USE_SELECT
+      case EntityType::SELECT:
+        return get_select_by_key(key, include_internal);
+#endif
+#ifdef USE_LOCK
+      case EntityType::LOCK:
+        return get_lock_by_key(key, include_internal);
+#endif
+#ifdef USE_VALVE
+      case EntityType::VALVE:
+        return get_valve_by_key(key, include_internal);
+#endif
+#ifdef USE_MEDIA_PLAYER
+      case EntityType::MEDIA_PLAYER:
+        return get_media_player_by_key(key, include_internal);
+#endif
+#ifdef USE_ALARM_CONTROL_PANEL
+      case EntityType::ALARM_CONTROL_PANEL:
+        return get_alarm_control_panel_by_key(key, include_internal);
+#endif
+#ifdef USE_EVENT
+      case EntityType::EVENT:
+        return get_event_by_key(key, include_internal);
+#endif
+#ifdef USE_UPDATE
+      case EntityType::UPDATE:
+        return get_update_by_key(key, include_internal);
+#endif
+      default:
+        return nullptr;
+    }
+  }
 
   Scheduler scheduler;
 
