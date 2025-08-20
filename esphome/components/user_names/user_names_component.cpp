@@ -21,7 +21,7 @@ void UserNamesComponent::setup() {
   this->preference_.init();
 
   auto &records = this->preference_.records();
-  for (uint16_t i = 0; i < records.size(); i++) {
+  for (size_t i = 0; i < records.size(); i++) {
     const UserNamesRecord *record = this->preference_.records()[i];
     if (record == nullptr)
       continue;
