@@ -36,7 +36,7 @@ template<typename RecordType> class ESPPreferencesArray {
     for (uint32_t i = 0; i < this->records_num_; i++) {
       ESPPreferenceObject record_perf = make_index_pref(i);
       ESPPreferenceObjectManage perf_manage(record_perf);
-      restore_record_data_(record_perf);
+      this->restore_record_data_(record_perf);
     }
     this->restored_state_ = true;
   }
@@ -52,7 +52,7 @@ template<typename RecordType> class ESPPreferencesArray {
         internal_record = new RecordType;
         *internal_record = record;
         this->records_[i] = internal_record;
-        write_index_(i, internal_record);
+        this->write_index_(i, internal_record);
         this->sync();
         return internal_record;
       }
@@ -63,7 +63,7 @@ template<typename RecordType> class ESPPreferencesArray {
     *internal_record = record;
     this->records_.push_back(internal_record);
 
-    write_index_(this->records_num_++, internal_record);
+    this->write_index_(this->records_num_++, internal_record);
     this->records_num_pref_.save(&this->records_num_);
 
     this->sync();
@@ -151,8 +151,8 @@ template<typename RecordType> class ESPPreferencesArrayKey : public ESPPreferenc
       RecordType *internal_record = this->records_[i];
       if (internal_record != nullptr && record.key() == internal_record->key()) {
         *internal_record = record;
-        write_index_(i, internal_record);
-        sync();
+        this->write_index_(i, internal_record);
+        this->sync();
         return internal_record;
       }
     }

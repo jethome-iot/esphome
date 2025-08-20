@@ -36,7 +36,7 @@ bool ESP32BasePreferences::sync() {
   for (ssize_t i = this->pending_save_.size() - 1; i >= 0; i--) {
     const auto &save = this->pending_save_[i];
     ESP_LOGVV(TAG, "Checking if NVS data %s has changed", save.key.c_str());
-    esp_err_t err;
+    esp_err_t err = ESP_OK;
     bool changed = false;
     if (save.data.empty()) {
       err = nvs_erase_key(this->nvs_handle_, save.key.c_str());

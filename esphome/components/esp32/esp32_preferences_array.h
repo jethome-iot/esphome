@@ -12,7 +12,7 @@ template<typename RecordType> class ESP32PreferencesArray : public ESPPreference
   ESPPreferenceObject make_counter_pref() override { return this->preference_.make_preference("counter"); }
 
   ESPPreferenceObject make_index_pref(uint32_t index) override {
-    return this->preference_.make_preference(str_snprintf("%d", 5, index));
+    return this->preference_.make_preference(std::to_string(index));
   }
 
   void sync() override { this->preference_.sync(); }
