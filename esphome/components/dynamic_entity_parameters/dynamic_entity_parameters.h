@@ -50,7 +50,7 @@ class SettingsKeeper : public Component {
     ESP_LOGCONFIG(TAG, "Active settings store:");
     for (auto *list : this->settings_list_) {
       if (list != nullptr) {
-        ESP_LOGCONFIG(TAG, "  %s", (*list)[0]->get_namespace());
+        ESP_LOGCONFIG(TAG, "  -%s", (*list)[0]->get_namespace());
       }
     }
   }
@@ -70,7 +70,9 @@ class SettingsKeeper : public Component {
   void reset_all() {
     for (auto *list : this->settings_list_) {
       if (list != nullptr) {
-        (*list)[0]->reset();
+        for (auto *settings : *list) {
+          settings->reset();
+        }
       }
     }
   }
