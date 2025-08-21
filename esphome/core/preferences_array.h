@@ -140,7 +140,7 @@ template<typename RecordType> class ESPPreferencesArray {
   bool restored_state_ = false;
 };
 
-template<typename RecordType> class ESPPreferencesArrayKey : public ESPPreferencesArray<RecordType> {
+template<typename RecordType> class ESPPreferencesArrayKey : virtual public ESPPreferencesArray<RecordType> {
  public:
   RecordType *make_record(RecordType &record) {
     if (!this->restored_state_)

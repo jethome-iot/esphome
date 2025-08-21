@@ -6,7 +6,7 @@
 namespace esphome {
 namespace esp32 {
 
-template<typename RecordType> class ESP32PreferencesArray : public ESPPreferencesArray<RecordType> {
+template<typename RecordType> class ESP32PreferencesArray : virtual public ESPPreferencesArray<RecordType> {
  public:
   using base_class = ESPPreferencesArray<RecordType>;
   ESPPreferenceObject make_counter_pref() override { return this->preference_.make_preference("counter"); }
@@ -30,7 +30,9 @@ template<typename RecordType> class ESP32PreferencesArray : public ESPPreference
   ESP32BasePreferences preference_;
 };
 
-template<typename RecordType> class ESP32PreferencesArrayKey : public esphome::ESPPreferencesArrayKey<RecordType> {};
+template<typename RecordType>
+class ESP32PreferencesArrayKey : public ESP32PreferencesArray<RecordType>,
+                                 public esphome::ESPPreferencesArrayKey<RecordType> {};
 
 }  // namespace esp32
 }  // namespace esphome

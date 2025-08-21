@@ -25,7 +25,7 @@ void UserNamesComponent::setup() {
     const UserNamesRecord *record = this->preference_.records()[i];
     if (record == nullptr)
       continue;
-    EntityBase *entity = App.get_entity_by_key(record->type, record->key, false);
+    EntityBase *entity = App.get_entity_by_key(record->type, record->entity_id, false);
     if (entity)
       entity->set_name(record->name);
   }

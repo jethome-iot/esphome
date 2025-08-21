@@ -6,10 +6,10 @@
 
 #ifdef USE_ESP32
 #include "esphome/components/esp32/esp32_preferences_array.h"
-template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArray<T>;
+template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArrayKey<T>;
 #else
 #include "esphome/core/preferences_array.h"
-template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArray<T>;
+template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArrayKey<T>;
 #endif
 
 namespace esphome {
@@ -17,15 +17,16 @@ namespace user_names {
 
 struct UserNamesRecord {
   static const size_t MAX_NAME_SIZE = 32;
-  uint32_t key = 0;
+  uint32_t entity_id = 0;
   char name[MAX_NAME_SIZE + 1] = {0};
   EntityType type = EntityType::NONE;
 
+  uint32_t key() { return this->entity_id; }
   void fill(EntityBase *entity, const char *name) {
     if (entity == nullptr || name == nullptr)
       return;
     this->type = entity->type();
-    this->key = entity->get_object_id_hash();
+    this->entity_id = entity->get_object_id_hash();
     strncpy(this->name, name, MAX_NAME_SIZE);
   }
 };
