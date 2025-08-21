@@ -1,13 +1,11 @@
 #pragma once
-#include "entity_parameters.h"
-
 #ifdef USE_ESP32
+#include "entity_parameters.h"
+#include <vector>
+#include <string.h>
+
 #include "esphome/components/esp32/esp32_preferences_array.h"
 template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArray<T>;
-#else
-#include "esphome/core/preferences_array.h"
-template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArray<T>;
-#endif
 
 // TODO Возможно стоит создать механизм подобно рендеру - имеем базовый класс интерфейса
 // В основной класс они добавляются в формате указателей и затем один за одним выполняют определенную функцию
@@ -20,42 +18,73 @@ namespace dynamic_entity_parameters {
 
 const char *TAG = "dynamic.entity.params";
 
-// Class for setting parameters for entities
-class DynamicEntityParameters : public Component {
+class SettingsBase {
  public:
-  DynamicEntityParameters();
+  virtual void set_namespace(std::string &&name) = 0;
+  virtual const char *get_namespace() = 0;
 
-  void setup() override;
+  // Check that namespace is available
+  virtual bool check_available() = 0;
+
+  // Make conversion to this version
+  virtual bool make_conversion_from_last_version(SettingsBase *last) = 0;
+  virtual void apply() = 0;
+
+  virtual void reset() = 0;
+};
+
+// Class for setting parameters for entities
+class SettingsKeeper : public Component {
+ public:
+  SettingsKeeper();
+
+  void setup() override {
+    // TODO Логика проверки наличия настроек и перехода между ними
+    // А затем вызов apply
+  }
 
   // setup should be called before api connected
   float get_setup_priority() const override { return setup_priority::HARDWARE + 1; }
 
-  void dump_config() override;
-
-  uint16_t record_size() { return this->preference_.get_size(); }
-
-  UserNamesRecord *record(uint16_t index) {
-    if (index >= this->preference_.get_size())
-      return nullptr;
-
-    return this->preference_.records()[index];
+  void dump_config() override {
+    ESP_LOGCONFIG(TAG, "Active settings store:");
+    for (auto *list : this->settings_list_) {
+      if (list != nullptr) {
+        ESP_LOGCONFIG(TAG, "  %s", (*list)[0]->get_namespace());
+      }
+    }
   }
 
-  void make_record(EntityBase *entity, const char *name);
+  SettingsBase *get_settings_preferences(const char *name) {
+    // Find only first element each array
+    for (auto *list : this->settings_list_) {
+      if (list != nullptr) {
+        if (strncmp((*list)[0]->get_namespace(), name, 16) == 0) {
+          return (*list)[0];
+        }
+      }
+    }
+    return nullptr;
+  }
 
-  void reset_all();
+  void reset_all() {
+    for (auto *list : this->settings_list_) {
+      if (list != nullptr) {
+        (*list)[0]->reset();
+      }
+    }
+  }
+
+  void add_settings_list(std::vector<SettingsBase *> *lst) { this->settings_list_->push_back(lst); }
 
  protected:
-#ifdef USE_SWITCH
-  PreferenceArrayType<SwitchParameters_ver1> switch_preference_;
-  void process_switch_parameters_() {}
-
-#endif
+  std::vector<std::vector<SettingsBase *> *> settings_list_;
 };
 
 }  // namespace dynamic_entity_parameters
 
-// extern user_names::UserNamesComponent *global_user_names;  //
-// NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+extern dynamic_entity_parameters::SettingsKeeper
+    *global_settings_keeper;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace esphome
+#endif

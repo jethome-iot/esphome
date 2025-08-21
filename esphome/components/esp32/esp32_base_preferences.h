@@ -13,7 +13,7 @@ class ESP32BasePreferences {
   void set_namespace(const char *name) { this->nvs_namespace_ = std::string(name); }
   const char *get_namespace() { return this->nvs_namespace_.c_str(); }
   bool open();
-
+  bool is_existing();
   ESPPreferenceObject make_preference(std::string &&key) {
     auto *pref = new ESP32PreferenceBackend(this->pending_save_);
     pref->nvs_handle = this->nvs_handle_;

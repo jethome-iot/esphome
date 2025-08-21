@@ -22,6 +22,20 @@ bool ESP32BasePreferences::open() {
   return true;
 }
 
+bool ESP32BasePreferences::is_existing() {
+  if (this->nvs_namespace_.empty()) {
+    ESP_LOGW(TAG, "namespace isn't set");
+    return false;
+  }
+  uint32_t nvs_handle_temp;
+  esp_err_t err = nvs_open(this->nvs_namespace_.c_str(), NVS_READ, &nvs_handle_temp);
+  if (err != 0) {
+    nvs_close(nvs_handle_temp);
+    return true;
+  }
+  return false;
+}
+
 bool ESP32BasePreferences::sync() {
   if (this->pending_save_.empty())
     return true;
