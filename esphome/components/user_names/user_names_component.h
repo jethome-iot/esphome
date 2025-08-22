@@ -4,22 +4,29 @@
 #include "esphome/core/entity_base.h"
 #include "esphome/core/application.h"
 
-#include <vector>
+#ifdef USE_ESP32
+#include "esphome/components/esp32/esp32_preferences_array.h"
+template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArrayKey<T>;
+#else
+#include "esphome/core/preferences_array.h"
+template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArrayKey<T>;
+#endif
 
 namespace esphome {
 namespace user_names {
 
 struct UserNamesRecord {
   static const size_t MAX_NAME_SIZE = 32;
-  uint32_t key = 0;
+  uint32_t entity_id = 0;
   char name[MAX_NAME_SIZE + 1] = {0};
   EntityType type = EntityType::NONE;
 
+  uint32_t key() { return this->entity_id; }
   void fill(EntityBase *entity, const char *name) {
     if (entity == nullptr || name == nullptr)
       return;
     this->type = entity->type();
-    this->key = entity->get_object_id_hash();
+    this->entity_id = entity->get_object_id_hash();
     strncpy(this->name, name, MAX_NAME_SIZE);
   }
 };
@@ -36,12 +43,13 @@ class UserNamesComponent : public Component {
 
   void dump_config() override;
 
-  uint16_t record_size() { return this->records_.size(); }
+  uint16_t record_size() { return this->preference_.get_size(); }
 
   UserNamesRecord *record(uint16_t index) {
-    if (index >= this->records_.size())
+    if (index >= this->preference_.get_size())
       return nullptr;
-    return this->records_[index];
+
+    return this->preference_.records()[index];
   }
 
   void make_record(EntityBase *entity, const char *name);
@@ -49,15 +57,7 @@ class UserNamesComponent : public Component {
   void reset_all();
 
  protected:
-  void restore_records_count_();
-  bool restore_record_data_(ESPPreferenceObject &obj);
-
-  uint16_t records_num_ = 0;
-  std::vector<UserNamesRecord *> records_;
-
-  ESPPreferenceObject records_num_pref_;
-  std::vector<ESPPreferenceObject> records_pref_;
-  uint32_t base_hash_;
+  PreferenceArrayType<UserNamesRecord> preference_;
 };
 
 }  // namespace user_names
