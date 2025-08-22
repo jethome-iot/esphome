@@ -14,18 +14,18 @@ template<typename T> using PreferenceArrayType = esphome::esp32::ESP32Preference
 //
 
 namespace esphome {
-namespace dynamic_entity_parameters {
+namespace dynamic_entity_settings {
 
 const char *TAG = "dynamic.entity.params";
 
 class SettingsBase {
  public:
-  virtual void set_namespace(std::string &&name) = 0;
+  virtual void set_namespace(const char *) = 0;
   virtual const char *get_namespace() = 0;
 
   // Check that namespace is available
   virtual bool check_available() = 0;
-
+  virtual bool load() = 0;
   // Make conversion to this version
   virtual bool make_conversion_from_last_version(SettingsBase *last) = 0;
   virtual void apply() = 0;
@@ -34,13 +34,22 @@ class SettingsBase {
 };
 
 // Class for setting parameters for entities
-class SettingsKeeper : public Component {
+class EntitySettingsKeeper : public Component {
  public:
-  SettingsKeeper();
+  EntitySettingsKeeper();
 
   void setup() override {
-    // TODO Логика проверки наличия настроек и перехода между ними
-    // А затем вызов apply
+    // TODO Logic for checking existing settings and conversion between them
+
+    // Just apply current setting
+    for (auto *list : this->settings_list_) {
+      if (list == nullptr || list->empty())
+        continue;
+      SettingsBase *setting = list->at(0);
+      bool res = setting->load();
+      if (res)
+        setting->apply();
+    }
   }
 
   // setup should be called before api connected
@@ -83,10 +92,10 @@ class SettingsKeeper : public Component {
   std::vector<std::vector<SettingsBase *> *> settings_list_;
 };
 
-}  // namespace dynamic_entity_parameters
+}  // namespace dynamic_entity_settings
 
-extern dynamic_entity_parameters::SettingsKeeper
-    *global_settings_keeper;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+extern dynamic_entity_parameters::EntitySettingsKeeper
+    *global_entity_settings_keeper;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace esphome
 #endif
