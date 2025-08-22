@@ -1,17 +1,22 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_ID
+from esphome.core import ID
 
-dynamic_entity_parameters_ns = cg.esphome_ns.namespace("dynamic_entity_parameters")
-UserNamesComponent = dynamic_entity_parameters_ns.class_(
-    "UserNamesComponent", cg.Component
+dynamic_entity_settings_ns = cg.esphome_ns.namespace("dynamic_entity_settings")
+EntitySettingsKeeper = dynamic_entity_settings_ns.class_(
+    "EntitySettingsKeeper", cg.Component
+)
+
+SwitchSettingsVer1 = dynamic_entity_settings_ns.class_(
+    "SwitchSettingsVer1", cg.Component
 )
 
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
-            cv.GenerateID(): cv.declare_id(UserNamesComponent),
+            cv.GenerateID(): cv.declare_id(EntitySettingsKeeper),
         }
     )
 )
@@ -20,3 +25,8 @@ CONFIG_SCHEMA = cv.All(
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+
+    switch_setting_ver1 = cg.new_Pvariable(
+        ID(id="switch_setting_v1_ptr", type=SwitchSettingsVer1)
+    )
+    cg.add(var.add_settings_list({switch_setting_ver1}))

@@ -86,10 +86,16 @@ class EntitySettingsKeeper : public Component {
     }
   }
 
-  void add_settings_list(std::vector<SettingsBase *> *lst) { this->settings_list_->push_back(lst); }
+  void add_settings_list(std::initializer_list<SettingsBase *> list) {
+    std::vector<SettingsBase *> temp;
+    for (const auto &elem : list) {
+      temp.push_back(elem);
+    }
+    this->settings_list_->push_back(temp);
+  }
 
  protected:
-  std::vector<std::vector<SettingsBase *> *> settings_list_;
+  std::vector<std::vector<SettingsBase *>> settings_list_;
 };
 
 }  // namespace dynamic_entity_settings

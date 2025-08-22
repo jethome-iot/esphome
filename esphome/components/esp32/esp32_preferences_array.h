@@ -25,6 +25,8 @@ template<typename RecordType, typename BaseClassType> class ESP32PreferencesArra
     return BaseClassType::init(restore_data);
   }
 
+  ESP32BasePreferences &get_preference() { return this->preference_; }
+
  protected:
   ESP32BasePreferences preference_;
 };
