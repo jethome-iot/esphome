@@ -12,6 +12,10 @@
 #include "esp_netif.h"
 #include "esp_mac.h"
 
+#if CONFIG_ETHERNET_PHY_LAN867X
+#include "esp_eth_phy_lan867x.h"
+#endif
+
 namespace esphome {
 namespace ethernet {
 
@@ -27,6 +31,7 @@ enum EthernetType : uint8_t {
   ETHERNET_TYPE_W5500,
   ETHERNET_TYPE_OPENETH,
   ETHERNET_TYPE_DM9051,
+  ETHERNET_TYPE_LAN867X,
 };
 
 struct ManualIP {
