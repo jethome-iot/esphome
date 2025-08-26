@@ -1,13 +1,12 @@
-#include "user_names_component.h"
-#include "esphome/core/log.h"
+#include "dynamic_entity_settings.h"
 #include "esphome/core/helpers.h"
-#include <cstring>
 
 namespace esphome {
-dynamic_entity_parameters::EntitySettingsKeeper
+dynamic_entity_settings::EntitySettingsKeeper
     *global_entity_settings_keeper =  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
     nullptr;
 namespace dynamic_entity_settings {
+const char *TAG = "dynamic.entity.params";
 
 EntitySettingsKeeper::EntitySettingsKeeper() { global_entity_settings_keeper = this; }
 

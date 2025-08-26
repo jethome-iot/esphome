@@ -8,9 +8,7 @@ EntitySettingsKeeper = dynamic_entity_settings_ns.class_(
     "EntitySettingsKeeper", cg.Component
 )
 
-SwitchSettingsVer1 = dynamic_entity_settings_ns.class_(
-    "SwitchSettingsVer1", cg.Component
-)
+SwitchSettingsVer1 = dynamic_entity_settings_ns.class_("SwitchSettingsVer1")
 
 
 CONFIG_SCHEMA = cv.All(
@@ -29,4 +27,6 @@ async def to_code(config):
     switch_setting_ver1 = cg.new_Pvariable(
         ID(id="switch_setting_v1_ptr", type=SwitchSettingsVer1)
     )
-    cg.add(var.add_settings_list({switch_setting_ver1}))
+
+    dynamic_settings_list = [switch_setting_ver1]
+    cg.add(var.add_settings_list(dynamic_settings_list))

@@ -1,9 +1,7 @@
 #pragma once
 #if defined(USE_ESP32) && defined(USE_SWITCH)
 #include "dynamic_entity_settings.h"
-#include "esphome/components/esp32/esp32_preferences_array.h"
 #include "esphome/components/switch/switch.h"
-#include "esphome/core/application.h"
 #include "settings_names.h"
 
 namespace esphome {
@@ -23,20 +21,23 @@ class SwitchSettingsVer1 : public SettingsBase {
  public:
   SwitchSettingsVer1() { this->set_namespace(switch_settings_v1_name); }
 
-  void set_namespace(std::string &&name) { this->preference_array_.set_namespace(name); }
+  void set_namespace(const char *name) override { this->preference_array_.set_namespace(name); }
 
   const char *get_namespace() override { return this->preference_array_.get_namespace(); };
 
   bool check_available() override { return this->preference_array_.get_preference().is_existing(); }
 
-  bool load() override { this->preference_array_.restore_records_data(); }
+  bool load() override {
+    this->preference_array_.restore_records_data();
+    return true;
+  }
 
   void apply() override {
-    for (SwitchSettings_ver1 *set : this->preference_array_::records()) {
+    for (SwitchSettings_ver1 *set : this->preference_array_.records()) {
       if (set == nullptr)
         continue;
       switch_::Switch *switch_ptr =
-          static_cast<switch_::Switch>(App.get_entity_by_key(EntityType::SWITCH, set->entity_id));
+          static_cast<switch_::Switch *>(App.get_entity_by_key(EntityType::SWITCH, set->entity_id));
       if (switch_ptr == nullptr)
         continue;
       switch_ptr->set_restore_mode(set->restore_mode);
@@ -48,10 +49,13 @@ class SwitchSettingsVer1 : public SettingsBase {
 
   bool make_conversion_from_last_version(SettingsBase *last) override { return true; }
 
+  void reset() {}
+
  protected:
-  esp32::ESP32PreferencesArrayKey<SwitchSettings_ver1> preference_array_;
+  PreferenceArrayType<SwitchSettings_ver1> preference_array_;
 };
 
-}
+}  // namespace dynamic_entity_settings
+}  // namespace esphome
 
 #endif

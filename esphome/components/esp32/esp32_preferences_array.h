@@ -16,6 +16,7 @@ template<typename RecordType, typename BaseClassType> class ESP32PreferencesArra
 
   void sync() override { this->preference_.sync(); }
   void set_namespace(const char *name) { this->preference_.set_namespace(name); }
+  const char *get_namespace() { return this->preference_.get_namespace(); }
 
   bool init(bool restore_data = true) {
     bool res = this->preference_.open();

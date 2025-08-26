@@ -28,7 +28,7 @@ bool ESP32BasePreferences::is_existing() {
     return false;
   }
   uint32_t nvs_handle_temp;
-  esp_err_t err = nvs_open(this->nvs_namespace_.c_str(), NVS_READ, &nvs_handle_temp);
+  esp_err_t err = nvs_open(this->nvs_namespace_.c_str(), NVS_READONLY, &nvs_handle_temp);
   if (err == 0) {
     nvs_close(nvs_handle_temp);
     return true;

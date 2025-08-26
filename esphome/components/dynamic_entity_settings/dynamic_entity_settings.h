@@ -1,11 +1,8 @@
 #pragma once
 #ifdef USE_ESP32
-#include "entity_parameters.h"
 #include <vector>
-#include <string.h>
-
+#include "esphome/core/component.h"
 #include "esphome/components/esp32/esp32_preferences_array.h"
-template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArray<T>;
 
 // TODO Возможно стоит создать механизм подобно рендеру - имеем базовый класс интерфейса
 // В основной класс они добавляются в формате указателей и затем один за одним выполняют определенную функцию
@@ -16,7 +13,8 @@ template<typename T> using PreferenceArrayType = esphome::esp32::ESP32Preference
 namespace esphome {
 namespace dynamic_entity_settings {
 
-const char *TAG = "dynamic.entity.params";
+extern const char *TAG;
+template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArray<T>;
 
 class SettingsBase {
  public:
@@ -42,10 +40,10 @@ class EntitySettingsKeeper : public Component {
     // TODO Logic for checking existing settings and conversion between them
 
     // Just apply current setting
-    for (auto *list : this->settings_list_) {
-      if (list == nullptr || list->empty())
+    for (auto &list : this->settings_list_) {
+      if (list.empty())
         continue;
-      SettingsBase *setting = list->at(0);
+      SettingsBase *setting = list[0];
       bool res = setting->load();
       if (res)
         setting->apply();
@@ -57,42 +55,34 @@ class EntitySettingsKeeper : public Component {
 
   void dump_config() override {
     ESP_LOGCONFIG(TAG, "Active settings store:");
-    for (auto *list : this->settings_list_) {
-      if (list != nullptr) {
-        ESP_LOGCONFIG(TAG, "  -%s", (*list)[0]->get_namespace());
+    for (auto &list : this->settings_list_) {
+      if (!list.empty()) {
+        ESP_LOGCONFIG(TAG, "  -%s", list[0]->get_namespace());
       }
     }
   }
 
   SettingsBase *get_settings_preferences(const char *name) {
     // Find only first element each array
-    for (auto *list : this->settings_list_) {
-      if (list != nullptr) {
-        if (strncmp((*list)[0]->get_namespace(), name, 16) == 0) {
-          return (*list)[0];
-        }
+    for (auto &list : this->settings_list_) {
+      if (list.empty())
+        continue;
+      if (strncmp(list[0]->get_namespace(), name, 16) == 0) {
+        return list[0];
       }
     }
     return nullptr;
   }
 
   void reset_all() {
-    for (auto *list : this->settings_list_) {
-      if (list != nullptr) {
-        for (auto *settings : *list) {
-          settings->reset();
-        }
+    for (auto &list : this->settings_list_) {
+      for (auto *settings : list) {
+        settings->reset();
       }
     }
   }
 
-  void add_settings_list(std::initializer_list<SettingsBase *> list) {
-    std::vector<SettingsBase *> temp;
-    for (const auto &elem : list) {
-      temp.push_back(elem);
-    }
-    this->settings_list_->push_back(temp);
-  }
+  void add_settings_list(std::vector<SettingsBase *> list) { this->settings_list_.push_back(list); }
 
  protected:
   std::vector<std::vector<SettingsBase *>> settings_list_;
@@ -100,7 +90,7 @@ class EntitySettingsKeeper : public Component {
 
 }  // namespace dynamic_entity_settings
 
-extern dynamic_entity_parameters::EntitySettingsKeeper
+extern dynamic_entity_settings::EntitySettingsKeeper
     *global_entity_settings_keeper;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace esphome
