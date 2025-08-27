@@ -158,6 +158,17 @@ template<typename RecordType> class ESPPreferencesArrayKey : public ESPPreferenc
     }
     return ESPPreferencesArray<RecordType>::make_record(record);
   }
+
+  bool find_record_by_key(RecordType &record) {
+    for (uint32_t i = 0; i < this->records_num_; i++) {
+      RecordType *internal_record = this->records_[i];
+      if (internal_record != nullptr && record.key() == internal_record->key()) {
+        record = *internal_record;
+        return true;
+      }
+    }
+    return false;
+  }
 };
 
 }  // namespace esphome

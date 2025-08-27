@@ -4,17 +4,11 @@
 #include "esphome/core/component.h"
 #include "esphome/components/esp32/esp32_preferences_array.h"
 
-// TODO Возможно стоит создать механизм подобно рендеру - имеем базовый класс интерфейса
-// В основной класс они добавляются в формате указателей и затем один за одним выполняют определенную функцию
-// Можно попробовать реализовать как лямбду при наличии новой версии настроечника она может без проблем считывать старые
-// настройки и переносить их в новый неймспейс
-//
-
 namespace esphome {
 namespace dynamic_entity_settings {
 
 extern const char *TAG;
-template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArray<T>;
+template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArrayKey<T>;
 
 class SettingsBase {
  public:
@@ -23,11 +17,17 @@ class SettingsBase {
 
   // Check that namespace is available
   virtual bool check_available() = 0;
+  virtual bool init() = 0;
   virtual bool load() = 0;
   // Make conversion to this version
   virtual bool make_conversion_from_last_version(SettingsBase *last) = 0;
+
+  // Apply loaded settings
   virtual void apply() = 0;
 
+  // Records size
+  virtual size_t size() = 0;
+  // Clear all records
   virtual void reset() = 0;
 };
 
@@ -39,12 +39,19 @@ class EntitySettingsKeeper : public Component {
   void setup() override {
     // TODO Logic for checking existing settings and conversion between them
 
-    // Just apply current setting
+    // Just apply current setting now
     for (auto &list : this->settings_list_) {
       if (list.empty())
         continue;
       SettingsBase *setting = list[0];
-      bool res = setting->load();
+
+      if (!setting->check_available())
+        continue;
+
+      bool res = setting->init();
+      if (!res)
+        continue;
+      res = setting->load();
       if (res)
         setting->apply();
     }
@@ -57,13 +64,13 @@ class EntitySettingsKeeper : public Component {
     ESP_LOGCONFIG(TAG, "Active settings store:");
     for (auto &list : this->settings_list_) {
       if (!list.empty()) {
-        ESP_LOGCONFIG(TAG, "  -%s", list[0]->get_namespace());
+        ESP_LOGCONFIG(TAG, " - %s, records: %d", list[0]->get_namespace(), list[0]->size());
       }
     }
   }
 
   SettingsBase *get_settings_preferences(const char *name) {
-    // Find only first element each array
+    // Find only first element each array now
     for (auto &list : this->settings_list_) {
       if (list.empty())
         continue;

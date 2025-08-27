@@ -11,9 +11,9 @@ namespace dynamic_entity_settings {
 struct SwitchSettings_ver1 {
   uint32_t entity_id = 0;
   uint32_t key() const { return this->entity_id; }
-  switch_::SwitchRestoreMode restore_mode;
-  uint8_t reserved[7];
-  bool inverted;
+  switch_::SwitchRestoreMode restore_mode = switch_::SWITCH_ALWAYS_OFF;
+  uint8_t reserved[7] = {0};
+  bool inverted = false;
 };
 #pragma pack()
 
@@ -27,6 +27,8 @@ class SwitchSettingsVer1 : public SettingsBase {
 
   bool check_available() override { return this->preference_array_.get_preference().is_existing(); }
 
+  bool init() override { return this->preference_array_.init(false); }
+
   bool load() override {
     this->preference_array_.restore_records_data();
     return true;
@@ -34,22 +36,41 @@ class SwitchSettingsVer1 : public SettingsBase {
 
   void apply() override {
     for (SwitchSettings_ver1 *set : this->preference_array_.records()) {
-      if (set == nullptr)
-        continue;
-      switch_::Switch *switch_ptr =
-          static_cast<switch_::Switch *>(App.get_entity_by_key(EntityType::SWITCH, set->entity_id));
-      if (switch_ptr == nullptr)
-        continue;
-      switch_ptr->set_restore_mode(set->restore_mode);
-      switch_ptr->set_inverted(set->inverted);
+      apply(set);
     }
   }
 
-  void make_record(SwitchSettings_ver1 &setting) { this->preference_array_.make_record(setting); }
+  void apply(SwitchSettings_ver1 *set) {
+    if (set == nullptr)
+      return;
+    switch_::Switch *switch_ptr =
+        static_cast<switch_::Switch *>(App.get_entity_by_key(EntityType::SWITCH, set->entity_id));
+    if (switch_ptr == nullptr)
+      return;
+    switch_ptr->set_restore_mode(set->restore_mode);
+    switch_ptr->set_inverted(set->inverted);
+  }
+
+  void make_record(SwitchSettings_ver1 &setting) {
+    this->preference_array_.make_record(setting);
+    this->apply(&setting);
+  }
+
+  bool get_record(switch_::Switch *switch_obj, SwitchSettings_ver1 &set) {
+    set.entity_id = switch_obj->get_object_id_hash();
+    switch_::Switch *switch_ptr =
+        static_cast<switch_::Switch *>(App.get_entity_by_key(EntityType::SWITCH, set.entity_id));
+    if (switch_ptr == nullptr)
+      return false;
+    bool res = this->preference_array_.find_record_by_key(set);
+    return res;
+  }
+
+  size_t size() override { return preference_array_.get_size(); }
 
   bool make_conversion_from_last_version(SettingsBase *last) override { return true; }
 
-  void reset() {}
+  void reset() { this->preference_array_.clear_all(); }
 
  protected:
   PreferenceArrayType<SwitchSettings_ver1> preference_array_;
