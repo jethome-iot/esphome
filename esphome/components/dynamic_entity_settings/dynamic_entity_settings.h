@@ -6,23 +6,24 @@
 
 namespace esphome {
 namespace dynamic_entity_settings {
-
-extern const char *TAG;
 template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArrayKey<T>;
 
-class SettingsBase {
+// Interface for settings type
+class SettingsBaseInterface {
  public:
   virtual void set_namespace(const char *) = 0;
   virtual const char *get_namespace() = 0;
 
   // Check that namespace is available
   virtual bool check_available() = 0;
+  // Init storage
   virtual bool init() = 0;
+  // Load to ram
   virtual bool load() = 0;
   // Make conversion to this version
-  virtual bool make_conversion_from_last_version(SettingsBase *last) = 0;
+  virtual bool make_conversion_from_last_version(SettingsBaseInterface *last) = 0;
 
-  // Apply loaded settings
+  // Apply all loaded settings
   virtual void apply() = 0;
 
   // Records size
@@ -36,63 +37,23 @@ class EntitySettingsKeeper : public Component {
  public:
   EntitySettingsKeeper();
 
-  void setup() override {
-    // TODO Logic for checking existing settings and conversion between them
-
-    // Just apply current setting now
-    for (auto &list : this->settings_list_) {
-      if (list.empty())
-        continue;
-      SettingsBase *setting = list[0];
-
-      if (!setting->check_available())
-        continue;
-
-      bool res = setting->init();
-      if (!res)
-        continue;
-      res = setting->load();
-      if (res)
-        setting->apply();
-    }
-  }
+  void setup() override;
 
   // setup should be called before api connected
   float get_setup_priority() const override { return setup_priority::HARDWARE + 1; }
 
-  void dump_config() override {
-    ESP_LOGCONFIG(TAG, "Active settings store:");
-    for (auto &list : this->settings_list_) {
-      if (!list.empty()) {
-        ESP_LOGCONFIG(TAG, " - %s, records: %d", list[0]->get_namespace(), list[0]->size());
-      }
-    }
-  }
+  void dump_config() override;
 
-  SettingsBase *get_settings_preferences(const char *name) {
-    // Find only first element each array now
-    for (auto &list : this->settings_list_) {
-      if (list.empty())
-        continue;
-      if (strncmp(list[0]->get_namespace(), name, 16) == 0) {
-        return list[0];
-      }
-    }
-    return nullptr;
-  }
+  SettingsBaseInterface *get_settings_preference(const char *name);
 
-  void reset_all() {
-    for (auto &list : this->settings_list_) {
-      for (auto *settings : list) {
-        settings->reset();
-      }
-    }
-  }
+  void reset_all();
 
-  void add_settings_list(std::vector<SettingsBase *> list) { this->settings_list_.push_back(list); }
+  void add_settings_list(std::vector<SettingsBaseInterface *> &&list) {
+    this->settings_list_.push_back(std::move(list));
+  }
 
  protected:
-  std::vector<std::vector<SettingsBase *>> settings_list_;
+  std::vector<std::vector<SettingsBaseInterface *>> settings_list_;
 };
 
 }  // namespace dynamic_entity_settings

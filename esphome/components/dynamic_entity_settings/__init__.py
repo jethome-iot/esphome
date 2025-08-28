@@ -8,7 +8,11 @@ EntitySettingsKeeper = dynamic_entity_settings_ns.class_(
     "EntitySettingsKeeper", cg.Component
 )
 
-SwitchSettingsVer1 = dynamic_entity_settings_ns.class_("SwitchSettingsVer1")
+SettingsBaseInterface = dynamic_entity_settings_ns.class_("SettingsBaseInterface")
+
+SwitchSettingsVer1 = dynamic_entity_settings_ns.class_(
+    "SwitchSettingsVer1", SettingsBaseInterface
+)
 
 
 CONFIG_SCHEMA = cv.All(
