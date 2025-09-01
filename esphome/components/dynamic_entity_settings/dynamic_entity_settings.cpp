@@ -1,5 +1,6 @@
 #include "dynamic_entity_settings.h"
 #include "esphome/core/helpers.h"
+#include <nvs_flash.h>
 
 namespace esphome {
 dynamic_entity_settings::EntitySettingsKeeper
@@ -45,7 +46,7 @@ SettingsBaseInterface *EntitySettingsKeeper::get_settings_preference(const char 
   for (auto &list : this->settings_list_) {
     if (list.empty())
       continue;
-    if (strncmp(list[0]->get_namespace(), name, 16) == 0) {
+    if (strncmp(list[0]->get_namespace(), name, NVS_KEY_NAME_MAX_SIZE) == 0) {
       return list[0];
     }
   }
