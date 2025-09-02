@@ -112,6 +112,8 @@ class Switch : public EntityBase, public EntityBase_DeviceClass {
 
   void set_restore_mode(SwitchRestoreMode restore_mode) { this->restore_mode = restore_mode; }
 
+  void update();
+
  protected:
   /** Write the given state to hardware. You should implement this
    * abstract method if you want to create your own switch.

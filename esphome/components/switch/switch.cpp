@@ -20,11 +20,15 @@ void Switch::toggle() {
   ESP_LOGD(TAG, "'%s' Toggling %s.", this->get_name().c_str(), this->state ? "OFF" : "ON");
   this->write_state(this->inverted_ == this->state);
 }
+
+void Switch::update() { this->write_state(this->state != this->inverted_); }
+
 optional<bool> Switch::get_initial_state() {
+  this->rtc_ = global_preferences->make_preference<bool>(this->get_object_id_hash());
+
   if (!(restore_mode & RESTORE_MODE_PERSISTENT_MASK))
     return {};
 
-  this->rtc_ = global_preferences->make_preference<bool>(this->get_object_id_hash());
   bool initial_state;
   if (!this->rtc_.load(&initial_state))
     return {};

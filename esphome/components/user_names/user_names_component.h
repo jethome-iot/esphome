@@ -3,17 +3,20 @@
 #include "esphome/core/entity_types.h"
 #include "esphome/core/entity_base.h"
 #include "esphome/core/application.h"
-
 #ifdef USE_ESP32
 #include "esphome/components/esp32/esp32_preferences_array.h"
-template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArrayKey<T>;
 #else
 #include "esphome/core/preferences_array.h"
-template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArrayKey<T>;
 #endif
 
 namespace esphome {
 namespace user_names {
+
+#ifdef USE_ESP32
+template<typename T> using PreferenceArrayType = esp32::ESP32PreferencesArrayKey<T>;
+#else
+template<typename T> using PreferenceArrayType = esphome::ESPPreferencesArrayKey<T>;
+#endif
 
 struct UserNamesRecord {
   static const size_t MAX_NAME_SIZE = 32;
