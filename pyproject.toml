@@ -8,7 +8,7 @@ license     = {text = "MIT"}
 description = "ESPJHome is JetHome fork of ESPHome which is a system to configure your microcontrollers by simple yet powerful configuration files and control them remotely through Home Automation systems."
 readme      = "README.md"
 authors     = [
-  {name = "The JetHome Authors", email = "dev@jethome.com"},
+  {name = "The JetHome Authors", email = "dev@jethome.com"}
 ]
 keywords    = ["home", "automation"]
 classifiers = [
