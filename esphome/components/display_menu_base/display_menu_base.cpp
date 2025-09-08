@@ -30,6 +30,10 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
   }
 #endif
 
+  // TODO call lambda which create other items
+  //
+  num_items += menu->generate();
+
   if (num_items == 0) {
     display_menu_base::MenuItem *back_item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_BACK);
     back_item->set_text("No items in menu. Back");
@@ -405,8 +409,9 @@ bool DisplayMenuComponent::cursor_down_() {
 bool DisplayMenuComponent::enter_menu_() {
   this->displayed_item_->on_leave();
   this->displayed_item_ = this->get_selected_item_();
-  if (item->is_generate_on_enter())
-    this->generate_to_menu_items_(this->displayed_item_);
+  auto *item = this->displayed_item_;
+  if (item->get_type() == MENU_ITEM_MENU && item->is_generate_on_enter())
+    this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
   this->selection_stack_.emplace_front(this->top_index_, this->cursor_index_);
   this->cursor_index_ = this->top_index_ = 0;
   this->displayed_item_->on_enter();

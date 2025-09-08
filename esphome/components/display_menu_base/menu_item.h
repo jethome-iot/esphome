@@ -50,8 +50,8 @@ class MenuItem {
  public:
   explicit MenuItem(MenuItemType t) : item_type_(t) {}
   virtual ~MenuItem() { clear_items(); }
-  void set_parent(MenuItemMenu *parent) { this->parent_ = parent; }
-  MenuItemMenu *get_parent() { return this->parent_; }
+  void set_parent(MenuItem *parent) { this->parent_ = parent; }
+  MenuItem *get_parent() { return this->parent_; }
   MenuItemType get_type() const { return this->item_type_; }
   template<typename V> void set_text(V val) { this->text_ = val; }
   void add_on_enter_callback(std::function<void()> &&cb) { this->on_enter_callbacks_.add(std::move(cb)); }
@@ -78,7 +78,7 @@ class MenuItem {
   bool is_generated() { return this->generated_; }
   void set_was_generated(bool val) { this->generated_ = val; }
 
-  bool is_generate_on_enter() { return this->generate_on_enter; }
+  bool is_generate_on_enter() { return this->generate_on_enter_; }
   void set_generate_on_enter(bool val) { this->generate_on_enter_ = val; }
 
   void clear_items() {
@@ -86,7 +86,7 @@ class MenuItem {
       delete item;
     }
     this->items_.clear();
-    this->need_generate_ = true;
+    this->generated_ = false;
   }
 
   virtual bool select_next() { return false; }
@@ -125,11 +125,19 @@ class MenuItemValueBase : public MenuItem {
 
 class MenuItemMenu : public MenuItemValueBase {
  public:
+  using generate_lambda_t = std::function<size_t(MenuItemMenu *menu)>;
   explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
   void add_generated_items(MenuItem *item) {
     item->set_parent(this);
     this->items_.push_back(item);
   }
+  size_t generate() {
+    if (lambda_)
+      return lambda_(this);
+    return 0;
+  }
+  void set_generate_lambda(generate_lambda_t &&lambda) { this->lambda_ = lambda; }
+  generate_lambda_t lambda_;
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const std::vector<groups::Group *> &groups() { return groups_; }
