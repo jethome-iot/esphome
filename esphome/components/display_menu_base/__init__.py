@@ -30,7 +30,7 @@ from esphome.const import (
 )
 
 CONF_GENERATE_LAMBDA = "generate_lambda"
-CONF_ON_ENTER_GENERATE = "on_enter_generate"
+CONF_GENERATE_ON_ENTER = "generate_on_enter"
 
 CODEOWNERS = ["@numo68"]
 
@@ -234,7 +234,7 @@ MENU_ITEM_SCHEMA = cv.typed_schema(
                     cv.Optional(CONF_ITEMS): cv.All(
                         cv.ensure_list(menu_item_schema), cv.Length(min=1)
                     ),
-                    cv.Optional(CONF_ON_ENTER_GENERATE): cv.boolean,
+                    cv.Optional(CONF_GENERATE_ON_ENTER): cv.boolean,
                     cv.Optional(CONF_GENERATE_LAMBDA): cv.lambda_,
                 }
             ).extend(gp.LIST_OF_GROUPS_SCHEMA),
@@ -468,8 +468,8 @@ async def menu_item_to_code(menu, config, parent):
             for group in groups:
                 group_var = await cg.get_variable(group)
                 cg.add(item.add_group(group_var))
-        if config.get(CONF_ON_ENTER_GENERATE):
-            cg.add(item.set_generate_on_enter(config[CONF_ON_ENTER_GENERATE]))
+        if config.get(CONF_GENERATE_ON_ENTER):
+            cg.add(item.set_generate_on_enter(config[CONF_GENERATE_ON_ENTER]))
         if lambda_config := config.get(CONF_GENERATE_LAMBDA):
             lambda_ = await cg.process_lambda(
                 lambda_config,

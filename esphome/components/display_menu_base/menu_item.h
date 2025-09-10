@@ -49,7 +49,7 @@ using value_getter_t = std::function<std::string(const MenuItem *)>;
 class MenuItem {
  public:
   explicit MenuItem(MenuItemType t) : item_type_(t) {}
-  virtual ~MenuItem() { clear_items(); }
+  virtual ~MenuItem() {}
   void set_parent(MenuItem *parent) { this->parent_ = parent; }
   MenuItem *get_parent() { return this->parent_; }
   MenuItemType get_type() const { return this->item_type_; }
@@ -75,20 +75,6 @@ class MenuItem {
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
-  bool is_generated() { return this->generated_; }
-  void set_was_generated(bool val) { this->generated_ = val; }
-
-  bool is_generate_on_enter() { return this->generate_on_enter_; }
-  void set_generate_on_enter(bool val) { this->generate_on_enter_ = val; }
-
-  void clear_items() {
-    for (auto *item : this->items_) {
-      delete item;
-    }
-    this->items_.clear();
-    this->generated_ = false;
-  }
-
   virtual bool select_next() { return false; }
   virtual bool select_prev() { return false; }
 
@@ -108,8 +94,6 @@ class MenuItem {
 
   std::vector<MenuItem *> items_;
   bool has_internal_items_{false};
-  bool generated_{false};
-  bool generate_on_enter_{false};
 };
 
 class MenuItemValueBase : public MenuItem {
@@ -127,6 +111,7 @@ class MenuItemMenu : public MenuItemValueBase {
  public:
   using generate_lambda_t = std::function<size_t(MenuItemMenu *menu)>;
   explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
+  ~MenuItemMenu() { clear_items(); }
   void add_generated_items(MenuItem *item) {
     item->set_parent(this);
     this->items_.push_back(item);
@@ -137,7 +122,21 @@ class MenuItemMenu : public MenuItemValueBase {
     return 0;
   }
   void set_generate_lambda(generate_lambda_t &&lambda) { this->lambda_ = lambda; }
-  generate_lambda_t lambda_;
+
+  bool is_generated() { return this->generated_; }
+  void set_was_generated(bool val) { this->generated_ = val; }
+
+  bool is_generate_on_enter() { return this->generate_on_enter_; }
+  void set_generate_on_enter(bool val) { this->generate_on_enter_ = val; }
+
+  void clear_items() {
+    for (auto *item : this->items_) {
+      delete item;
+    }
+    this->items_.clear();
+    this->generated_ = false;
+  }
+
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const std::vector<groups::Group *> &groups() { return groups_; }
@@ -146,6 +145,9 @@ class MenuItemMenu : public MenuItemValueBase {
 #ifdef USE_GROUPS
   std::vector<groups::Group *> groups_;
 #endif
+  generate_lambda_t lambda_;
+  bool generated_{false};
+  bool generate_on_enter_{false};
 };
 
 class MenuItemEditable : public MenuItemValueBase {
