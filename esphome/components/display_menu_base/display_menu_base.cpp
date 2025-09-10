@@ -30,8 +30,6 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
   }
 #endif
 
-  // TODO call lambda which create other items
-  //
   num_items += menu->generate();
 
   if (num_items == 0) {
@@ -40,7 +38,6 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
     menu->add_item(back_item);
   }
 
-  // was generated
   menu->set_was_generated(true);
 }
 
