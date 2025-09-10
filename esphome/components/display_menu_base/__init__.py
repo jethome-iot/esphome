@@ -156,7 +156,7 @@ def validate_items_groups_in_menu(config):
         and CONF_GENERATE_LAMBDA not in config
     ):
         raise cv.Invalid(
-            "Menu item should have at least one of the keys: groups, items"
+            "Menu item should have at least one of the keys: groups, items, generate_lambda"
         )
     return config
 
