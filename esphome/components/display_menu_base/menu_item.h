@@ -111,7 +111,7 @@ class MenuItemMenu : public MenuItemValueBase {
  public:
   using generate_lambda_t = std::function<size_t(MenuItemMenu *menu)>;
   explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
-  ~MenuItemMenu() { clear_items(); }
+  ~MenuItemMenu() override { clear_items(); }
   void add_generated_items(MenuItem *item) {
     item->set_parent(this);
     this->items_.push_back(item);
