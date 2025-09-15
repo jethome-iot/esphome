@@ -25,6 +25,9 @@ from esphome.const import (
     CONF_TYPE,
 )
 
+CONF_GENERATE_LAMBDA = "generate_lambda"
+CONF_GENERATE_ON_ENTER = "generate_on_enter"
+
 CODEOWNERS = ["@numo68"]
 
 AUTO_LOAD = ["display_menu_render_base", "groups"]
@@ -136,9 +139,13 @@ def validate_format(format):
 
 
 def validate_items_groups_in_menu(config):
-    if CONF_ITEMS not in config and CONF_GROUPS not in config:
+    if (
+        CONF_ITEMS not in config
+        and CONF_GROUPS not in config
+        and CONF_GENERATE_LAMBDA not in config
+    ):
         raise cv.Invalid(
-            "Menu item should have at least one of the keys: groups, items"
+            "Menu item should have at least one of the keys: groups, items, generate_lambda"
         )
     return config
 
@@ -216,6 +223,8 @@ MENU_ITEM_SCHEMA = cv.typed_schema(
                     cv.Optional(CONF_ITEMS): cv.All(
                         cv.ensure_list(menu_item_schema), cv.Length(min=1)
                     ),
+                    cv.Optional(CONF_GENERATE_ON_ENTER): cv.boolean,
+                    cv.Optional(CONF_GENERATE_LAMBDA): cv.lambda_,
                 }
             ).extend(gp.LIST_OF_GROUPS_SCHEMA),
             validate_items_groups_in_menu,
@@ -427,6 +436,18 @@ async def menu_item_to_code(menu, config, parent):
             for group in groups:
                 group_var = await cg.get_variable(group)
                 cg.add(item.add_group(group_var))
+        if config.get(CONF_GENERATE_ON_ENTER):
+            cg.add(item.set_generate_on_enter(config[CONF_GENERATE_ON_ENTER]))
+        if lambda_config := config.get(CONF_GENERATE_LAMBDA):
+            lambda_ = await cg.process_lambda(
+                lambda_config,
+                [
+                    (MenuItemMenuPtr, "menu"),
+                ],
+                return_type=cg.size_t,
+            )
+            cg.add(item.set_generate_lambda(lambda_))
+
     for conf in config.get(CONF_ON_ENTER, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], item)
         await automation.build_automation(trigger, [(MenuItemConstPtr, "it")], conf)

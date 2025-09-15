@@ -11,7 +11,7 @@ void DisplayMenuComponent::recurse_menu_items_(MenuItemMenu *parent_menu) {
   // Find menu items with groups and generate_items
   for (size_t i = 0; i < parent_menu->items_size(); i++) {
     MenuItem *item = parent_menu->get_item(i);
-    if (item->get_type() == MENU_ITEM_MENU) {
+    if (item->get_type() == MENU_ITEM_MENU && !static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
       MenuItemMenu *menu = static_cast<MenuItemMenu *>(item);
       recurse_menu_items_(menu);
       generate_to_menu_items_(menu);
@@ -20,6 +20,9 @@ void DisplayMenuComponent::recurse_menu_items_(MenuItemMenu *parent_menu) {
 }
 
 void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
+  if (menu->is_generated())
+    return;
+
   size_t num_items = menu->items_size();
 #ifdef USE_GROUPS
   for (groups::Group *group : menu->groups()) {
@@ -27,11 +30,15 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
   }
 #endif
 
+  num_items += menu->generate();
+
   if (num_items == 0) {
     display_menu_base::MenuItem *back_item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_BACK);
     back_item->set_text("No items in menu. Back");
     menu->add_item(back_item);
   }
+
+  menu->set_was_generated(true);
 }
 
 size_t DisplayMenuComponent::process_group_(MenuItemMenu *menu, groups::Group *group) {
@@ -399,6 +406,10 @@ bool DisplayMenuComponent::cursor_down_() {
 bool DisplayMenuComponent::enter_menu_() {
   this->displayed_item_->on_leave();
   this->displayed_item_ = this->get_selected_item_();
+  auto *item = this->displayed_item_;
+  if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
+    this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
+  }
   this->selection_stack_.emplace_front(this->top_index_, this->cursor_index_);
   this->cursor_index_ = this->top_index_ = 0;
   this->displayed_item_->on_enter();
@@ -411,6 +422,10 @@ bool DisplayMenuComponent::leave_menu_() {
 
   if (this->displayed_item_->get_parent() != nullptr) {
     this->displayed_item_->on_leave();
+    auto *item = this->displayed_item_;
+    if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
+      static_cast<MenuItemMenu *>(item)->clear_items();
+    }
     this->displayed_item_ = this->displayed_item_->get_parent();
     this->top_index_ = this->selection_stack_.front().first;
     this->cursor_index_ = this->selection_stack_.front().second;
