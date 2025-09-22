@@ -733,6 +733,7 @@ void WiFiComponent::check_connecting_finished() {
 
   if (this->error_from_callback_) {
     ESP_LOGW(TAG, "Connecting to network failed");
+    this->error_trigger_->trigger(this->error_reason_);
     this->retry_connect();
     return;
   }
@@ -749,6 +750,7 @@ void WiFiComponent::check_connecting_finished() {
 
   if (status == WiFiSTAConnectStatus::ERROR_CONNECT_FAILED) {
     ESP_LOGW(TAG, "Connecting to network failed");
+    this->error_trigger_->trigger(this->error_reason_);
     this->retry_connect();
     return;
   }

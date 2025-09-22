@@ -296,6 +296,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_ON_DISCONNECT): automation.validate_automation(
                 single=True
             ),
+            cv.Optional(CONF_ON_ERROR): automation.validate_automation(single=True),
             cv.Optional(CONF_USE_PSRAM): cv.All(
                 only_with_esp_idf, cv.requires_component("psram"), cv.boolean
             ),
@@ -445,6 +446,11 @@ async def to_code(config):
     if on_disconnect_config := config.get(CONF_ON_DISCONNECT):
         await automation.build_automation(
             var.get_disconnect_trigger(), [], on_disconnect_config
+        )
+
+    if on_error_config := config.get(CONF_ON_ERROR):
+        await automation.build_automation(
+            var.get_error_trigger(), [(cg.uint8, "code")], on_error_config
         )
 
 

@@ -739,6 +739,7 @@ void WiFiComponent::wifi_process_event_(IDFWiFiEvent *data) {
     s_sta_connected = false;
     s_sta_connecting = false;
     error_from_callback_ = true;
+    error_reason_ = it.reason;
 
   } else if (data->event_base == IP_EVENT && data->event_id == IP_EVENT_STA_GOT_IP) {
     const auto &it = data->data.ip_got_ip;

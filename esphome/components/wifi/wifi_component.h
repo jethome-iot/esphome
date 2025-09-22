@@ -319,6 +319,7 @@ class WiFiComponent : public Component {
 
   Trigger<> *get_connect_trigger() const { return this->connect_trigger_; };
   Trigger<> *get_disconnect_trigger() const { return this->disconnect_trigger_; };
+  Trigger<uint8_t> *get_error_trigger() const { return this->error_trigger_; };
 
   int32_t get_wifi_channel();
 
@@ -414,6 +415,7 @@ class WiFiComponent : public Component {
   bool has_ap_{false};
   bool handled_connected_state_{false};
   bool error_from_callback_{false};
+  uint8_t error_reason_;
   bool scan_done_{false};
   bool ap_setup_{false};
   bool passive_scan_{false};
@@ -428,6 +430,7 @@ class WiFiComponent : public Component {
   // Pointers at the end (naturally aligned)
   Trigger<> *connect_trigger_{new Trigger<>()};
   Trigger<> *disconnect_trigger_{new Trigger<>()};
+  Trigger<uint8_t> *error_trigger_{new Trigger<uint8_t>()};
 };
 
 extern WiFiComponent *global_wifi_component;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
