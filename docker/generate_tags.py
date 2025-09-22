@@ -37,7 +37,7 @@ def main():
     args = parser.parse_args()
 
     # detect channel from tag
-    match = re.match(r"^(\d+\.\d+)(?:\.\d+)(?:(b\d+)|(-dev\d+))?$", args.tag)
+    match = re.match(r"^(\d+\.\d+)\.\d+(?:(b\d+)|(-dev\d+)|(jh\d*))?$",args.tag)
     major_minor_version = None
     if match is None:  # eg 2023.12.0-dev20231109-testbranch
         channel = None  # Ran with custom tag for a branch etc
