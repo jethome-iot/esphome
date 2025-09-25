@@ -72,6 +72,22 @@ class MenuItem {
     this->items_.push_back(item);
   }
 
+  void remove_item(MenuItem *item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), item);
+    if (it != this->items_.end()) {
+      delete *it;
+      this->items_.erase(it);
+    }
+  }
+
+  void remove_index(int index) {
+    if (index < this->items_.size()) {
+      auto it = this->items_.begin() + index;
+      delete *it;
+      this->items_.erase(it);
+    }
+  }
+
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
