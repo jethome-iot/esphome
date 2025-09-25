@@ -72,6 +72,26 @@ class MenuItem {
     this->items_.push_back(item);
   }
 
+  void add_before(MenuItem *item, MenuItem *after_item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), after_item);
+    if (it != this->items_.end()) {
+      this->items_.emplace(it, item);
+    }
+  }
+
+  void add_after(MenuItem *item, MenuItem *after_item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), after_item);
+    if (it != this->items_.end()) {
+      this->items_.emplace(it + 1, item);
+    }
+  }
+
+  void add_to_index(uint16_t index) {
+    if (index < this->items_.size()) {
+      this->items_.emplace(this->items_.begin() + index, item);
+    }
+  }
+
   void remove_item(MenuItem *item) {
     auto it = std::find(this->items_.begin(), this->items_.end(), item);
     if (it != this->items_.end()) {
@@ -80,7 +100,7 @@ class MenuItem {
     }
   }
 
-  void remove_index(int index) {
+  void remove_index(uint16_t index) {
     if (index < this->items_.size()) {
       auto it = this->items_.begin() + index;
       delete *it;
@@ -90,6 +110,8 @@ class MenuItem {
 
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
+
+  std::vector<MenuItem *> &items() { return items_; }
 
   virtual bool select_next() { return false; }
   virtual bool select_prev() { return false; }
