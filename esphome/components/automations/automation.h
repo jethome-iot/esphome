@@ -2,6 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/preferences.h"
+#include "esphome/core/automation.h"
 #include <vector>
 
 namespace esphome {
@@ -68,8 +69,6 @@ class BaseAutomation {
   // std::vector<dallas_temp::DallasTemperatureSensor *> sensors_;
   // uint8_t saved_sensors_num_ = 0;
 };
-
-class
 
 }  // namespace automations
 }  // namespace esphome
