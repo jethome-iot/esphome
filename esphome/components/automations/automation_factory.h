@@ -32,6 +32,10 @@ template<typename... Ts> class TriggerFactory {
     switch (config.params.input.type) {
       case TypesInputTrigger::Press:
         return new binary_sensor::PressTrigger(sensor);
+      case TypesInputTrigger::Release:
+        return new binary_sensor::ReleaseTrigger(sensor);
+      case TypesInputTrigger::Click:
+        return new binary_sensor::ClickTrigger(sensor, 200, 1000);
     };
     return nullptr;
   }

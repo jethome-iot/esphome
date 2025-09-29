@@ -19,7 +19,7 @@ void AutomationLoader::setup() {
       "enabled": true,
       "trigger": {
         "source": "Input",
-        "type": 1,
+        "type": 3,
         "input_id": "68670887"
       },
       "actions": [
