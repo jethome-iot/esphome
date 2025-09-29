@@ -19,13 +19,13 @@ void AutomationLoader::setup() {
       "enabled": true,
       "trigger": {
         "source": "Input",
-        "type": 3,
+        "type": "press",
         "input_id": "68670887"
       },
       "actions": [
         {
           "source": "Switch",
-          "type": 1,
+          "type": "turn_on",
           "switch_id": "6ffef2f8"
         },
         {
@@ -34,7 +34,7 @@ void AutomationLoader::setup() {
         },
         {
           "source": "Switch",
-          "type": 2,
+          "type": "turn_off",
           "switch_id": "6ffef2f8"
         }
       ]

@@ -28,11 +28,21 @@ constexpr size_t MAX_TRIGGER_TYPES = static_cast<size_t>(SourceTrigger::MAX_TRIG
 constexpr size_t MAX_ACTION_TYPES = static_cast<size_t>(SourceAction::MAX_ACTION_TYPES);
 
 namespace EnumUtils {
+// SourceTrigger
 const char *sourceTriggerToString(SourceTrigger source);
 SourceTrigger stringToSourceTrigger(const std::string &str);
 
+// TypesInputTrigger
+const char *inputTriggerTypeToString(TypesInputTrigger type);
+TypesInputTrigger stringToInputTriggerType(const std::string &str);
+
+// SourceAction
 const char *sourceActionToString(SourceAction source);
 SourceAction stringToSourceAction(const std::string &str);
+
+// TypeSwitchAction
+const char *switchActionTypeToString(TypeSwitchAction type);
+TypeSwitchAction stringToSwitchActionType(const std::string &str);
 
 constexpr size_t triggerToIndex(SourceTrigger source) { return static_cast<size_t>(source); }
 

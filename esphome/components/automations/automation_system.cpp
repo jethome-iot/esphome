@@ -14,7 +14,7 @@ void TriggerConfig::serialize(JsonObject &obj) const {
 
   switch (source) {
     case SourceTrigger::Input:
-      obj["type"] = static_cast<uint8_t>(params.input.type);
+      obj["type"] = EnumUtils::inputTriggerTypeToString(params.input.type);
       obj["input_id"] = format_hex(params.input.input_id);
       break;
     default:
@@ -30,7 +30,7 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
 
   switch (source) {
     case SourceTrigger::Input: {
-      params.input.type = static_cast<TypesInputTrigger>(obj["type"].as<uint8_t>());
+      params.input.type = EnumUtils::stringToInputTriggerType(obj["type"].as<std::string>());
       std::string id_str = obj["input_id"].as<std::string>();
       params.input.input_id = parse_hex<uint32_t>(id_str).value();
       break;
@@ -49,7 +49,7 @@ void ActionConfig::serialize(JsonObject &obj) const {
 
   switch (source) {
     case SourceAction::Switch:
-      obj["type"] = static_cast<uint8_t>(params.switch_action.type);
+      obj["type"] = EnumUtils::switchActionTypeToString(params.switch_action.type);
       obj["switch_id"] = format_hex(params.switch_action.switch_id);
       break;
     case SourceAction::Delay:
@@ -68,7 +68,7 @@ bool ActionConfig::deserialize(const JsonObject &obj) {
 
   switch (source) {
     case SourceAction::Switch: {
-      params.switch_action.type = static_cast<TypeSwitchAction>(obj["type"].as<uint8_t>());
+      params.switch_action.type = EnumUtils::stringToSwitchActionType(obj["type"].as<std::string>());
       auto id_str = obj["switch_id"].as<std::string>();
       params.switch_action.switch_id = parse_hex<uint32_t>(id_str).value();
       break;
