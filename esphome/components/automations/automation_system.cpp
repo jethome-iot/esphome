@@ -1,41 +1,13 @@
 #include "automation_system.h"
-#include <cstring>
 #include <algorithm>
+#include "esphome/core/helpers.h"
+#include "esphome/components/json/json_util.h"
+#include "esphome/core/log.h"
 
 namespace esphome {
 namespace automations {
 
 TriggerConfig::TriggerConfig() : source(SourceTrigger::None) { memset(&params, 0, sizeof(params)); }
-
-TriggerConfig::~TriggerConfig() {
-  switch (source) {
-    case SourceTrigger::Input:
-      params.input.input_id.~basic_string();
-      break;
-    default:
-      break;
-  }
-}
-
-TriggerConfig::TriggerConfig(const TriggerConfig &other) : source(other.source) {
-  switch (source) {
-    case SourceTrigger::Input:
-      new (&params.input.input_id) std::string(other.params.input.input_id);
-      params.input.type = other.params.input.type;
-      break;
-    default:
-      memset(&params, 0, sizeof(params));
-      break;
-  }
-}
-
-TriggerConfig &TriggerConfig::operator=(const TriggerConfig &other) {
-  if (this != &other) {
-    this->~TriggerConfig();
-    new (this) TriggerConfig(other);
-  }
-  return *this;
-}
 
 void TriggerConfig::serialize(JsonObject &obj) const {
   obj["source"] = EnumUtils::sourceTriggerToString(source);
@@ -43,7 +15,7 @@ void TriggerConfig::serialize(JsonObject &obj) const {
   switch (source) {
     case SourceTrigger::Input:
       obj["type"] = static_cast<uint8_t>(params.input.type);
-      obj["input_id"] = params.input.input_id;
+      obj["input_id"] = format_hex(params.input.input_id);
       break;
     default:
       break;
@@ -57,10 +29,12 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
   source = EnumUtils::stringToSourceTrigger(obj["source"].as<std::string>());
 
   switch (source) {
-    case SourceTrigger::Input:
+    case SourceTrigger::Input: {
       params.input.type = static_cast<TypesInputTrigger>(obj["type"].as<uint8_t>());
-      params.input.input_id = obj["input_id"].as<std::string>();
+      std::string id_str = obj["input_id"].as<std::string>();
+      params.input.input_id = parse_hex<uint32_t>(id_str).value();
       break;
+    }
     default:
       break;
   }
@@ -70,49 +44,16 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
 
 ActionConfig::ActionConfig() : source(SourceAction::None) { memset(&params, 0, sizeof(params)); }
 
-ActionConfig::~ActionConfig() {
-  switch (source) {
-    case SourceAction::Switch:
-      params.switch_action.switch_id.~basic_string();
-      break;
-    default:
-      break;
-  }
-}
-
-ActionConfig::ActionConfig(const ActionConfig &other) : source(other.source) {
-  switch (source) {
-    case SourceAction::Switch:
-      new (&params.switch_action.switch_id) std::string(other.params.switch_action.switch_id);
-      params.switch_action.type = other.params.switch_action.type;
-      break;
-    case SourceAction::Delay:
-      params.common.delay = other.params.common.delay;
-      break;
-    default:
-      memset(&params, 0, sizeof(params));
-      break;
-  }
-}
-
-ActionConfig &ActionConfig::operator=(const ActionConfig &other) {
-  if (this != &other) {
-    this->~ActionConfig();
-    new (this) ActionConfig(other);
-  }
-  return *this;
-}
-
 void ActionConfig::serialize(JsonObject &obj) const {
   obj["source"] = EnumUtils::sourceActionToString(source);
 
   switch (source) {
     case SourceAction::Switch:
       obj["type"] = static_cast<uint8_t>(params.switch_action.type);
-      obj["switch_id"] = params.switch_action.switch_id;
+      obj["switch_id"] = format_hex(params.switch_action.switch_id);
       break;
     case SourceAction::Delay:
-      obj["delay_s"] = params.common.delay;
+      obj["delay_s"] = params.delay.delay_s;
       break;
     default:
       break;
@@ -126,12 +67,14 @@ bool ActionConfig::deserialize(const JsonObject &obj) {
   source = EnumUtils::stringToSourceAction(obj["source"].as<std::string>());
 
   switch (source) {
-    case SourceAction::Switch:
+    case SourceAction::Switch: {
       params.switch_action.type = static_cast<TypeSwitchAction>(obj["type"].as<uint8_t>());
-      params.switch_action.switch_id = obj["switch_id"].as<std::string>();
+      auto id_str = obj["switch_id"].as<std::string>();
+      params.switch_action.switch_id = parse_hex<uint32_t>(id_str).value();
       break;
-    case SourceAction::Common:
-      params.common.delay = obj["delay_s"].as<uint32_t>();
+    }
+    case SourceAction::Delay:
+      params.delay.delay_s = obj["delay_s"].as<uint32_t>();
       break;
     default:
       break;
@@ -142,7 +85,7 @@ bool ActionConfig::deserialize(const JsonObject &obj) {
 
 void AutomationConfig::serialize(JsonObject &obj) const {
   obj["name"] = name;
-  obj["id"] = id;
+  // obj["id"] = id;
   obj["enabled"] = enabled;
 
   JsonObject trigger_obj = obj.createNestedObject("trigger");
@@ -164,6 +107,7 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
   enabled = obj["enabled"].as<bool>();
 
   if (!trigger.deserialize(obj["trigger"].as<JsonObject>())) {
+    ESP_LOGI("Alex", "Failed load trigger");
     return false;
   }
 
@@ -173,6 +117,9 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
       ActionConfig action;
       if (action.deserialize(action_obj.as<JsonObject>())) {
         actions.push_back(action);
+      } else {
+        ESP_LOGI("Alex", "Failed load action");
+        return false;
       }
     }
   }
@@ -180,7 +127,6 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
-// Реализация AutomationStorage
 bool AutomationStorage::loadFromJson(const std::string &json_str) {
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, json_str);
@@ -221,7 +167,7 @@ std::string AutomationStorage::saveToJson() const {
 
 void AutomationStorage::addConfig(const AutomationConfig &config) {
   for (auto &existing : configs_) {
-    if (existing.id == config.id) {
+    if (existing.name == config.name) {
       existing = config;
       return;
     }
@@ -229,9 +175,9 @@ void AutomationStorage::addConfig(const AutomationConfig &config) {
   configs_.push_back(config);
 }
 
-bool AutomationStorage::removeConfig(const std::string &id) {
+bool AutomationStorage::removeConfig(const std::string &name) {
   auto it = std::remove_if(configs_.begin(), configs_.end(),
-                           [&id](const AutomationConfig &config) { return config.id == id; });
+                           [&name](const AutomationConfig &config) { return config.name == name; });
 
   if (it != configs_.end()) {
     configs_.erase(it, configs_.end());
@@ -242,46 +188,10 @@ bool AutomationStorage::removeConfig(const std::string &id) {
 
 const AutomationConfig *AutomationStorage::getConfig(uint8_t index) const {
   if (index < configs_.size()) {
-    return configs_[index];
+    return &(configs_[index]);
   }
   return nullptr;
 }
-
-namespace EnumUtils {
-const char *sourceTriggerToString(SourceTrigger source) {
-  switch (source) {
-    case SourceTrigger::Input:
-      return "Input";
-    default:
-      return "None";
-  }
-}
-
-SourceTrigger stringToSourceTrigger(const std::string &str) {
-  if (str == "Input")
-    return SourceTrigger::Input;
-  return SourceTrigger::None;
-}
-
-const char *sourceActionToString(SourceAction source) {
-  switch (source) {
-    case SourceAction::Delay:
-      return "Delay";
-    case SourceAction::Switch:
-      return "Switch";
-    default:
-      return "None";
-  }
-}
-
-SourceAction stringToSourceAction(const std::string &str) {
-  if (str == "Delay")
-    return SourceAction::Delay;
-  if (str == "Switch")
-    return SourceAction::Switch;
-  return SourceAction::None;
-}
-}  // namespace EnumUtils
 
 }  // namespace automations
 }  // namespace esphome

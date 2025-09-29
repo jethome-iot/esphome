@@ -1,81 +1,112 @@
 #pragma once
 #include "automation_system.h"
+#include "esphome/core/application.h"
+#include "esphome/components/binary_sensor/automation.h"
+#include "esphome/components/switch/automation.h"
+#include "esphome/core/base_automation.h"
+#include "esphome/core/automation.h"
+#include "esphome/core/log.h"
 
 namespace esphome {
 namespace automations {
 
-// Фабрика с фиксированными массивами для embedded систем
-template<typename... Ts> class AutomationFactory {
- private:
-  using TriggerCreator = std::function<Trigger<Ts...> *(const TriggerConfig &)>;
-  using ActionCreator = std::function<Action<Ts...> *(const ActionConfig &)>;
-
-  // Фиксированные массивы для быстрого доступа O(1)
-  TriggerCreator trigger_creators_[MAX_TRIGGER_TYPES] = {nullptr};
-  ActionCreator action_creators_[MAX_ACTION_TYPES] = {nullptr};
-
+template<typename... Ts> class TriggerFactory {
  public:
-  AutomationFactory() = default;
-
-  // Регистрация создателей
-  void registerTriggerCreator(SourceTrigger source, TriggerCreator creator) {
-    size_t index = EnumUtils::triggerToIndex(source);
-    if (index < MAX_TRIGGER_TYPES) {
-      trigger_creators_[index] = creator;
+  static Trigger<Ts...> *createTrigger(const TriggerConfig &config) {
+    switch (config.source) {
+      case SourceTrigger::Input:
+        return createInputTrigger(config);
+      default:
+        return nullptr;
     }
   }
 
-  void registerActionCreator(SourceAction source, ActionCreator creator) {
-    size_t index = EnumUtils::actionToIndex(source);
-    if (index < MAX_ACTION_TYPES) {
-      action_creators_[index] = creator;
+ private:
+  static Trigger<Ts...> *createInputTrigger(const TriggerConfig &config) {
+    auto *sensor = App.get_binary_sensor_by_key(config.params.input.input_id);
+    if (sensor == nullptr) {
+      ESP_LOGE("automation", "Cannot find trigger object_id %s",
+               format_hex_pretty(config.params.input.input_id).c_str());
+      return nullptr;
+    }
+    switch (config.params.input.type) {
+      case TypesInputTrigger::Press:
+        return new binary_sensor::PressTrigger(sensor);
+    };
+    return nullptr;
+  }
+};
+
+template<typename... Ts> class ActionFactory {
+ public:
+  static Action<Ts...> *createAction(const ActionConfig &config) {
+    switch (config.source) {
+      case SourceAction::Switch:
+        return createSwitchAction(config);
+      case SourceAction::Delay:
+        return createDelayAction(config);
+      default:
+        return nullptr;
     }
   }
 
-  // Поиск создателей
-  TriggerCreator getTriggerCreator(SourceTrigger source) const {
-    size_t index = EnumUtils::triggerToIndex(source);
-    return (index < MAX_TRIGGER_TYPES) ? trigger_creators_[index] : nullptr;
+ private:
+  static Action<Ts...> *createSwitchAction(const ActionConfig &config) {
+    auto *switch_obj = App.get_switch_by_key(config.params.switch_action.switch_id);
+    if (switch_obj == nullptr) {
+      ESP_LOGE("automation", "Cannot find switch with object_id %s",
+               format_hex_pretty(config.params.switch_action.switch_id).c_str());
+      return nullptr;
+    }
+
+    switch (config.params.switch_action.type) {
+      case TypeSwitchAction::TurnOff:
+        return new switch_::TurnOffAction(switch_obj);
+      case TypeSwitchAction::TurnOn:
+        return new switch_::TurnOnAction(switch_obj);
+      case TypeSwitchAction::Toggle:
+        return new switch_::ToggleAction(switch_obj);
+    };
+    return nullptr;
   }
 
-  ActionCreator getActionCreator(SourceAction source) const {
-    size_t index = EnumUtils::actionToIndex(source);
-    return (index < MAX_ACTION_TYPES) ? action_creators_[index] : nullptr;
+  static Action<Ts...> *createDelayAction(const ActionConfig &config) {
+    auto *delay = new DelayAction();
+    delay->set_delay(config.params.delay.delay_s * 1000);
+    return delay;
   }
+};
 
+template<typename... Ts> class AutomationFactory {
+ public:
   // Создание одной автоматизации
-  std::unique_ptr<Automation<Ts...>> createAutomation(const AutomationConfig &config) {
+  static std::unique_ptr<Automation<Ts...>> createAutomation(const AutomationConfig &config) {
     if (!config.enabled) {
       return nullptr;
     }
 
-    auto trigger_creator = getTriggerCreator(config.trigger.source);
-    if (!trigger_creator) {
-      return nullptr;
-    }
-
-    Trigger<Ts...> *trigger = trigger_creator(config.trigger);
+    Trigger<Ts...> *trigger = TriggerFactory<Ts...>::createTrigger(config.trigger);
     if (!trigger) {
+      ESP_LOGE("automation", "Error create Trigger");
       return nullptr;
     }
 
     auto automation = std::make_unique<Automation<Ts...>>(trigger);
 
     for (const auto &action_config : config.actions) {
-      auto action_creator = getActionCreator(action_config.source);
-      if (action_creator) {
-        Action<Ts...> *action = action_creator(action_config);
-        if (action) {
-          automation->add_action(action);
-        }
+      Action<Ts...> *action = ActionFactory<Ts...>::createAction(action_config);
+      if (action) {
+        automation->add_action(action);
+      } else {
+        ESP_LOGE("automation", "Error create Action");
+        return nullptr;
       }
     }
 
     return automation;
   }
 
-  // Создание всех автоматизаций из хранилища
-  std::vector<std::unique_ptr<Automation<Ts...>>> createAllAutomations(const AutomationStorage &storage) {
+  static std::vector<std::unique_ptr<Automation<Ts...>>> createAllAutomations(const AutomationStorage &storage) {
     std::vector<std::unique_ptr<Automation<Ts...>>> automations;
     automations.reserve(storage.size());
 
@@ -87,35 +118,6 @@ template<typename... Ts> class AutomationFactory {
     }
 
     return automations;
-  }
-
-  // Проверка зарегистрированных типов
-  bool isTriggerTypeSupported(SourceTrigger source) const { return getTriggerCreator(source) != nullptr; }
-
-  bool isActionTypeSupported(SourceAction source) const { return getActionCreator(source) != nullptr; }
-
-  // Очистка регистраций
-  void clearTriggerCreator(SourceTrigger source) {
-    size_t index = EnumUtils::triggerToIndex(source);
-    if (index < MAX_TRIGGER_TYPES) {
-      trigger_creators_[index] = nullptr;
-    }
-  }
-
-  void clearActionCreator(SourceAction source) {
-    size_t index = EnumUtils::actionToIndex(source);
-    if (index < MAX_ACTION_TYPES) {
-      action_creators_[index] = nullptr;
-    }
-  }
-
-  void clearAll() {
-    for (size_t i = 0; i < MAX_TRIGGER_TYPES; ++i) {
-      trigger_creators_[i] = nullptr;
-    }
-    for (size_t i = 0; i < MAX_ACTION_TYPES; ++i) {
-      action_creators_[i] = nullptr;
-    }
   }
 };
 

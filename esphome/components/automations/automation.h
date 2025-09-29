@@ -8,55 +8,6 @@
 namespace esphome {
 namespace automations {
 
-enum class SourceTrigger : uint8_t {
-  None,
-  Input,
-  // Temperature
-};
-
-enum class TypesInputTrigger : uint8_t {
-  None,
-  Press,
-  Release,
-  Click,
-};
-
-struct BaseTrigger {
-  SourceTrigger source_trigger;
-};
-
-struct InputTrigger : public BaseTrigger {
-  TypesInputTrigger type;
-  // May be options
-};
-
-enum class SourceAction {
-  None,
-  Common,
-  Switch,
-};
-
-enum class TypeSwitchAction {
-  None,
-  TurnOn,
-  TurnOff,
-  Toggle,
-};
-
-enum class TypeCommonAction { None, Delay };
-
-struct BaseAction {
-  SourceAction source_action;
-};
-
-struct SwitchAction : public BaseAction {
-  TypeSwitchAction type;
-};
-
-struct CommonAction : public BaseAction {
-  TypeCommonAction type;
-};
-
 class BaseAutomation {
  public:
   // dallas_temp::DallasTemperatureSensor *sensor(uint16_t number) {

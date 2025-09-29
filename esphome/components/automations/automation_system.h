@@ -1,11 +1,7 @@
 #pragma once
 #include <ArduinoJson.h>
-#include <memory>
 #include <vector>
-#include <string>
-#include <functional>
 #include "enums.h"
-#include "esphome/core/automation.h"
 
 namespace esphome {
 namespace automations {
@@ -16,16 +12,16 @@ struct TriggerConfig {
   union {
     struct {
       TypesInputTrigger type;
-      std::string input_id;
+      uint32_t input_id;
     } input;
 
     // Other
   } params;
 
   TriggerConfig();
-  ~TriggerConfig();
-  TriggerConfig(const TriggerConfig &other);
-  TriggerConfig &operator=(const TriggerConfig &other);
+  ~TriggerConfig() = default;
+  TriggerConfig(const TriggerConfig &other) = default;
+  TriggerConfig &operator=(const TriggerConfig &other) = default;
 
   void serialize(JsonObject &obj) const;
   bool deserialize(const JsonObject &obj);
@@ -37,18 +33,18 @@ struct ActionConfig {
   union {
     struct {
       TypeSwitchAction type;
-      std::string switch_id;
+      uint32_t switch_id;
     } switch_action;
 
     struct {
       uint32_t delay_s;
-    } common;
+    } delay;
   } params;
 
   ActionConfig();
-  ~ActionConfig();
-  ActionConfig(const ActionConfig &other);
-  ActionConfig &operator=(const ActionConfig &other);
+  ~ActionConfig() = default;
+  ActionConfig(const ActionConfig &other) = default;
+  ActionConfig &operator=(const ActionConfig &other) = default;
 
   void serialize(JsonObject &obj) const;
   bool deserialize(const JsonObject &obj);
@@ -75,27 +71,13 @@ class AutomationStorage {
 
   void addConfig(const AutomationConfig &config);
   bool removeConfig(const std::string &id);
-  const AutomationConfig *getConfig(const std::string &id) const;
+  const AutomationConfig *getConfig(uint8_t index) const;
   const std::vector<AutomationConfig> &getAllConfigs() const { return configs_; }
   void clear() { configs_.clear(); }
 
   size_t size() const { return configs_.size(); }
   bool empty() const { return configs_.empty(); }
 };
-
-// Вспомогательные функции для работы с enum
-namespace EnumUtils {
-const char *sourceTriggerToString(SourceTrigger source);
-SourceTrigger stringToSourceTrigger(const std::string &str);
-
-const char *sourceActionToString(SourceAction source);
-SourceAction stringToSourceAction(const std::string &str);
-
-// Конвертация enum в индекс
-constexpr size_t triggerToIndex(SourceTrigger source) { return static_cast<size_t>(source); }
-
-constexpr size_t actionToIndex(SourceAction source) { return static_cast<size_t>(source); }
-}  // namespace EnumUtils
 
 }  // namespace automations
 }  // namespace esphome
