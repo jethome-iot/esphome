@@ -1,6 +1,29 @@
-modules = ["cpp-clang14", "python-3.10", "c-clang14", "bash"]
+modules = ["cpp-clang14", "c-clang14", "bash", "python-3.11"]
 [agent]
 expertMode = true
 
 [nix]
 channel = "stable-25_05"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Unit Tests"
+
+[[workflows.workflow]]
+name = "Unit Tests"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "script/unit_test"
+
+[workflows.workflow.metadata]
+outputType = "console"
