@@ -1,0 +1,6 @@
+modules = ["cpp-clang14", "python-3.10", "c-clang14", "bash"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
