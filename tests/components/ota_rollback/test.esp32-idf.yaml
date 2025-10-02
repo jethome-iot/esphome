@@ -1,1 +1,13 @@
-<<: !include common.yaml
+esphome:
+  name: test_ota_rollback_esp32_idf
+
+esp32:
+  board: nodemcu-32s
+  framework:
+    type: esp-idf
+
+logger:
+  level: VERY_VERBOSE
+
+packages:
+  common: !include common.yaml
