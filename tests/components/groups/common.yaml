@@ -1,0 +1,40 @@
+groups:
+  - id: test_group_1
+    name: "Living Room"
+  - id: test_group_2
+    name: "Bedroom"
+  - id: test_group_3
+    name: "Kitchen"
+
+binary_sensor:
+  - platform: gpio
+    pin: 2
+    id: sensor1
+    name: "Test Sensor 1"
+    groups:
+      - test_group_1
+      - test_group_3
+  
+  - platform: gpio
+    pin: 3
+    id: sensor2
+    name: "Test Sensor 2"
+    groups:
+      - test_group_2
+      - test_group_3
+
+switch:
+  - platform: gpio
+    pin: 4
+    id: switch1
+    name: "Test Switch 1"
+    groups:
+      - test_group_1
+  
+  - platform: gpio
+    pin: 5
+    id: switch2
+    name: "Test Switch 2"
+    groups:
+      - test_group_2
+      - test_group_3
