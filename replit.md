@@ -15,7 +15,7 @@ script/unit_test
 
 ### 2. Component Tests
 ```bash
-script/component_test  
+script/component_test
 # This runs pytest on tests/component_tests/
 ```
 
@@ -61,3 +61,4 @@ docker run --rm -v "${PWD}/":/esphome -it ghcr.io/esphome/esphome-lint script/qu
 
 ## Recent Changes
 - 2025-10-02: Initial documentation of ESPHome testing framework
+
