@@ -79,5 +79,7 @@ class AutomationStorage {
   bool empty() const { return configs_.empty(); }
 };
 
+extern AutomationStorage global_automation_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 }  // namespace automations
 }  // namespace esphome

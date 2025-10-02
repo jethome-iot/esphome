@@ -7,6 +7,10 @@
 namespace esphome {
 namespace automations {
 
+static const char *const TAG = "automations";
+
+AutomationStorage global_automation_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 TriggerConfig::TriggerConfig() : source(SourceTrigger::None) { memset(&params, 0, sizeof(params)); }
 
 void TriggerConfig::serialize(JsonObject &obj) const {
