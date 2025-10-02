@@ -3,6 +3,15 @@
 ## Overview
 This is an ESPHome repository containing the complete ESPHome source code and testing framework.
 
+## Modifiable Components
+
+You can modify only the following components and their associated tests:
+- **dallas_temp_searcher** - Dallas temperature sensor searcher component
+- **dynamic_entity_settings** - Dynamic entity settings component  
+- **groups** - Groups component
+- **ota_rollback** - OTA rollback component
+- **user_names** - User names component
+
 ## Running Unit Tests
 
 ESPHome has several types of tests:
@@ -61,4 +70,4 @@ docker run --rm -v "${PWD}/":/esphome -it ghcr.io/esphome/esphome-lint script/qu
 
 ## Recent Changes
 - 2025-10-02: Initial documentation of ESPHome testing framework
-
+- 2025-10-02: Added list of modifiable components
