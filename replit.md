@@ -51,17 +51,6 @@ pip install -r requirements_test.txt
 pip install -e ".[dev]"
 ```
 
-## Docker Alternative
-
-Run tests using Docker:
-```bash
-# Run full lint + test suite
-docker run --rm -v "${PWD}/":/esphome -it ghcr.io/esphome/esphome-lint script/fulltest
-
-# Quick lint only
-docker run --rm -v "${PWD}/":/esphome -it ghcr.io/esphome/esphome-lint script/quicklint
-```
-
 ## Test Structure
 
 - **Unit Tests**: Located in `tests/unit_tests/` - Test core Python functionality
