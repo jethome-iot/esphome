@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Test runner for custom ESPHome components."""
+"""Test runner for JetHome components."""
 
 import os
 import subprocess
@@ -13,7 +13,7 @@ YELLOW = '\033[93m'
 RESET = '\033[0m'
 BOLD = '\033[1m'
 
-# List of custom components to test
+# List of JetHome components to test
 CUSTOM_COMPONENTS = [
     'dallas_temp_searcher',
     'dynamic_entity_settings',
@@ -56,7 +56,7 @@ def run_test(component_name, test_file):
 
 def main():
     """Main test runner."""
-    print(f"{BOLD}ESPHome Custom Components Test Runner{RESET}")
+    print(f"{BOLD}JetHome Components Test Runner{RESET}")
     print(f"Testing components: {', '.join(CUSTOM_COMPONENTS)}")
     print("-" * 60)
     
