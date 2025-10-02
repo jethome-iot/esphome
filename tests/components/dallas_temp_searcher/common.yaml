@@ -4,27 +4,10 @@ one_wire:
     pin: 4
 
 dallas_temp_searcher:
-  id: dallas_searcher_all
+  id: dallas_searcher_id
   one_wire_id: one_wire1_id
   update_interval: 20s
   mode: all
   name_prefix: "Temperature"
   name_addr_start_byte: 2
   name_addr_stop_byte: 6
-  groups:
-    - group1_id
-    - group2_id
-
-groups:
-  - id: group1_id
-    name: "Temperature Group 1"
-  - id: group2_id
-    name: "Temperature Group 2"
-
-# Sensor component is required by dallas_temp (auto-loaded by dallas_temp_searcher)
-sensor:
-  - platform: template
-    name: "Test Temperature Sensor"
-    id: test_temp_sensor
-    update_interval: 60s
-    lambda: return 25.0;

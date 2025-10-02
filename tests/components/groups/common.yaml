@@ -14,7 +14,7 @@ binary_sensor:
     groups:
       - test_group_1
       - test_group_3
-  
+
   - platform: gpio
     pin: 3
     id: sensor2
@@ -30,7 +30,7 @@ switch:
     name: "Test Switch 1"
     groups:
       - test_group_1
-  
+
   - platform: gpio
     pin: 5
     id: switch2

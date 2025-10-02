@@ -7,7 +7,7 @@ This is a JetHome project built on ESPHome framework with customized components 
 
 You can modify only the following components and their associated tests:
 - **dallas_temp_searcher** - Dallas temperature sensor searcher component
-- **dynamic_entity_settings** - Dynamic entity settings component  
+- **dynamic_entity_settings** - Dynamic entity settings component
 - **groups** - Groups component
 - **ota_rollback** - OTA rollback component (ESP-IDF only)
 - **user_names** - User names component
