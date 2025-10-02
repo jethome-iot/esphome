@@ -1,7 +1,7 @@
-# ESPHome Project
+# JetHome Project
 
 ## Overview
-This is an ESPHome repository containing the complete ESPHome source code and testing framework.
+This is a JetHome project built on ESPHome framework with customized components and testing infrastructure.
 
 ## Modifiable Components
 
@@ -33,10 +33,10 @@ tests/components/<component_name>/
 
 ### Running Tests for Our Components
 
-#### Custom Component Test Runner
+#### JetHome Component Test Runner
 Run tests specifically for our 5 modifiable components:
 ```bash
-script/test_custom_components
+script/test_jethome_components
 # Tests only: dallas_temp_searcher, dynamic_entity_settings, groups, ota_rollback, user_names
 ```
 
@@ -50,7 +50,7 @@ esphome compile tests/components/dallas_temp_searcher/test.esp32-ard.yaml
 esphome compile tests/components/ota_rollback/test.esp32-idf.yaml
 ```
 
-## General ESPHome Testing
+## General Testing Framework
 
 ### 1. Unit Tests - Python code testing
 ```bash
@@ -92,7 +92,7 @@ pip install -e ".[dev]"
 - **Unit Tests**: Located in `tests/unit_tests/` - Test core Python functionality
 - **Component Tests**: Located in `tests/component_tests/` - Test individual component integrations
 - **Component YAML Tests**: Located in `tests/components/` - Test YAML configurations for each component
-- **Custom Component Tests**: Located in `tests/components/` for our 5 modifiable components (ESP32 only)
+- **JetHome Component Tests**: Located in `tests/components/` for our 5 modifiable components (ESP32 only)
 
 ## Component Dependencies
 
@@ -103,7 +103,8 @@ pip install -e ".[dev]"
 - **user_names**: Standalone component
 
 ## Recent Changes
-- 2025-10-02: Initial documentation of ESPHome testing framework
+- 2025-10-02: Initial documentation of JetHome testing framework
 - 2025-10-02: Added list of modifiable components
 - 2025-10-02: Created ESP32-only test configurations for all modifiable components
-- 2025-10-02: Added custom test runner for modifiable components
+- 2025-10-02: Added JetHome test runner for modifiable components
+- 2025-10-02: Rebranded project from ESPHome to JetHome
