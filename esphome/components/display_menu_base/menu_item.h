@@ -86,7 +86,7 @@ class MenuItem {
     }
   }
 
-  void add_to_index(uint16_t index) {
+  void add_to_index(uint16_t index, MenuItem *item) {
     if (index < this->items_.size()) {
       this->items_.emplace(this->items_.begin() + index, item);
     }
