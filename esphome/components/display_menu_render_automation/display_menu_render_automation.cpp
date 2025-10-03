@@ -296,33 +296,24 @@ MenuItemSelect *DisplayMenuRenderAutomation::createInputTriggerTypeSelect(Trigge
 }
 
 MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerConfig *trigger) {
-  auto *select_var = new DynamicSelect();
-  std::vector<std::string> options;
+  using BinarySensorSelect = EntitySelect<binary_sensor::BinarySensor>;
+  auto *select_var = new BinarySensorSelect();
 
-  // Get all binary sensors
-  for (auto *sensor : App.get_binary_sensors()) {
-    if (sensor && sensor->has_own_name()) {
-      options.push_back(sensor->get_name());
-    }
+  // Load all binary sensors (automatically filters internal ones)
+  select_var->load_entities(App.get_binary_sensors());
+
+  // Pre-select if editing existing config
+  if (trigger->params.input.input_id != 0) {
+    select_var->select_by_id_hash(trigger->params.input.input_id);
   }
-
-  if (options.empty()) {
-    options.push_back("<no sensors>");
-  }
-
-  select_var->set_options(options);
 
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Input Sensor");
   item->set_immediate_edit(true);
   item->set_select_variable(select_var);
-  item->add_on_value_callback([trigger, select_var]() {
-    size_t index = select_var->get_index();
-    auto sensors = App.get_binary_sensors();
-    if (index < sensors.size()) {
-      trigger->params.input.input_id = sensors[index]->get_object_id_hash();
-    }
-  });
+
+  item->add_on_value_callback(
+      [trigger, select_var]() { trigger->params.input.input_id = select_var->get_selected_id_hash(); });
 
   return item;
 }
@@ -365,33 +356,24 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchActionTypeSelect(Action
 }
 
 MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *action) {
-  auto *select_var = new DynamicSelect();
-  std::vector<std::string> options;
+  using SwitchSelect = EntitySelect<switch_::Switch>;
+  auto *select_var = new SwitchSelect();
 
-  // Get all switches
-  for (auto *sw : App.get_switches()) {
-    if (sw && sw->has_own_name()) {
-      options.push_back(sw->get_name());
-    }
+  // Load all switches (automatically filters internal ones)
+  select_var->load_entities(App.get_switches());
+
+  // Pre-select if editing existing config
+  if (action->params.switch_action.switch_id != 0) {
+    select_var->select_by_id_hash(action->params.switch_action.switch_id);
   }
-
-  if (options.empty()) {
-    options.push_back("<no switches>");
-  }
-
-  select_var->set_options(options);
 
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Switch");
   item->set_immediate_edit(true);
   item->set_select_variable(select_var);
-  item->add_on_value_callback([action, select_var]() {
-    size_t index = select_var->get_index();
-    auto switches = App.get_switches();
-    if (index < switches.size()) {
-      action->params.switch_action.switch_id = switches[index]->get_object_id_hash();
-    }
-  });
+
+  item->add_on_value_callback(
+      [action, select_var]() { action->params.switch_action.switch_id = select_var->get_selected_id_hash(); });
 
   return item;
 }
