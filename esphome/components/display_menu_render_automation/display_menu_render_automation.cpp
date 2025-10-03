@@ -185,15 +185,20 @@ size_t DisplayMenuRenderAutomation::generateTriggerEditor(MenuItemMenu *menu, Tr
 size_t DisplayMenuRenderAutomation::generateActionsEditor(MenuItemMenu *menu, std::vector<ActionConfig> *actions) {
   menu->clear_items();
 
-  // List existing actions
+  // List existing actions with labels
   for (size_t i = 0; i < actions->size(); i++) {
+    // Action label
+    MenuItem *action_label = new MenuItem(MENU_ITEM_LABEL);
+    action_label->set_text("Action " + std::to_string(i + 1) + ":");
+    menu->add_item(action_label);
+
+    // Action menu item
     MenuItemMenu *action_item = new MenuItemMenu();
-    action_item->set_text("Action " + std::to_string(i + 1));
-    action_item->set_value_lambda([this, actions, i](const MenuItem *) {
+    action_item->set_text([this, actions, i](const MenuItem *) {
       if (i < actions->size()) {
-        return getActionSummary((*actions)[i]);
+        return std::string(" ") + getActionSummary((*actions)[i]);
       }
-      return std::string("");
+      return std::string(" Not configured");
     });
 
     action_item->set_generate_on_enter(true);
@@ -486,8 +491,12 @@ std::string DisplayMenuRenderAutomation::getActionSummary(const ActionConfig &ac
   std::string summary = EnumUtils::sourceActionToString(action.source);
 
   if (action.source == SourceAction::Switch) {
-    summary += " - ";
-    summary += EnumUtils::switchActionTypeToString(action.params.switch_action.type);
+    std::string switch_name = "Unknown Switch";
+    auto *sw = App.get_switch_by_key(action.params.switch_action.switch_id);
+    if (sw) {
+      switch_name = sw->get_name();
+    }
+    summary = switch_name + " - " + EnumUtils::switchActionTypeToString(action.params.switch_action.type);
   } else if (action.source == SourceAction::Delay) {
     summary += " " + std::to_string(action.params.delay.delay_s) + "s";
   }
