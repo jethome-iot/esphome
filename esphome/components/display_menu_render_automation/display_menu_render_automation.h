@@ -53,6 +53,9 @@ class DisplayMenuRenderAutomation {
   std::string getTriggerSummary(const TriggerConfig &trigger);
   std::string getActionSummary(const ActionConfig &action);
 
+  // Memory management
+  void clear_helpers();
+
  protected:
   // Temporary state for editing
   std::unique_ptr<AutomationConfig> editing_automation_;
@@ -62,6 +65,11 @@ class DisplayMenuRenderAutomation {
   MenuItemMenu *root_menu_{nullptr};
   // Reference to the display menu component
   DisplayMenuComponent *menu_component_{nullptr};
+
+  // Helper component storage for memory management
+  std::vector<std::unique_ptr<simple::SimpleSelect>> select_helpers_;
+  std::vector<std::unique_ptr<simple::SimpleNumber>> number_helpers_;
+  std::vector<std::unique_ptr<simple::SimpleSwitch>> switch_helpers_;
 };
 
 // Helper class for managing dynamic selects

@@ -7,6 +7,7 @@ namespace display_menu_render_automation {
 static const char *const TAG = "menu_automation";
 
 size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
+  clear_helpers();  // Clean up old helpers before regenerating
   menu->clear_items();
   root_menu_ = menu;
 
@@ -76,9 +77,11 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
   enabled_switch->set_on_text("Yes");
   enabled_switch->set_off_text("No");
   // Create a temporary switch for the enabled state
-  auto *temp_switch = new simple::SimpleSwitch();
+  auto temp_switch = std::make_unique<simple::SimpleSwitch>();
   temp_switch->state = editing_automation_->enabled;
-  enabled_switch->set_switch_variable(temp_switch);
+  auto *switch_ptr = temp_switch.get();
+  switch_helpers_.push_back(std::move(temp_switch));
+  enabled_switch->set_switch_variable(switch_ptr);
   enabled_switch->add_on_value_callback([this]() { editing_automation_->enabled = !editing_automation_->enabled; });
   menu->add_item(enabled_switch);
 
@@ -259,7 +262,7 @@ size_t DisplayMenuRenderAutomation::generateActionEditor(MenuItemMenu *menu, Act
 // Helper method implementations
 
 MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerConfig *trigger) {
-  auto *select_var = new DynamicSelect();
+  auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options;
 
   for (int i = 0; i < static_cast<int>(SourceTrigger::MAX_TRIGGER_TYPES); i++) {
@@ -268,28 +271,34 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerCo
   select_var->set_options(options);
   select_var->set_index(static_cast<size_t>(trigger->source));
 
+  auto *select_ptr = select_var.get();
+  select_helpers_.push_back(std::move(select_var));
+
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Trigger Source");
   item->set_immediate_edit(true);
-  item->set_select_variable(select_var);
+  item->set_select_variable(select_ptr);
   item->add_on_value_callback(
-      [trigger, select_var, this]() { trigger->source = static_cast<SourceTrigger>(select_var->get_index()); });
+      [trigger, select_ptr, this]() { trigger->source = static_cast<SourceTrigger>(select_ptr->get_index()); });
 
   return item;
 }
 
 MenuItemSelect *DisplayMenuRenderAutomation::createInputTriggerTypeSelect(TriggerConfig *trigger) {
-  auto *select_var = new DynamicSelect();
+  auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options = {"None", "Press", "Release", "Click"};
   select_var->set_options(options);
   select_var->set_index(static_cast<size_t>(trigger->params.input.type));
 
+  auto *select_ptr = select_var.get();
+  select_helpers_.push_back(std::move(select_var));
+
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Trigger Type");
   item->set_immediate_edit(true);
-  item->set_select_variable(select_var);
-  item->add_on_value_callback([trigger, select_var]() {
-    trigger->params.input.type = static_cast<TypesInputTrigger>(select_var->get_index());
+  item->set_select_variable(select_ptr);
+  item->add_on_value_callback([trigger, select_ptr]() {
+    trigger->params.input.type = static_cast<TypesInputTrigger>(select_ptr->get_index());
   });
 
   return item;
@@ -297,7 +306,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createInputTriggerTypeSelect(Trigge
 
 MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerConfig *trigger) {
   using BinarySensorSelect = EntitySelect<binary_sensor::BinarySensor>;
-  auto *select_var = new BinarySensorSelect();
+  auto select_var = std::make_unique<BinarySensorSelect>();
 
   // Load all binary sensors (automatically filters internal ones)
   select_var->load_entities(App.get_binary_sensors());
@@ -307,19 +316,22 @@ MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerCon
     select_var->select_by_id_hash(trigger->params.input.input_id);
   }
 
+  auto *select_ptr = select_var.get();
+  select_helpers_.push_back(std::move(select_var));
+
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Input Sensor");
   item->set_immediate_edit(true);
-  item->set_select_variable(select_var);
+  item->set_select_variable(select_ptr);
 
   item->add_on_value_callback(
-      [trigger, select_var]() { trigger->params.input.input_id = select_var->get_selected_id_hash(); });
+      [trigger, select_ptr]() { trigger->params.input.input_id = select_ptr->get_selected_id_hash(); });
 
   return item;
 }
 
 MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConfig *action) {
-  auto *select_var = new DynamicSelect();
+  auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options;
 
   for (int i = 0; i < static_cast<int>(SourceAction::MAX_ACTION_TYPES); i++) {
@@ -328,28 +340,34 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
   select_var->set_options(options);
   select_var->set_index(static_cast<size_t>(action->source));
 
+  auto *select_ptr = select_var.get();
+  select_helpers_.push_back(std::move(select_var));
+
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Action Type");
   item->set_immediate_edit(true);
-  item->set_select_variable(select_var);
+  item->set_select_variable(select_ptr);
   item->add_on_value_callback(
-      [action, select_var]() { action->source = static_cast<SourceAction>(select_var->get_index()); });
+      [action, select_ptr]() { action->source = static_cast<SourceAction>(select_ptr->get_index()); });
 
   return item;
 }
 
 MenuItemSelect *DisplayMenuRenderAutomation::createSwitchActionTypeSelect(ActionConfig *action) {
-  auto *select_var = new DynamicSelect();
+  auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options = {"None", "Turn On", "Turn Off", "Toggle"};
   select_var->set_options(options);
   select_var->set_index(static_cast<size_t>(action->params.switch_action.type));
 
+  auto *select_ptr = select_var.get();
+  select_helpers_.push_back(std::move(select_var));
+
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Switch Action");
   item->set_immediate_edit(true);
-  item->set_select_variable(select_var);
-  item->add_on_value_callback([action, select_var]() {
-    action->params.switch_action.type = static_cast<TypeSwitchAction>(select_var->get_index());
+  item->set_select_variable(select_ptr);
+  item->add_on_value_callback([action, select_ptr]() {
+    action->params.switch_action.type = static_cast<TypeSwitchAction>(select_ptr->get_index());
   });
 
   return item;
@@ -357,7 +375,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchActionTypeSelect(Action
 
 MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *action) {
   using SwitchSelect = EntitySelect<switch_::Switch>;
-  auto *select_var = new SwitchSelect();
+  auto select_var = std::make_unique<SwitchSelect>();
 
   // Load all switches (automatically filters internal ones)
   select_var->load_entities(App.get_switches());
@@ -367,32 +385,38 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *ac
     select_var->select_by_id_hash(action->params.switch_action.switch_id);
   }
 
+  auto *select_ptr = select_var.get();
+  select_helpers_.push_back(std::move(select_var));
+
   MenuItemSelect *item = new MenuItemSelect();
   item->set_text("Switch");
   item->set_immediate_edit(true);
-  item->set_select_variable(select_var);
+  item->set_select_variable(select_ptr);
 
   item->add_on_value_callback(
-      [action, select_var]() { action->params.switch_action.switch_id = select_var->get_selected_id_hash(); });
+      [action, select_ptr]() { action->params.switch_action.switch_id = select_ptr->get_selected_id_hash(); });
 
   return item;
 }
 
 MenuItemNumber *DisplayMenuRenderAutomation::createDelayNumber(ActionConfig *action) {
   // Create a temporary number component for delay editing
-  auto *number_var = new simple::SimpleNumber();
+  auto number_var = std::make_unique<simple::SimpleNumber>();
   number_var->traits.set_min_value(1);
   number_var->traits.set_max_value(3600);  // Max 1 hour
   number_var->traits.set_step(1);
   number_var->state = action->params.delay.delay_s;
 
+  auto *number_ptr = number_var.get();
+  number_helpers_.push_back(std::move(number_var));
+
   MenuItemNumber *item = new MenuItemNumber();
   item->set_text("Delay (seconds)");
   item->set_immediate_edit(true);
-  item->set_number_variable(number_var);
+  item->set_number_variable(number_ptr);
   item->set_format("%.0f s");
   item->add_on_value_callback(
-      [action, number_var]() { action->params.delay.delay_s = static_cast<uint32_t>(number_var->state); });
+      [action, number_ptr]() { action->params.delay.delay_s = static_cast<uint32_t>(number_ptr->state); });
 
   return item;
 }
@@ -411,6 +435,12 @@ void DisplayMenuRenderAutomation::saveAutomation(AutomationConfig *config) {
   std::string json = global_automation_storage.saveToJson();
   ESP_LOGI(TAG, "Saving automation: %s", json.c_str());
   // Here you would typically save to preferences or flash
+}
+
+void DisplayMenuRenderAutomation::clear_helpers() {
+  select_helpers_.clear();
+  number_helpers_.clear();
+  switch_helpers_.clear();
 }
 
 void DisplayMenuRenderAutomation::deleteAutomation(size_t index) {
