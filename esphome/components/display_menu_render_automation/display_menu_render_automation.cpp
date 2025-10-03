@@ -21,12 +21,12 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
     automation_item->set_text(name);
 
     // Show summary as value
-    automation_item->set_value_lambda([this, i](const MenuItem *) {
-      const AutomationConfig *cfg = global_automation_storage.getConfig(i);
-      if (!cfg)
-        return std::string("");
-      return getTriggerSummary(cfg->trigger);
-    });
+    // automation_item->set_value_lambda([this, i](const MenuItem *) {
+    //   const AutomationConfig *cfg = global_automation_storage.getConfig(i);
+    //   if (!cfg)
+    //     return std::string("");
+    //   return getTriggerSummary(cfg->trigger);
+    // });
 
     // Generate submenu on enter
     automation_item->set_generate_on_enter(true);
