@@ -85,10 +85,15 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
   enabled_switch->add_on_value_callback([this]() { editing_automation_->enabled = !editing_automation_->enabled; });
   menu->add_item(enabled_switch);
 
+  // Trigger section label
+  MenuItem *trigger_label = new MenuItem(MENU_ITEM_LABEL);
+  trigger_label->set_text("Trigger:");
+  menu->add_item(trigger_label);
+
   // Trigger editor submenu
   MenuItemMenu *trigger_menu = new MenuItemMenu();
-  trigger_menu->set_text("Trigger");
-  trigger_menu->set_value_lambda([this](const MenuItem *) { return getTriggerSummary(editing_automation_->trigger); });
+  trigger_menu->set_text(
+      [this](const MenuItem *) { return std::string(" ") + getTriggerSummary(editing_automation_->trigger); });
   trigger_menu->set_generate_on_enter(true);
   trigger_menu->set_generate_lambda(
       [this](MenuItemMenu *submenu) { return generateTriggerEditor(submenu, &editing_automation_->trigger); });
@@ -462,8 +467,12 @@ std::string DisplayMenuRenderAutomation::getTriggerSummary(const TriggerConfig &
   std::string summary = EnumUtils::sourceTriggerToString(trigger.source);
 
   if (trigger.source == SourceTrigger::Input) {
-    summary += " - ";
-    summary += EnumUtils::inputTriggerTypeToString(trigger.params.input.type);
+    std::string sensor_name = "Unknown Sensor";
+    auto *sensor = App.get_binary_sensor_by_key(trigger.params.input.input_id);
+    if (sensor) {
+      sensor_name = sensor->get_name();
+    }
+    summary = sensor_name + " - " + EnumUtils::inputTriggerTypeToString(trigger.params.input.type);
   }
 
   return summary;
