@@ -2,6 +2,7 @@
 
 #include "automation_loader.h"
 #include "automation_factory.h"
+#include "automation_system.h"
 
 namespace esphome {
 namespace automations {
@@ -41,13 +42,12 @@ void AutomationLoader::setup() {
     }
   ])";
 
-  AutomationStorage storage;
-  if (!storage.loadFromJson(json_config)) {
+  if (!global_automation_storage.loadFromJson(json_config)) {
     ESP_LOGW(TAG, "Cannot load automations");
     return;
   }
 
-  automations_ = std::move(AutomationFactory<>::createAllAutomations(storage));
+  automations_ = std::move(AutomationFactory<>::createAllAutomations(global_automation_storage));
 };
 
 }  // namespace automations
