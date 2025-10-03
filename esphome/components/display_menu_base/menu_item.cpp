@@ -71,6 +71,7 @@ bool MenuItemSelect::select_next() {
   if (this->select_var_ != nullptr) {
     this->select_var_->make_call().select_next(true).perform();
     changed = true;
+    this->on_value_();
   }
 
   return changed;
@@ -82,6 +83,7 @@ bool MenuItemSelect::select_prev() {
   if (this->select_var_ != nullptr) {
     this->select_var_->make_call().select_previous(true).perform();
     changed = true;
+    this->on_value_();
   }
 
   return changed;

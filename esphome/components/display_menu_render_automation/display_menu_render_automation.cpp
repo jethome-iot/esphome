@@ -285,7 +285,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerCo
   select_helpers_.push_back(std::move(select_var));
 
   MenuItemSelect *item = new MenuItemSelect();
-  item->set_text("Trigger Source");
+  item->set_text("Source");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
   item->add_on_value_callback(
