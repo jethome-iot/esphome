@@ -131,7 +131,19 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
-bool AutomationStorage::loadFromJson(const std::string &json_str) {
+void AutomationStorage::init() {
+  this->json_obj_ = global_preferences->make_preference<JsonData>(fnv1_hash(std::string("_automation_storage_")), true);
+}
+
+bool AutomationStorage::loadFromPreference() {
+  JsonData data;
+  if (this->json_obj_.load(&data)) {
+    return loadFromJson(data.data);
+  }
+  return false;
+}
+
+bool AutomationStorage::loadFromJson(const char *json_str) {
   DynamicJsonDocument doc(4096);
   DeserializationError error = deserializeJson(doc, json_str);
 
@@ -155,7 +167,7 @@ bool AutomationStorage::loadFromJson(const JsonArray &array) {
   return true;
 }
 
-std::string AutomationStorage::saveToJson() const {
+std::string AutomationStorage::saveToJson() {
   DynamicJsonDocument doc(4096);
   JsonArray array = doc.to<JsonArray>();
 
@@ -166,6 +178,13 @@ std::string AutomationStorage::saveToJson() const {
 
   std::string output;
   serializeJson(doc, output);
+  JsonData data;
+  memset(data.data, 0, 4096);
+  strcpy(data.data, output.c_str());
+  ESP_LOGI(TAG, "Automation config %s", data.data);
+  this->json_obj_.save<JsonData>(&data);
+  global_preferences->sync();
+
   return output;
 }
 
@@ -184,7 +203,15 @@ bool AutomationStorage::removeConfig(const std::string &name) {
                            [&name](const AutomationConfig &config) { return config.name == name; });
 
   if (it != configs_.end()) {
-    configs_.erase(it, configs_.end());
+    configs_.erase(it);
+    return true;
+  }
+  return false;
+}
+
+bool AutomationStorage::removeConfig(uint8_t index) {
+  if (index < configs_.size()) {
+    configs_.erase(configs_.begin() + index);
     return true;
   }
   return false;

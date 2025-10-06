@@ -41,6 +41,7 @@ static std::string formatDelayDHMS(uint32_t total_seconds) {
 size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
   clear_helpers();  // Clean up old helpers before regenerating
   menu->clear_items();
+  menu->set_generate_on_enter(true);
   root_menu_ = menu;
 
   // Generate list of existing automations
@@ -147,6 +148,7 @@ size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *men
   save_cmd->add_on_value_callback([this, index, menu]() {
     if (is_new_automation_) {
       global_automation_storage.addConfig(*editing_automation_);
+      global_automation_storage.saveToJson();
     } else {
       // Update existing
       auto configs = global_automation_storage.getAllConfigs();
@@ -157,11 +159,13 @@ size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *men
           global_automation_storage.addConfig(cfg);
         }
       }
+      global_automation_storage.saveToJson();
     }
     editing_automation_.reset();
     // Navigate back and regenerate
     if (root_menu_) {
-      root_menu_->generate();
+      // Navigate back and regenerate parent
+      this->menu_component_->back();
     }
   });
   menu->add_item(save_cmd);
@@ -174,7 +178,8 @@ size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *men
       delete_automation(index);
       editing_automation_.reset();
       if (root_menu_) {
-        root_menu_->generate();
+        // Navigate back and regenerate parent
+        this->menu_component_->back();
       }
     });
     menu->add_item(delete_cmd);
@@ -589,16 +594,7 @@ void DisplayMenuRenderAutomation::clear_helpers() {
   switch_helpers_.clear();
 }
 
-void DisplayMenuRenderAutomation::delete_automation(size_t index) {
-  auto configs = global_automation_storage.getAllConfigs();
-  if (index < configs.size()) {
-    configs.erase(configs.begin() + index);
-    global_automation_storage.clear();
-    for (const auto &cfg : configs) {
-      global_automation_storage.addConfig(cfg);
-    }
-  }
-}
+void DisplayMenuRenderAutomation::delete_automation(size_t index) { global_automation_storage.removeConfig(index); }
 
 std::string DisplayMenuRenderAutomation::get_trigger_summary(const TriggerConfig &trigger) {
   if (trigger.source == SourceTrigger::None) {

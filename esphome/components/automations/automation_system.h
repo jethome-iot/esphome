@@ -2,6 +2,7 @@
 #include <ArduinoJson.h>
 #include <vector>
 #include "enums.h"
+#include "esphome/core/preferences.h"
 
 namespace esphome {
 namespace automations {
@@ -60,18 +61,27 @@ struct AutomationConfig {
   bool deserialize(const JsonObject &obj);
 };
 
+struct JsonData {
+  char data[4096];
+};
+
 class AutomationStorage {
  private:
   std::vector<AutomationConfig> configs_;
+  ESPPreferenceObject json_obj_;
 
  public:
-  bool loadFromJson(const std::string &json_str);
+  void init();
+  bool loadFromPreference();
+  bool loadFromJson(const char *json_str);
   bool loadFromJson(const JsonArray &array);
-  std::string saveToJson() const;
+  std::string saveToJson();
+  bool saveToPreference();
 
   void addConfig(const AutomationConfig &config);
   bool removeConfig(const std::string &id);
   const AutomationConfig *getConfig(uint8_t index) const;
+  bool removeConfig(uint8_t index);
   const std::vector<AutomationConfig> &getAllConfigs() const { return configs_; }
   void clear() { configs_.clear(); }
 
