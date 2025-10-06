@@ -7,25 +7,30 @@ namespace display_menu_render_automation {
 static const char *const TAG = "menu_automation";
 
 // Helper functions for time conversion
-static void secondsToHMS(uint32_t total_seconds, uint8_t &hours, uint8_t &minutes, uint8_t &seconds) {
-  hours = total_seconds / 3600;
+static void secondsToDHMS(uint32_t total_seconds, uint16_t &days, uint8_t &hours, uint8_t &minutes, uint8_t &seconds) {
+  days = total_seconds / 86400;  // 86400 = 24 * 60 * 60
+  hours = (total_seconds % 86400) / 3600;
   minutes = (total_seconds % 3600) / 60;
   seconds = total_seconds % 60;
 }
 
-static uint32_t hmsToSeconds(uint8_t hours, uint8_t minutes, uint8_t seconds) {
-  return hours * 3600 + minutes * 60 + seconds;
+static uint32_t dhmsToSeconds(uint16_t days, uint8_t hours, uint8_t minutes, uint8_t seconds) {
+  return days * 86400 + hours * 3600 + minutes * 60 + seconds;
 }
 
-static std::string formatDelayHMS(uint32_t total_seconds) {
+static std::string formatDelayDHMS(uint32_t total_seconds) {
+  uint16_t days;
   uint8_t hours, minutes, seconds;
-  secondsToHMS(total_seconds, hours, minutes, seconds);
+  secondsToDHMS(total_seconds, days, hours, minutes, seconds);
 
   std::string result;
+  if (days > 0) {
+    result += std::to_string(days) + "d ";
+  }
   if (hours > 0) {
     result += std::to_string(hours) + "h ";
   }
-  if (minutes > 0 || hours > 0) {
+  if (minutes > 0 || hours > 0 || days > 0) {
     result += std::to_string(minutes) + "m ";
   }
   result += std::to_string(seconds) + "s";
@@ -408,13 +413,23 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
       // Add delay time fields directly to the action editor menu
 
       // Get current values
+      uint16_t days;
       uint8_t hours, minutes, seconds;
-      secondsToHMS(action->params.delay.delay_s, hours, minutes, seconds);
+      secondsToDHMS(action->params.delay.delay_s, days, hours, minutes, seconds);
+
+      // Create Days input
+      auto days_var = std::make_unique<simple::SimpleNumber>();
+      days_var->traits.set_min_value(0);
+      days_var->traits.set_max_value(365);  // Max 365 days
+      days_var->traits.set_step(1);
+      days_var->publish_state(days);
+      auto *days_ptr = days_var.get();
+      number_helpers_.push_back(std::move(days_var));
 
       // Create Hours input
       auto hours_var = std::make_unique<simple::SimpleNumber>();
       hours_var->traits.set_min_value(0);
-      hours_var->traits.set_max_value(24);  // Max 24 hours
+      hours_var->traits.set_max_value(23);  // Max 23 hours
       hours_var->traits.set_step(1);
       hours_var->publish_state(hours);
       auto *hours_ptr = hours_var.get();
@@ -438,16 +453,30 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
       auto *seconds_ptr = seconds_var.get();
       number_helpers_.push_back(std::move(seconds_var));
 
+      // Add Days field
+      MenuItemNumber *days_item = new MenuItemNumber();
+      days_item->set_text("Days");
+      days_item->set_immediate_edit(true);
+      days_item->set_number_variable(days_ptr);
+      days_item->set_format("%.0f d");
+      days_item->add_on_value_callback([action, days_ptr, hours_ptr, minutes_ptr, seconds_ptr]() {
+        action->params.delay.delay_s =
+            dhmsToSeconds(static_cast<uint16_t>(days_ptr->state), static_cast<uint8_t>(hours_ptr->state),
+                          static_cast<uint8_t>(minutes_ptr->state), static_cast<uint8_t>(seconds_ptr->state));
+      });
+      parent_menu->add_item(days_item, insert_pos);
+      dynamic_action_items_.push_back(days_item);
+
       // Add Hours field
       MenuItemNumber *hours_item = new MenuItemNumber();
       hours_item->set_text("Hours");
       hours_item->set_immediate_edit(true);
       hours_item->set_number_variable(hours_ptr);
       hours_item->set_format("%.0f h");
-      hours_item->add_on_value_callback([action, hours_ptr, minutes_ptr, seconds_ptr]() {
+      hours_item->add_on_value_callback([action, days_ptr, hours_ptr, minutes_ptr, seconds_ptr]() {
         action->params.delay.delay_s =
-            hmsToSeconds(static_cast<uint8_t>(hours_ptr->state), static_cast<uint8_t>(minutes_ptr->state),
-                         static_cast<uint8_t>(seconds_ptr->state));
+            dhmsToSeconds(static_cast<uint16_t>(days_ptr->state), static_cast<uint8_t>(hours_ptr->state),
+                          static_cast<uint8_t>(minutes_ptr->state), static_cast<uint8_t>(seconds_ptr->state));
       });
       parent_menu->add_item(hours_item, insert_pos + 1);
       dynamic_action_items_.push_back(hours_item);
@@ -458,10 +487,10 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
       minutes_item->set_immediate_edit(true);
       minutes_item->set_number_variable(minutes_ptr);
       minutes_item->set_format("%.0f m");
-      minutes_item->add_on_value_callback([action, hours_ptr, minutes_ptr, seconds_ptr]() {
+      minutes_item->add_on_value_callback([action, days_ptr, hours_ptr, minutes_ptr, seconds_ptr]() {
         action->params.delay.delay_s =
-            hmsToSeconds(static_cast<uint8_t>(hours_ptr->state), static_cast<uint8_t>(minutes_ptr->state),
-                         static_cast<uint8_t>(seconds_ptr->state));
+            dhmsToSeconds(static_cast<uint16_t>(days_ptr->state), static_cast<uint8_t>(hours_ptr->state),
+                          static_cast<uint8_t>(minutes_ptr->state), static_cast<uint8_t>(seconds_ptr->state));
       });
       parent_menu->add_item(minutes_item, insert_pos + 2);
       dynamic_action_items_.push_back(minutes_item);
@@ -472,10 +501,10 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
       seconds_item->set_immediate_edit(true);
       seconds_item->set_number_variable(seconds_ptr);
       seconds_item->set_format("%.0f s");
-      seconds_item->add_on_value_callback([action, hours_ptr, minutes_ptr, seconds_ptr]() {
+      seconds_item->add_on_value_callback([action, days_ptr, hours_ptr, minutes_ptr, seconds_ptr]() {
         action->params.delay.delay_s =
-            hmsToSeconds(static_cast<uint8_t>(hours_ptr->state), static_cast<uint8_t>(minutes_ptr->state),
-                         static_cast<uint8_t>(seconds_ptr->state));
+            dhmsToSeconds(static_cast<uint16_t>(days_ptr->state), static_cast<uint8_t>(hours_ptr->state),
+                          static_cast<uint8_t>(minutes_ptr->state), static_cast<uint8_t>(seconds_ptr->state));
       });
       parent_menu->add_item(seconds_item, insert_pos + 3);
       dynamic_action_items_.push_back(seconds_item);
@@ -598,7 +627,7 @@ std::string DisplayMenuRenderAutomation::getActionSummary(const ActionConfig &ac
     }
     summary = switch_name + " - " + EnumUtils::switchActionTypeToString(action.params.switch_action.type);
   } else if (action.source == SourceAction::Delay) {
-    summary += " " + formatDelayHMS(action.params.delay.delay_s);
+    summary += " " + formatDelayDHMS(action.params.delay.delay_s);
   }
 
   return summary;
