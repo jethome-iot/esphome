@@ -430,6 +430,13 @@ bool DisplayMenuComponent::leave_menu_() {
     this->top_index_ = this->selection_stack_.front().first;
     this->cursor_index_ = this->selection_stack_.front().second;
     this->selection_stack_.pop_front();
+
+    // Update previous menu if generated
+    item = this->displayed_item_;
+    if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
+      static_cast<MenuItemMenu *>(item)->clear_items();
+      this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
+    }
     this->displayed_item_->on_enter();
     changed = true;
   }
