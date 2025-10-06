@@ -28,29 +28,29 @@ class DisplayMenuRenderAutomation {
   void set_menu(DisplayMenuComponent *menu) { this->menu_component_ = menu; }
 
  protected:
-  size_t generateAutomationEditor(MenuItemMenu *menu, size_t index);
-  size_t generateTriggerEditor(MenuItemMenu *menu, TriggerConfig *trigger);
-  size_t generateActionsEditor(MenuItemMenu *menu, std::vector<ActionConfig> *actions);
-  size_t generateActionEditor(MenuItemMenu *menu, ActionConfig *action, size_t index,
-                              std::vector<ActionConfig> *actions);
+  size_t generate_automation_editor(MenuItemMenu *menu, size_t index);
+  size_t generate_trigger_editor(MenuItemMenu *menu, TriggerConfig *trigger);
+  size_t generate_actions_editor(MenuItemMenu *menu, std::vector<ActionConfig> *actions);
+  size_t generate_action_editor(MenuItemMenu *menu, ActionConfig *action, size_t index,
+                                std::vector<ActionConfig> *actions);
 
   // Helper methods for creating selection menus
-  MenuItemSelect *createSourceTriggerSelect(TriggerConfig *trigger, MenuItemMenu *parent_menu);
-  MenuItemSelect *createInputTriggerTypeSelect(TriggerConfig *trigger);
-  MenuItemSelect *createBinarySensorSelect(TriggerConfig *trigger);
+  MenuItemSelect *create_source_trigger_select(TriggerConfig *trigger, MenuItemMenu *parent_menu);
+  MenuItemSelect *create_input_trigger_type_select(TriggerConfig *trigger);
+  MenuItemSelect *create_binary_sensor_select(TriggerConfig *trigger);
 
-  MenuItemSelect *createSourceActionSelect(ActionConfig *action, MenuItemMenu *parent_menu);
-  MenuItemSelect *createSwitchActionTypeSelect(ActionConfig *action);
-  MenuItemSelect *createSwitchSelect(ActionConfig *action);
+  MenuItemSelect *create_source_action_select(ActionConfig *action, MenuItemMenu *parent_menu);
+  MenuItemSelect *create_switch_action_type_select(ActionConfig *action);
+  MenuItemSelect *create_switch_select(ActionConfig *action);
 
   // State management
-  void createNewAutomation();
-  void saveAutomation(AutomationConfig *config);
-  void deleteAutomation(size_t index);
+  void create_new_automation();
+  void save_automation(AutomationConfig *config);
+  void delete_automation(size_t index);
 
   // Utility methods
-  std::string getTriggerSummary(const TriggerConfig &trigger);
-  std::string getActionSummary(const ActionConfig &action);
+  std::string get_trigger_summary(const TriggerConfig &trigger);
+  std::string get_action_summary(const ActionConfig &action);
 
   // Memory management
   void clear_helpers();

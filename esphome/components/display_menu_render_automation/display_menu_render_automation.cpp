@@ -64,7 +64,7 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
     // Generate submenu on enter
     automation_item->set_generate_on_enter(true);
     automation_item->set_generate_lambda(
-        [this, i](MenuItemMenu *submenu) { return generateAutomationEditor(submenu, i); });
+        [this, i](MenuItemMenu *submenu) { return generate_automation_editor(submenu, i); });
 
     menu->add_item(automation_item);
   }
@@ -73,7 +73,7 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
   MenuItemCommand *add_new = new MenuItemCommand();
   add_new->set_text("+ Add New Automation");
   add_new->add_on_value_callback([this, menu]() {
-    createNewAutomation();
+    create_new_automation();
     menu->generate();  // Regenerate to show new automation
   });
   menu->add_item(add_new);
@@ -81,7 +81,7 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
   return menu->items_size();
 }
 
-size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu, size_t index) {
+size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *menu, size_t index) {
   menu->clear_items();
 
   const AutomationConfig *config = global_automation_storage.getConfig(index);
@@ -125,10 +125,10 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
   // Trigger editor submenu
   MenuItemMenu *trigger_menu = new MenuItemMenu();
   trigger_menu->set_text(
-      [this](const MenuItem *) { return std::string(" ") + getTriggerSummary(editing_automation_->trigger); });
+      [this](const MenuItem *) { return std::string(" ") + get_trigger_summary(editing_automation_->trigger); });
   trigger_menu->set_generate_on_enter(true);
   trigger_menu->set_generate_lambda(
-      [this](MenuItemMenu *submenu) { return generateTriggerEditor(submenu, &editing_automation_->trigger); });
+      [this](MenuItemMenu *submenu) { return generate_trigger_editor(submenu, &editing_automation_->trigger); });
   menu->add_item(trigger_menu);
 
   // Actions editor submenu
@@ -138,7 +138,7 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
       [this](const MenuItem *) { return std::to_string(editing_automation_->actions.size()) + " actions"; });
   actions_menu->set_generate_on_enter(true);
   actions_menu->set_generate_lambda(
-      [this](MenuItemMenu *submenu) { return generateActionsEditor(submenu, &editing_automation_->actions); });
+      [this](MenuItemMenu *submenu) { return generate_actions_editor(submenu, &editing_automation_->actions); });
   menu->add_item(actions_menu);
 
   // Save command
@@ -171,7 +171,7 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
     MenuItemCommand *delete_cmd = new MenuItemCommand();
     delete_cmd->set_text("Delete");
     delete_cmd->add_on_value_callback([this, index, menu]() {
-      deleteAutomation(index);
+      delete_automation(index);
       editing_automation_.reset();
       if (root_menu_) {
         root_menu_->generate();
@@ -183,21 +183,21 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
   return menu->items_size();
 }
 
-size_t DisplayMenuRenderAutomation::generateTriggerEditor(MenuItemMenu *menu, TriggerConfig *trigger) {
+size_t DisplayMenuRenderAutomation::generate_trigger_editor(MenuItemMenu *menu, TriggerConfig *trigger) {
   menu->clear_items();
 
   // Clear any previous dynamic items
   dynamic_trigger_items_.clear();
 
   // Source selector with dynamic menu management
-  MenuItemSelect *source_select = createSourceTriggerSelect(trigger, menu);
+  MenuItemSelect *source_select = create_source_trigger_select(trigger, menu);
   menu->add_to_index(0, source_select);
   source_select->on_value_();
 
   return menu->items_size();
 }
 
-size_t DisplayMenuRenderAutomation::generateActionsEditor(MenuItemMenu *menu, std::vector<ActionConfig> *actions) {
+size_t DisplayMenuRenderAutomation::generate_actions_editor(MenuItemMenu *menu, std::vector<ActionConfig> *actions) {
   menu->clear_items();
 
   // List existing actions with labels
@@ -211,14 +211,14 @@ size_t DisplayMenuRenderAutomation::generateActionsEditor(MenuItemMenu *menu, st
     MenuItemMenu *action_item = new MenuItemMenu();
     action_item->set_text([this, actions, i](const MenuItem *) {
       if (i < actions->size()) {
-        return std::string(" ") + getActionSummary((*actions)[i]);
+        return std::string(" ") + get_action_summary((*actions)[i]);
       }
       return std::string(" Not configured");
     });
 
     action_item->set_generate_on_enter(true);
     action_item->set_generate_lambda([this, actions, i](MenuItemMenu *submenu) {
-      return generateActionEditor(submenu, &(*actions)[i], i, actions);
+      return generate_action_editor(submenu, &(*actions)[i], i, actions);
     });
     menu->add_item(action_item);
   }
@@ -235,15 +235,15 @@ size_t DisplayMenuRenderAutomation::generateActionsEditor(MenuItemMenu *menu, st
   return menu->items_size();
 }
 
-size_t DisplayMenuRenderAutomation::generateActionEditor(MenuItemMenu *menu, ActionConfig *action, size_t index,
-                                                         std::vector<ActionConfig> *actions) {
+size_t DisplayMenuRenderAutomation::generate_action_editor(MenuItemMenu *menu, ActionConfig *action, size_t index,
+                                                           std::vector<ActionConfig> *actions) {
   menu->clear_items();
 
   // Clear any previous dynamic items
   dynamic_action_items_.clear();
 
   // Source selector with dynamic menu management
-  MenuItemSelect *source_select = createSourceActionSelect(action, menu);
+  MenuItemSelect *source_select = create_source_action_select(action, menu);
   menu->add_to_index(0, source_select);
 
   // Delete action button
@@ -265,8 +265,8 @@ size_t DisplayMenuRenderAutomation::generateActionEditor(MenuItemMenu *menu, Act
 
 // Helper method implementations
 
-MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerConfig *trigger,
-                                                                       MenuItemMenu *parent_menu) {
+MenuItemSelect *DisplayMenuRenderAutomation::create_source_trigger_select(TriggerConfig *trigger,
+                                                                          MenuItemMenu *parent_menu) {
   auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options;
 
@@ -303,12 +303,12 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerCo
       size_t insert_pos = parent_menu->items_size();
 
       // Add binary sensor selector
-      MenuItemSelect *sensor_select = createBinarySensorSelect(trigger);
+      MenuItemSelect *sensor_select = create_binary_sensor_select(trigger);
       parent_menu->add_item(sensor_select, insert_pos);
       dynamic_trigger_items_.push_back(sensor_select);
 
       // Add input type selector
-      MenuItemSelect *type_select = createInputTriggerTypeSelect(trigger);
+      MenuItemSelect *type_select = create_input_trigger_type_select(trigger);
       parent_menu->add_item(type_select, insert_pos + 1);
       dynamic_trigger_items_.push_back(type_select);
     }
@@ -317,7 +317,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerCo
   return item;
 }
 
-MenuItemSelect *DisplayMenuRenderAutomation::createInputTriggerTypeSelect(TriggerConfig *trigger) {
+MenuItemSelect *DisplayMenuRenderAutomation::create_input_trigger_type_select(TriggerConfig *trigger) {
   auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options = {"None", "Press", "Release", "Click"};
   select_var->set_options(options);
@@ -337,7 +337,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createInputTriggerTypeSelect(Trigge
   return item;
 }
 
-MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerConfig *trigger) {
+MenuItemSelect *DisplayMenuRenderAutomation::create_binary_sensor_select(TriggerConfig *trigger) {
   using BinarySensorSelect = EntitySelect<binary_sensor::BinarySensor>;
   auto select_var = std::make_unique<BinarySensorSelect>();
 
@@ -366,7 +366,8 @@ MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerCon
   return item;
 }
 
-MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConfig *action, MenuItemMenu *parent_menu) {
+MenuItemSelect *DisplayMenuRenderAutomation::create_source_action_select(ActionConfig *action,
+                                                                         MenuItemMenu *parent_menu) {
   auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options;
 
@@ -403,12 +404,12 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
 
     if (new_source == SourceAction::Switch) {
       // Add switch selector
-      MenuItemSelect *switch_select = createSwitchSelect(action);
+      MenuItemSelect *switch_select = create_switch_select(action);
       parent_menu->add_item(switch_select, insert_pos);
       dynamic_action_items_.push_back(switch_select);
 
       // Add switch action type selector
-      MenuItemSelect *type_select = createSwitchActionTypeSelect(action);
+      MenuItemSelect *type_select = create_switch_action_type_select(action);
       parent_menu->add_item(type_select, insert_pos + 1);
       dynamic_action_items_.push_back(type_select);
 
@@ -517,7 +518,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
   return item;
 }
 
-MenuItemSelect *DisplayMenuRenderAutomation::createSwitchActionTypeSelect(ActionConfig *action) {
+MenuItemSelect *DisplayMenuRenderAutomation::create_switch_action_type_select(ActionConfig *action) {
   auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options = {"None", "Turn On", "Turn Off", "Toggle"};
   select_var->set_options(options);
@@ -537,7 +538,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchActionTypeSelect(Action
   return item;
 }
 
-MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *action) {
+MenuItemSelect *DisplayMenuRenderAutomation::create_switch_select(ActionConfig *action) {
   using SwitchSelect = EntitySelect<switch_::Switch>;
   auto select_var = std::make_unique<SwitchSelect>();
 
@@ -566,7 +567,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *ac
   return item;
 }
 
-void DisplayMenuRenderAutomation::createNewAutomation() {
+void DisplayMenuRenderAutomation::create_new_automation() {
   editing_automation_ = std::make_unique<AutomationConfig>();
   editing_automation_->name = "New Automation";
   editing_automation_->enabled = true;
@@ -575,7 +576,7 @@ void DisplayMenuRenderAutomation::createNewAutomation() {
   global_automation_storage.addConfig(*editing_automation_);
 }
 
-void DisplayMenuRenderAutomation::saveAutomation(AutomationConfig *config) {
+void DisplayMenuRenderAutomation::save_automation(AutomationConfig *config) {
   // Save to storage
   std::string json = global_automation_storage.saveToJson();
   ESP_LOGI(TAG, "Saving automation: %s", json.c_str());
@@ -588,7 +589,7 @@ void DisplayMenuRenderAutomation::clear_helpers() {
   switch_helpers_.clear();
 }
 
-void DisplayMenuRenderAutomation::deleteAutomation(size_t index) {
+void DisplayMenuRenderAutomation::delete_automation(size_t index) {
   auto configs = global_automation_storage.getAllConfigs();
   if (index < configs.size()) {
     configs.erase(configs.begin() + index);
@@ -599,7 +600,7 @@ void DisplayMenuRenderAutomation::deleteAutomation(size_t index) {
   }
 }
 
-std::string DisplayMenuRenderAutomation::getTriggerSummary(const TriggerConfig &trigger) {
+std::string DisplayMenuRenderAutomation::get_trigger_summary(const TriggerConfig &trigger) {
   if (trigger.source == SourceTrigger::None) {
     return "Not configured";
   }
@@ -618,7 +619,7 @@ std::string DisplayMenuRenderAutomation::getTriggerSummary(const TriggerConfig &
   return summary;
 }
 
-std::string DisplayMenuRenderAutomation::getActionSummary(const ActionConfig &action) {
+std::string DisplayMenuRenderAutomation::get_action_summary(const ActionConfig &action) {
   if (action.source == SourceAction::None) {
     return "Not configured";
   }
