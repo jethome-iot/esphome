@@ -6,6 +6,33 @@ namespace display_menu_render_automation {
 
 static const char *const TAG = "menu_automation";
 
+// Helper functions for time conversion
+static void secondsToHMS(uint32_t total_seconds, uint8_t &hours, uint8_t &minutes, uint8_t &seconds) {
+  hours = total_seconds / 3600;
+  minutes = (total_seconds % 3600) / 60;
+  seconds = total_seconds % 60;
+}
+
+static uint32_t hmsToSeconds(uint8_t hours, uint8_t minutes, uint8_t seconds) {
+  return hours * 3600 + minutes * 60 + seconds;
+}
+
+static std::string formatDelayHMS(uint32_t total_seconds) {
+  uint8_t hours, minutes, seconds;
+  secondsToHMS(total_seconds, hours, minutes, seconds);
+
+  std::string result;
+  if (hours > 0) {
+    result += std::to_string(hours) + "h ";
+  }
+  if (minutes > 0 || hours > 0) {
+    result += std::to_string(minutes) + "m ";
+  }
+  result += std::to_string(seconds) + "s";
+
+  return result;
+}
+
 size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
   clear_helpers();  // Clean up old helpers before regenerating
   menu->clear_items();
@@ -378,10 +405,80 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
       dynamic_action_items_.push_back(type_select);
 
     } else if (new_source == SourceAction::Delay) {
-      // Add delay number input
-      MenuItemNumber *delay_number = createDelayNumber(action);
-      parent_menu->add_item(delay_number, insert_pos);
-      dynamic_action_items_.push_back(delay_number);
+      // Add delay time fields directly to the action editor menu
+
+      // Get current values
+      uint8_t hours, minutes, seconds;
+      secondsToHMS(action->params.delay.delay_s, hours, minutes, seconds);
+
+      // Create Hours input
+      auto hours_var = std::make_unique<simple::SimpleNumber>();
+      hours_var->traits.set_min_value(0);
+      hours_var->traits.set_max_value(24);  // Max 24 hours
+      hours_var->traits.set_step(1);
+      hours_var->publish_state(hours);
+      auto *hours_ptr = hours_var.get();
+      number_helpers_.push_back(std::move(hours_var));
+
+      // Create Minutes input
+      auto minutes_var = std::make_unique<simple::SimpleNumber>();
+      minutes_var->traits.set_min_value(0);
+      minutes_var->traits.set_max_value(59);
+      minutes_var->traits.set_step(1);
+      minutes_var->publish_state(minutes);
+      auto *minutes_ptr = minutes_var.get();
+      number_helpers_.push_back(std::move(minutes_var));
+
+      // Create Seconds input
+      auto seconds_var = std::make_unique<simple::SimpleNumber>();
+      seconds_var->traits.set_min_value(0);
+      seconds_var->traits.set_max_value(59);
+      seconds_var->traits.set_step(1);
+      seconds_var->publish_state(seconds);
+      auto *seconds_ptr = seconds_var.get();
+      number_helpers_.push_back(std::move(seconds_var));
+
+      // Add Hours field
+      MenuItemNumber *hours_item = new MenuItemNumber();
+      hours_item->set_text("Hours");
+      hours_item->set_immediate_edit(true);
+      hours_item->set_number_variable(hours_ptr);
+      hours_item->set_format("%.0f h");
+      hours_item->add_on_value_callback([action, hours_ptr, minutes_ptr, seconds_ptr]() {
+        action->params.delay.delay_s =
+            hmsToSeconds(static_cast<uint8_t>(hours_ptr->state), static_cast<uint8_t>(minutes_ptr->state),
+                         static_cast<uint8_t>(seconds_ptr->state));
+      });
+      parent_menu->add_item(hours_item, insert_pos + 1);
+      dynamic_action_items_.push_back(hours_item);
+
+      // Add Minutes field
+      MenuItemNumber *minutes_item = new MenuItemNumber();
+      minutes_item->set_text("Minutes");
+      minutes_item->set_immediate_edit(true);
+      minutes_item->set_number_variable(minutes_ptr);
+      minutes_item->set_format("%.0f m");
+      minutes_item->add_on_value_callback([action, hours_ptr, minutes_ptr, seconds_ptr]() {
+        action->params.delay.delay_s =
+            hmsToSeconds(static_cast<uint8_t>(hours_ptr->state), static_cast<uint8_t>(minutes_ptr->state),
+                         static_cast<uint8_t>(seconds_ptr->state));
+      });
+      parent_menu->add_item(minutes_item, insert_pos + 2);
+      dynamic_action_items_.push_back(minutes_item);
+
+      // Add Seconds field
+      MenuItemNumber *seconds_item = new MenuItemNumber();
+      seconds_item->set_text("Seconds");
+      seconds_item->set_immediate_edit(true);
+      seconds_item->set_number_variable(seconds_ptr);
+      seconds_item->set_format("%.0f s");
+      seconds_item->add_on_value_callback([action, hours_ptr, minutes_ptr, seconds_ptr]() {
+        action->params.delay.delay_s =
+            hmsToSeconds(static_cast<uint8_t>(hours_ptr->state), static_cast<uint8_t>(minutes_ptr->state),
+                         static_cast<uint8_t>(seconds_ptr->state));
+      });
+      parent_menu->add_item(seconds_item, insert_pos + 3);
+      dynamic_action_items_.push_back(seconds_item);
     }
   });
 
@@ -430,28 +527,6 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *ac
 
   item->add_on_value_callback(
       [action, select_ptr]() { action->params.switch_action.switch_id = select_ptr->get_selected_id_hash(); });
-
-  return item;
-}
-
-MenuItemNumber *DisplayMenuRenderAutomation::createDelayNumber(ActionConfig *action) {
-  // Create a temporary number component for delay editing
-  auto number_var = std::make_unique<simple::SimpleNumber>();
-  number_var->traits.set_min_value(1);
-  number_var->traits.set_max_value(3600);  // Max 1 hour
-  number_var->traits.set_step(1);
-  number_var->publish_state(action->params.delay.delay_s);
-
-  auto *number_ptr = number_var.get();
-  number_helpers_.push_back(std::move(number_var));
-
-  MenuItemNumber *item = new MenuItemNumber();
-  item->set_text("Delay");
-  item->set_immediate_edit(true);
-  item->set_number_variable(number_ptr);
-  item->set_format("%.0f s");
-  item->add_on_value_callback(
-      [action, number_ptr]() { action->params.delay.delay_s = static_cast<uint32_t>(number_ptr->state); });
 
   return item;
 }
@@ -523,7 +598,7 @@ std::string DisplayMenuRenderAutomation::getActionSummary(const ActionConfig &ac
     }
     summary = switch_name + " - " + EnumUtils::switchActionTypeToString(action.params.switch_action.type);
   } else if (action.source == SourceAction::Delay) {
-    summary += " " + std::to_string(action.params.delay.delay_s) + "s";
+    summary += " " + formatDelayHMS(action.params.delay.delay_s);
   }
 
   return summary;

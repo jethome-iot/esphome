@@ -42,7 +42,6 @@ class DisplayMenuRenderAutomation {
   MenuItemSelect *createSourceActionSelect(ActionConfig *action, MenuItemMenu *parent_menu);
   MenuItemSelect *createSwitchActionTypeSelect(ActionConfig *action);
   MenuItemSelect *createSwitchSelect(ActionConfig *action);
-  MenuItemNumber *createDelayNumber(ActionConfig *action);
 
   // State management
   void createNewAutomation();
