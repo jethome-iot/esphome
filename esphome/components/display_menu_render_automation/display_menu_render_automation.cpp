@@ -440,13 +440,13 @@ MenuItemNumber *DisplayMenuRenderAutomation::createDelayNumber(ActionConfig *act
   number_var->traits.set_min_value(1);
   number_var->traits.set_max_value(3600);  // Max 1 hour
   number_var->traits.set_step(1);
-  number_var->state = action->params.delay.delay_s;
+  number_var->publish_state(action->params.delay.delay_s);
 
   auto *number_ptr = number_var.get();
   number_helpers_.push_back(std::move(number_var));
 
   MenuItemNumber *item = new MenuItemNumber();
-  item->set_text("Delay (seconds)");
+  item->set_text("Delay");
   item->set_immediate_edit(true);
   item->set_number_variable(number_ptr);
   item->set_format("%.0f s");
