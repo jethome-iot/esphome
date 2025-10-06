@@ -84,6 +84,7 @@ class DynamicSelect : public simple::SimpleSelect {
     this->traits.set_options(options);
     if (!options.empty() && this->state.empty()) {
       this->state = options[0];
+      this->set_has_state(true);
     }
   }
 
@@ -91,6 +92,7 @@ class DynamicSelect : public simple::SimpleSelect {
     auto options = this->traits.get_options();
     if (index < options.size()) {
       this->state = options[index];
+      this->set_has_state(true);
     }
   }
 
@@ -148,6 +150,7 @@ template<typename EntityType> class EntitySelect : public simple::SimpleSelect {
     this->traits.set_options(display_names);
     if (!display_names.empty() && this->state.empty()) {
       this->state = display_names[0];
+      this->set_has_state(true);
     }
   }
 
@@ -181,6 +184,7 @@ template<typename EntityType> class EntitySelect : public simple::SimpleSelect {
     auto options = this->traits.get_options();
     if (index < options.size()) {
       this->state = options[index];
+      this->set_has_state(true);
     }
   }
 

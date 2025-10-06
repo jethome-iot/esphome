@@ -347,6 +347,9 @@ MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerCon
   // Pre-select if editing existing config
   if (trigger->params.input.input_id != 0) {
     select_var->select_by_id_hash(trigger->params.input.input_id);
+  } else {
+    select_var->set_index(0);
+    trigger->params.input.input_id = select_var->get_selected_id_hash();
   }
 
   auto *select_ptr = select_var.get();
@@ -544,6 +547,9 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSwitchSelect(ActionConfig *ac
   // Pre-select if editing existing config
   if (action->params.switch_action.switch_id != 0) {
     select_var->select_by_id_hash(action->params.switch_action.switch_id);
+  } else {
+    select_var->set_index(0);
+    action->params.switch_action.switch_id = select_var->get_selected_id_hash();
   }
 
   auto *select_ptr = select_var.get();
