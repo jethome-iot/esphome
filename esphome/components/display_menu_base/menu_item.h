@@ -72,6 +72,8 @@ class MenuItem {
     this->items_.push_back(item);
   }
 
+  void add_item(MenuItem *item, size_t pos) { add_to_index(pos, item); }
+
   void add_before(MenuItem *item, MenuItem *after_item) {
     auto it = std::find(this->items_.begin(), this->items_.end(), after_item);
     if (it != this->items_.end()) {
@@ -87,8 +89,8 @@ class MenuItem {
   }
 
   void add_to_index(uint16_t index, MenuItem *item) {
-    if (index < this->items_.size()) {
-      this->items_.emplace(this->items_.begin() + index, item);
+    if (index <= this->items_.size()) {
+      this->items_.insert(this->items_.begin() + index, item);
     }
   }
 
@@ -118,10 +120,9 @@ class MenuItem {
 
   void on_enter();
   void on_leave();
-
- protected:
   void on_value_();
 
+ protected:
   MenuItemType item_type_;
   MenuItem *parent_{nullptr};
   TemplatableValue<std::string, const MenuItem *> text_;

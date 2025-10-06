@@ -148,36 +148,19 @@ size_t DisplayMenuRenderAutomation::generateAutomationEditor(MenuItemMenu *menu,
     menu->add_item(delete_cmd);
   }
 
-  // Back button
-  MenuItem *back_item = new MenuItem(MENU_ITEM_BACK);
-  back_item->set_text("Back");
-  menu->add_item(back_item);
-
   return menu->items_size();
 }
 
 size_t DisplayMenuRenderAutomation::generateTriggerEditor(MenuItemMenu *menu, TriggerConfig *trigger) {
   menu->clear_items();
 
-  // Source selector
-  MenuItemSelect *source_select = createSourceTriggerSelect(trigger);
-  menu->add_item(source_select);
+  // Clear any previous dynamic items
+  dynamic_trigger_items_.clear();
 
-  // Dynamic options based on source
-  if (trigger->source == SourceTrigger::Input) {
-    // Input sensor selector
-    MenuItemSelect *sensor_select = createBinarySensorSelect(trigger);
-    menu->add_item(sensor_select);
-
-    // Input type selector
-    MenuItemSelect *type_select = createInputTriggerTypeSelect(trigger);
-    menu->add_item(type_select);
-  }
-
-  // Back button
-  MenuItem *back_item = new MenuItem(MENU_ITEM_BACK);
-  back_item->set_text("Back");
-  menu->add_item(back_item);
+  // Source selector with dynamic menu management
+  MenuItemSelect *source_select = createSourceTriggerSelect(trigger, menu);
+  menu->add_to_index(0, source_select);
+  source_select->on_value_();
 
   return menu->items_size();
 }
@@ -217,11 +200,6 @@ size_t DisplayMenuRenderAutomation::generateActionsEditor(MenuItemMenu *menu, st
   });
   menu->add_item(add_action);
 
-  // Back button
-  MenuItem *back_item = new MenuItem(MENU_ITEM_BACK);
-  back_item->set_text("Back");
-  menu->add_item(back_item);
-
   return menu->items_size();
 }
 
@@ -229,25 +207,12 @@ size_t DisplayMenuRenderAutomation::generateActionEditor(MenuItemMenu *menu, Act
                                                          std::vector<ActionConfig> *actions) {
   menu->clear_items();
 
-  // Source selector
-  MenuItemSelect *source_select = createSourceActionSelect(action);
-  menu->add_item(source_select);
+  // Clear any previous dynamic items
+  dynamic_action_items_.clear();
 
-  // Dynamic options based on source
-  if (action->source == SourceAction::Switch) {
-    // Switch selector
-    MenuItemSelect *switch_select = createSwitchSelect(action);
-    menu->add_item(switch_select);
-
-    // Action type selector
-    MenuItemSelect *type_select = createSwitchActionTypeSelect(action);
-    menu->add_item(type_select);
-
-  } else if (action->source == SourceAction::Delay) {
-    // Delay value editor
-    MenuItemNumber *delay_number = createDelayNumber(action);
-    menu->add_item(delay_number);
-  }
+  // Source selector with dynamic menu management
+  MenuItemSelect *source_select = createSourceActionSelect(action, menu);
+  menu->add_to_index(0, source_select);
 
   // Delete action button
   MenuItemCommand *delete_cmd = new MenuItemCommand();
@@ -261,17 +226,15 @@ size_t DisplayMenuRenderAutomation::generateActionEditor(MenuItemMenu *menu, Act
   });
   menu->add_item(delete_cmd);
 
-  // Back button
-  MenuItem *back_item = new MenuItem(MENU_ITEM_BACK);
-  back_item->set_text("Back");
-  menu->add_item(back_item);
+  source_select->on_value_();
 
   return menu->items_size();
 }
 
 // Helper method implementations
 
-MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerConfig *trigger) {
+MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerConfig *trigger,
+                                                                       MenuItemMenu *parent_menu) {
   auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options;
 
@@ -288,8 +251,36 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceTriggerSelect(TriggerCo
   item->set_text("Source");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
-  item->add_on_value_callback(
-      [trigger, select_ptr, this]() { trigger->source = static_cast<SourceTrigger>(select_ptr->get_index()); });
+
+  // Dynamic menu management in callback
+  item->add_on_value_callback([trigger, select_ptr, this, parent_menu]() {
+    SourceTrigger new_source = static_cast<SourceTrigger>(select_ptr->get_index());
+
+    // Remove existing dynamic items
+    for (auto *dynamic_item : dynamic_trigger_items_) {
+      parent_menu->remove_item(dynamic_item);
+    }
+    dynamic_trigger_items_.clear();
+
+    // Update the trigger source
+    trigger->source = new_source;
+
+    // Add new items based on the selected source
+    if (new_source == SourceTrigger::Input) {
+      // Insert items at the end
+      size_t insert_pos = parent_menu->items_size();
+
+      // Add binary sensor selector
+      MenuItemSelect *sensor_select = createBinarySensorSelect(trigger);
+      parent_menu->add_item(sensor_select, insert_pos);
+      dynamic_trigger_items_.push_back(sensor_select);
+
+      // Add input type selector
+      MenuItemSelect *type_select = createInputTriggerTypeSelect(trigger);
+      parent_menu->add_item(type_select, insert_pos + 1);
+      dynamic_trigger_items_.push_back(type_select);
+    }
+  });
 
   return item;
 }
@@ -340,7 +331,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::createBinarySensorSelect(TriggerCon
   return item;
 }
 
-MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConfig *action) {
+MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConfig *action, MenuItemMenu *parent_menu) {
   auto select_var = std::make_unique<DynamicSelect>();
   std::vector<std::string> options;
 
@@ -357,8 +348,42 @@ MenuItemSelect *DisplayMenuRenderAutomation::createSourceActionSelect(ActionConf
   item->set_text("Action Type");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
-  item->add_on_value_callback(
-      [action, select_ptr]() { action->source = static_cast<SourceAction>(select_ptr->get_index()); });
+
+  // Dynamic menu management in callback
+  item->add_on_value_callback([action, select_ptr, this, parent_menu]() {
+    SourceAction new_source = static_cast<SourceAction>(select_ptr->get_index());
+
+    // Remove existing dynamic items
+    for (auto *dynamic_item : dynamic_action_items_) {
+      parent_menu->remove_item(dynamic_item);
+    }
+    dynamic_action_items_.clear();
+
+    // Update the action source
+    action->source = new_source;
+
+    // Add new items based on the selected source
+    // Insert items before Delete Action button
+    size_t insert_pos = parent_menu->items_size() - 1;
+
+    if (new_source == SourceAction::Switch) {
+      // Add switch selector
+      MenuItemSelect *switch_select = createSwitchSelect(action);
+      parent_menu->add_item(switch_select, insert_pos);
+      dynamic_action_items_.push_back(switch_select);
+
+      // Add switch action type selector
+      MenuItemSelect *type_select = createSwitchActionTypeSelect(action);
+      parent_menu->add_item(type_select, insert_pos + 1);
+      dynamic_action_items_.push_back(type_select);
+
+    } else if (new_source == SourceAction::Delay) {
+      // Add delay number input
+      MenuItemNumber *delay_number = createDelayNumber(action);
+      parent_menu->add_item(delay_number, insert_pos);
+      dynamic_action_items_.push_back(delay_number);
+    }
+  });
 
   return item;
 }

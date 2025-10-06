@@ -35,11 +35,11 @@ class DisplayMenuRenderAutomation {
                               std::vector<ActionConfig> *actions);
 
   // Helper methods for creating selection menus
-  MenuItemSelect *createSourceTriggerSelect(TriggerConfig *trigger);
+  MenuItemSelect *createSourceTriggerSelect(TriggerConfig *trigger, MenuItemMenu *parent_menu);
   MenuItemSelect *createInputTriggerTypeSelect(TriggerConfig *trigger);
   MenuItemSelect *createBinarySensorSelect(TriggerConfig *trigger);
 
-  MenuItemSelect *createSourceActionSelect(ActionConfig *action);
+  MenuItemSelect *createSourceActionSelect(ActionConfig *action, MenuItemMenu *parent_menu);
   MenuItemSelect *createSwitchActionTypeSelect(ActionConfig *action);
   MenuItemSelect *createSwitchSelect(ActionConfig *action);
   MenuItemNumber *createDelayNumber(ActionConfig *action);
@@ -70,6 +70,10 @@ class DisplayMenuRenderAutomation {
   std::vector<std::unique_ptr<simple::SimpleSelect>> select_helpers_;
   std::vector<std::unique_ptr<simple::SimpleNumber>> number_helpers_;
   std::vector<std::unique_ptr<simple::SimpleSwitch>> switch_helpers_;
+
+  // Dynamic menu item tracking
+  std::vector<MenuItem *> dynamic_trigger_items_;
+  std::vector<MenuItem *> dynamic_action_items_;
 };
 
 // Helper class for managing dynamic selects
