@@ -173,31 +173,12 @@ size_t AutomationConfigStorage::saveToJson(const char *json_str, size_t max_buff
   return json_size;
 }
 
-void AutomationConfigStorage::addConfig(const AutomationConfig &config) {
-  for (auto &existing : configs_) {
-    if (existing.name == config.name) {
-      existing = config;
-      return;
-    }
-  }
-  configs_.push_back(config);
-}
+void AutomationConfigStorage::addConfig(const AutomationConfig &config) { configs_.push_back(config); }
 
 void AutomationConfigStorage::updateConfig(uint8_t index, AutomationConfig *config) {
   if (index < configs_.size()) {
     configs_[index] = *config;
   }
-}
-
-bool AutomationConfigStorage::removeConfig(const std::string &name) {
-  auto it = std::remove_if(configs_.begin(), configs_.end(),
-                           [&name](const AutomationConfig &config) { return config.name == name; });
-
-  if (it != configs_.end()) {
-    configs_.erase(it);
-    return true;
-  }
-  return false;
 }
 
 bool AutomationConfigStorage::removeConfig(uint8_t index) {

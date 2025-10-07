@@ -6,6 +6,7 @@
 #include "esphome/core/base_automation.h"
 #include "esphome/core/automation.h"
 #include "esphome/core/log.h"
+#include "esphome/components/simple/simple_action.h"
 
 namespace esphome {
 namespace automations {
@@ -50,7 +51,7 @@ template<typename... Ts> class ActionFactory {
       case SourceAction::Delay:
         return createDelayAction(config);
       default:
-        return nullptr;
+        return createEmptyAction();
     }
   }
 
@@ -60,7 +61,7 @@ template<typename... Ts> class ActionFactory {
     if (switch_obj == nullptr) {
       ESP_LOGE("automation", "Cannot find switch with object_id %s",
                format_hex_pretty(config.params.switch_action.switch_id).c_str());
-      return nullptr;
+      return createEmptyAction();
     }
 
     switch (config.params.switch_action.type) {
@@ -71,13 +72,18 @@ template<typename... Ts> class ActionFactory {
       case TypeSwitchAction::Toggle:
         return new switch_::ToggleAction(switch_obj);
     };
-    return nullptr;
+    return createEmptyAction();
   }
 
   static Action<Ts...> *createDelayAction(const ActionConfig &config) {
     auto *delay = new DelayAction();
     delay->set_delay(config.params.delay.delay_s * 1000);
     return delay;
+  }
+
+  static Action<Ts...> *createEmptyAction() {
+    auto *empty = new simple::EmptyAction<Ts...>();
+    return empty;
   }
 };
 

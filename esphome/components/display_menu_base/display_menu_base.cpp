@@ -436,6 +436,9 @@ bool DisplayMenuComponent::leave_menu_() {
     if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
       static_cast<MenuItemMenu *>(item)->clear_items();
       this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
+      if (this->cursor_index_ >= static_cast<MenuItemMenu *>(item)->items_size()) {
+        this->cursor_index_ = static_cast<MenuItemMenu *>(item)->items_size() - 1;
+      }
     }
     this->displayed_item_->on_enter();
     changed = true;

@@ -57,7 +57,6 @@ class DisplayMenuRenderAutomation {
  protected:
   // Temporary state for editing
   std::unique_ptr<AutomationConfig> editing_automation_;
-  bool is_new_automation_{false};
 
   // Track menu regeneration
   MenuItemMenu *root_menu_{nullptr};

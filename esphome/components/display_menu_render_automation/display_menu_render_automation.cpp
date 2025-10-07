@@ -44,6 +44,7 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
   menu->clear_items();
   menu->set_generate_on_enter(true);
   root_menu_ = menu;
+  editing_automation_.reset();
 
   // Generate list of existing automations
   for (size_t i = 0; i < global_automation_storage->configs().size(); i++) {
@@ -54,14 +55,6 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
     MenuItemMenu *automation_item = new MenuItemMenu();
     std::string name = config->name.empty() ? "Automation " + std::to_string(i + 1) : config->name;
     automation_item->set_text(name);
-
-    // Show summary as value
-    // automation_item->set_value_lambda([this, i](const MenuItem *) {
-    //   const AutomationConfig *cfg = global_automation_storage.getConfig(i);
-    //   if (!cfg)
-    //     return std::string("");
-    //   return getTriggerSummary(cfg->trigger);
-    // });
 
     // Generate submenu on enter
     automation_item->set_generate_on_enter(true);
@@ -93,7 +86,6 @@ size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *men
   // Create editable copy
   if (!editing_automation_) {
     editing_automation_ = std::make_unique<AutomationConfig>(*config);
-    is_new_automation_ = false;
   }
 
   // Name editor (using custom item for text input)
@@ -147,37 +139,21 @@ size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *men
   MenuItemCommand *save_cmd = new MenuItemCommand();
   save_cmd->set_text("Save");
   save_cmd->add_on_value_callback([this, index, menu]() {
-    if (is_new_automation_) {
-      global_automation_storage->configs().addConfig(*editing_automation_);
-      global_automation_storage->save_configs();
-    } else {
-      // Update existing
-      global_automation_storage->configs().updateConfig(index, editing_automation_.get());
-      global_automation_storage->save_configs();
-    }
-    editing_automation_.reset();
-    // Navigate back and regenerate
-    if (root_menu_) {
-      // Navigate back and regenerate parent
-      this->menu_component_->back();
-    }
+    global_automation_storage->configs().updateConfig(index, editing_automation_.get());
+    global_automation_storage->save_configs();
+
+    // Navigate back
+    this->menu_component_->back();
   });
   menu->add_item(save_cmd);
 
-  // Delete command (only for existing automations)
-  if (!is_new_automation_) {
-    MenuItemCommand *delete_cmd = new MenuItemCommand();
-    delete_cmd->set_text("Delete");
-    delete_cmd->add_on_value_callback([this, index, menu]() {
-      delete_automation(index);
-      editing_automation_.reset();
-      if (root_menu_) {
-        // Navigate back and regenerate parent
-        this->menu_component_->back();
-      }
-    });
-    menu->add_item(delete_cmd);
-  }
+  MenuItemCommand *delete_cmd = new MenuItemCommand();
+  delete_cmd->set_text("Delete");
+  delete_cmd->add_on_value_callback([this, index, menu]() {
+    delete_automation(index);
+    this->menu_component_->back();
+  });
+  menu->add_item(delete_cmd);
 
   return menu->items_size();
 }
@@ -570,7 +546,6 @@ void DisplayMenuRenderAutomation::create_new_automation() {
   editing_automation_ = std::make_unique<AutomationConfig>();
   editing_automation_->name = "New Automation";
   editing_automation_->enabled = true;
-  is_new_automation_ = true;
 
   global_automation_storage->configs().addConfig(*editing_automation_);
 }
