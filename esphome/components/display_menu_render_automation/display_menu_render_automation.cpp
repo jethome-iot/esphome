@@ -66,7 +66,7 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
 
   // Add "New Automation" button
   MenuItemCommand *add_new = new MenuItemCommand();
-  add_new->set_text("+ Add New Automation");
+  add_new->set_text("+ Add automation");
   add_new->add_on_value_callback([this, menu]() {
     create_new_automation();
     menu->generate();  // Regenerate to show new automation
@@ -302,7 +302,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::create_input_trigger_type_select(Tr
   select_helpers_.push_back(std::move(select_var));
 
   MenuItemSelect *item = new MenuItemSelect();
-  item->set_text("Trigger Type");
+  item->set_text("Type");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
   item->add_on_value_callback([trigger, select_ptr]() {
@@ -331,7 +331,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::create_binary_sensor_select(Trigger
   select_helpers_.push_back(std::move(select_var));
 
   MenuItemSelect *item = new MenuItemSelect();
-  item->set_text("Input Sensor");
+  item->set_text("Input");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
 
@@ -356,7 +356,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::create_source_action_select(ActionC
   select_helpers_.push_back(std::move(select_var));
 
   MenuItemSelect *item = new MenuItemSelect();
-  item->set_text("Action Type");
+  item->set_text("Action");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
 
@@ -503,7 +503,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::create_switch_action_type_select(Ac
   select_helpers_.push_back(std::move(select_var));
 
   MenuItemSelect *item = new MenuItemSelect();
-  item->set_text("Switch Action");
+  item->set_text("Type");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
   item->add_on_value_callback([action, select_ptr]() {
@@ -532,7 +532,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::create_switch_select(ActionConfig *
   select_helpers_.push_back(std::move(select_var));
 
   MenuItemSelect *item = new MenuItemSelect();
-  item->set_text("Switch");
+  item->set_text("Output");
   item->set_immediate_edit(true);
   item->set_select_variable(select_ptr);
 
@@ -544,7 +544,7 @@ MenuItemSelect *DisplayMenuRenderAutomation::create_switch_select(ActionConfig *
 
 void DisplayMenuRenderAutomation::create_new_automation() {
   editing_automation_ = std::make_unique<AutomationConfig>();
-  editing_automation_->name = "New Automation";
+  editing_automation_->name = "Automation " + std::to_string(global_automation_storage->configs().size() + 1);
   editing_automation_->enabled = true;
 
   global_automation_storage->configs().addConfig(*editing_automation_);

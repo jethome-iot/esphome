@@ -89,7 +89,7 @@ template<typename... Ts> class ActionFactory {
 
 template<typename... Ts> class AutomationFactory {
  public:
-  // Создание одной автоматизации
+  // Create automation from config
   static std::unique_ptr<Automation<Ts...>> createAutomation(const AutomationConfig &config) {
     if (!config.enabled) {
       return nullptr;
