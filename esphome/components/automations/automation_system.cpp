@@ -9,8 +9,6 @@ namespace automations {
 
 static const char *const TAG = "automations";
 
-AutomationStorage global_automation_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
-
 TriggerConfig::TriggerConfig() : source(SourceTrigger::None) { memset(&params, 0, sizeof(params)); }
 
 void TriggerConfig::serialize(JsonObject &obj) const {
@@ -131,20 +129,8 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
-void AutomationStorage::init() {
-  this->json_obj_ = global_preferences->make_preference<JsonData>(fnv1_hash(std::string("_automation_storage_")), true);
-}
-
-bool AutomationStorage::loadFromPreference() {
-  JsonData data;
-  if (this->json_obj_.load(&data)) {
-    return loadFromJson(data.data);
-  }
-  return false;
-}
-
-bool AutomationStorage::loadFromJson(const char *json_str) {
-  DynamicJsonDocument doc(4096);
+bool AutomationConfigStorage::loadFromJson(const char *json_str, size_t max_buffer_size) {
+  DynamicJsonDocument doc(max_buffer_size);
   DeserializationError error = deserializeJson(doc, json_str);
 
   if (error) {
@@ -154,7 +140,7 @@ bool AutomationStorage::loadFromJson(const char *json_str) {
   return loadFromJson(doc.as<JsonArray>());
 }
 
-bool AutomationStorage::loadFromJson(const JsonArray &array) {
+bool AutomationConfigStorage::loadFromJson(const JsonArray &array) {
   configs_.clear();
 
   for (const auto &item : array) {
@@ -167,8 +153,8 @@ bool AutomationStorage::loadFromJson(const JsonArray &array) {
   return true;
 }
 
-std::string AutomationStorage::saveToJson() {
-  DynamicJsonDocument doc(4096);
+size_t AutomationConfigStorage::saveToJson(const char *json_str, size_t max_buffer_size) {
+  DynamicJsonDocument doc(max_buffer_size);
   JsonArray array = doc.to<JsonArray>();
 
   for (const auto &config : configs_) {
@@ -176,19 +162,18 @@ std::string AutomationStorage::saveToJson() {
     config.serialize(obj);
   }
 
-  std::string output;
-  serializeJson(doc, output);
-  JsonData data;
-  memset(data.data, 0, 4096);
-  strcpy(data.data, output.c_str());
-  ESP_LOGI(TAG, "Automation config %s", data.data);
-  this->json_obj_.save<JsonData>(&data);
-  global_preferences->sync();
+  size_t json_size = measureJson(doc);
+  if (json_size > max_buffer_size - 1) {
+    ESP_LOGE(TAG, "Buffer size is small. Json Doc size is %d", json_size);
+    return 0;
+  }
 
-  return output;
+  serializeJson(doc, (void *) json_str, max_buffer_size);
+
+  return json_size;
 }
 
-void AutomationStorage::addConfig(const AutomationConfig &config) {
+void AutomationConfigStorage::addConfig(const AutomationConfig &config) {
   for (auto &existing : configs_) {
     if (existing.name == config.name) {
       existing = config;
@@ -198,7 +183,13 @@ void AutomationStorage::addConfig(const AutomationConfig &config) {
   configs_.push_back(config);
 }
 
-bool AutomationStorage::removeConfig(const std::string &name) {
+void AutomationConfigStorage::updateConfig(uint8_t index, AutomationConfig *config) {
+  if (index < configs_.size()) {
+    configs_[index] = *config;
+  }
+}
+
+bool AutomationConfigStorage::removeConfig(const std::string &name) {
   auto it = std::remove_if(configs_.begin(), configs_.end(),
                            [&name](const AutomationConfig &config) { return config.name == name; });
 
@@ -209,7 +200,7 @@ bool AutomationStorage::removeConfig(const std::string &name) {
   return false;
 }
 
-bool AutomationStorage::removeConfig(uint8_t index) {
+bool AutomationConfigStorage::removeConfig(uint8_t index) {
   if (index < configs_.size()) {
     configs_.erase(configs_.begin() + index);
     return true;
@@ -217,7 +208,7 @@ bool AutomationStorage::removeConfig(uint8_t index) {
   return false;
 }
 
-const AutomationConfig *AutomationStorage::getConfig(uint8_t index) const {
+const AutomationConfig *AutomationConfigStorage::getConfig(uint8_t index) const {
   if (index < configs_.size()) {
     return &(configs_[index]);
   }

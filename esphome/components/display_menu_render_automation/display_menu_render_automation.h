@@ -45,7 +45,6 @@ class DisplayMenuRenderAutomation {
 
   // State management
   void create_new_automation();
-  void save_automation(AutomationConfig *config);
   void delete_automation(size_t index);
 
   // Utility methods

@@ -61,26 +61,20 @@ struct AutomationConfig {
   bool deserialize(const JsonObject &obj);
 };
 
-struct JsonData {
-  char data[4096];
-};
-
-class AutomationStorage {
+class AutomationConfigStorage {
  private:
   std::vector<AutomationConfig> configs_;
   ESPPreferenceObject json_obj_;
 
  public:
-  void init();
-  bool loadFromPreference();
-  bool loadFromJson(const char *json_str);
+  bool loadFromJson(const char *json_str, size_t max_buffer_size);
   bool loadFromJson(const JsonArray &array);
-  std::string saveToJson();
-  bool saveToPreference();
+  size_t saveToJson(const char *json_str, size_t max_buffer_size);
 
   void addConfig(const AutomationConfig &config);
   bool removeConfig(const std::string &id);
   const AutomationConfig *getConfig(uint8_t index) const;
+  void updateConfig(uint8_t index, AutomationConfig *);
   bool removeConfig(uint8_t index);
   const std::vector<AutomationConfig> &getAllConfigs() const { return configs_; }
   void clear() { configs_.clear(); }
@@ -88,8 +82,6 @@ class AutomationStorage {
   size_t size() const { return configs_.size(); }
   bool empty() const { return configs_.empty(); }
 };
-
-extern AutomationStorage global_automation_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
 }  // namespace automations
 }  // namespace esphome

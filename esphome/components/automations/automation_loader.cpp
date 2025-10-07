@@ -5,52 +5,51 @@
 #include "automation_system.h"
 
 namespace esphome {
+
+automations::AutomationStorage
+    *global_automation_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 namespace automations {
 
-const char *TAG = "automation";
+static const char *const TAG = "automation_storage";
 
-void AutomationLoader::setup() {
-  // TODO it should be loaded from flash storage
-  // Dynamic creation for test
+AutomationStorage::AutomationStorage() { global_automation_storage = this; }
 
-  global_automation_storage.init();
-  global_automation_storage.loadFromPreference();
-  // static const char *json_config = R"([
-  //   {
-  //     "id": "auto1",
-  //     "name": "Inp1-react",
-  //     "enabled": true,
-  //     "trigger": {
-  //       "source": "Input",
-  //       "type": "press",
-  //       "input_id": "68670887"
-  //     },
-  //     "actions": [
-  //       {
-  //         "source": "Switch",
-  //         "type": "turn_on",
-  //         "switch_id": "6ffef2f8"
-  //       },
-  //       {
-  //         "source": "Delay",
-  //         "delay_s": 5
-  //       },
-  //       {
-  //         "source": "Switch",
-  //         "type": "turn_off",
-  //         "switch_id": "6ffef2f8"
-  //       }
-  //     ]
-  //   }
-  // ])";
+void AutomationStorage::setup() {
+  this->json_obj_ = global_preferences->make_preference<JsonData>(fnv1_hash(std::string("_automation_storage_")), true);
 
-  // if (!global_automation_storage.loadFromJson(json_config)) {
-  //   ESP_LOGW(TAG, "Cannot load automations");
-  //   return;
-  // }
+  JsonData data;
+  bool res = this->json_obj_.load(&data);
+  if (!res) {
+    ESP_LOGD(TAG, "No saved automations in storage");
+    return;
+  }
 
-  automations_ = std::move(AutomationFactory<>::createAllAutomations(global_automation_storage));
+  res = this->config_storage_.loadFromJson(data.data, JsonData::MAX_DATA_SIZE);
+
+  if (!res) {
+    ESP_LOGD(TAG, "Error json parsing");
+  }
+
+  automations_ = std::move(AutomationFactory<>::createAllAutomations(this->config_storage_));
 };
+
+void AutomationStorage::save_configs() {
+  JsonData data;
+  data.size = this->config_storage_.saveToJson(data.data, data.MAX_DATA_SIZE);
+
+  if (data.size == 0) {
+    ESP_LOGE(TAG, "Config isn't saved");
+    return;
+  }
+
+  this->json_obj_.save<JsonData>(&data);
+  global_preferences->sync();
+  ESP_LOGD(TAG, "Config is saved. Size %d", data.size);
+  ESP_LOGV(TAG, "Saved data %s", data.data);
+
+  this->changed_ = true;
+}
 
 }  // namespace automations
 }  // namespace esphome

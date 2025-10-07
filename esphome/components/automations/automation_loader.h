@@ -4,37 +4,45 @@
 #include "esphome/core/preferences.h"
 #include "esphome/core/automation.h"
 #include <vector>
+#include "automation_system.h"
 
 namespace esphome {
 namespace automations {
 
-// Class for dynamic creation DallasTemperatureSensor for sensors connected to onewire bus
-class AutomationLoader : public Component {
+// Datablock struct
+struct JsonData {
+  static constexpr size_t MAX_DATA_SIZE = 4096;
+  char data[MAX_DATA_SIZE];
+  size_t size;
+};
+
+// Class for loading Automation config from preferences
+class AutomationStorage : public Component {
  public:
+  AutomationStorage();
+
   void setup() override;
 
   float get_setup_priority() const override { return setup_priority::HARDWARE + 1; }
 
   void dump_config() override{};
 
-  // uint16_t sensors_size() { return this->sensors_.size(); }
+  void save_configs();
 
-  // dallas_temp::DallasTemperatureSensor *sensor(uint16_t number) {
-  //   if (number > this->sensors_.size() || number == 0)
-  //     return nullptr;
-  //   return this->sensors_[number - 1];
-  // }
+  AutomationConfigStorage &configs() { return config_storage_; }
+
+  bool is_consistent() { return changed_; }
 
  protected:
-  // std::vector<dallas_temp::DallasTemperatureSensor *> sensors_;
-  // uint8_t saved_sensors_num_ = 0;
-
-  // SearchMode search_mode_ = SearchMode::ALL;
-  ESPPreferenceObject sensors_count_pref_;
-  std::vector<ESPPreferenceObject> addresses_pref_;
-
   std::vector<std::unique_ptr<Automation<>>> automations_;
+  ESPPreferenceObject json_obj_;
+  AutomationConfigStorage config_storage_;
+  bool changed_{false};  // If automation isn't consistent with configs
 };
 
 }  // namespace automations
+
+extern automations::AutomationStorage
+    *global_automation_storage;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
+
 }  // namespace esphome

@@ -110,7 +110,7 @@ template<typename... Ts> class AutomationFactory {
     return automation;
   }
 
-  static std::vector<std::unique_ptr<Automation<Ts...>>> createAllAutomations(const AutomationStorage &storage) {
+  static std::vector<std::unique_ptr<Automation<Ts...>>> createAllAutomations(const AutomationConfigStorage &storage) {
     std::vector<std::unique_ptr<Automation<Ts...>>> automations;
     automations.reserve(storage.size());
 

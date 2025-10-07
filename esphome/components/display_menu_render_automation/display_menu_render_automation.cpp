@@ -1,5 +1,6 @@
 #include "display_menu_render_automation.h"
 #include "esphome/core/log.h"
+#include "esphome/components/automations/automation_loader.h"
 
 namespace esphome {
 namespace display_menu_render_automation {
@@ -45,8 +46,8 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
   root_menu_ = menu;
 
   // Generate list of existing automations
-  for (size_t i = 0; i < global_automation_storage.size(); i++) {
-    const AutomationConfig *config = global_automation_storage.getConfig(i);
+  for (size_t i = 0; i < global_automation_storage->configs().size(); i++) {
+    const AutomationConfig *config = global_automation_storage->configs().getConfig(i);
     if (!config)
       continue;
 
@@ -85,7 +86,7 @@ size_t DisplayMenuRenderAutomation::generate(MenuItemMenu *menu) {
 size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *menu, size_t index) {
   menu->clear_items();
 
-  const AutomationConfig *config = global_automation_storage.getConfig(index);
+  const AutomationConfig *config = global_automation_storage->configs().getConfig(index);
   if (!config)
     return 0;
 
@@ -147,19 +148,12 @@ size_t DisplayMenuRenderAutomation::generate_automation_editor(MenuItemMenu *men
   save_cmd->set_text("Save");
   save_cmd->add_on_value_callback([this, index, menu]() {
     if (is_new_automation_) {
-      global_automation_storage.addConfig(*editing_automation_);
-      global_automation_storage.saveToJson();
+      global_automation_storage->configs().addConfig(*editing_automation_);
+      global_automation_storage->save_configs();
     } else {
       // Update existing
-      auto configs = global_automation_storage.getAllConfigs();
-      if (index < configs.size()) {
-        configs[index] = *editing_automation_;
-        global_automation_storage.clear();
-        for (const auto &cfg : configs) {
-          global_automation_storage.addConfig(cfg);
-        }
-      }
-      global_automation_storage.saveToJson();
+      global_automation_storage->configs().updateConfig(index, editing_automation_.get());
+      global_automation_storage->save_configs();
     }
     editing_automation_.reset();
     // Navigate back and regenerate
@@ -578,14 +572,7 @@ void DisplayMenuRenderAutomation::create_new_automation() {
   editing_automation_->enabled = true;
   is_new_automation_ = true;
 
-  global_automation_storage.addConfig(*editing_automation_);
-}
-
-void DisplayMenuRenderAutomation::save_automation(AutomationConfig *config) {
-  // Save to storage
-  std::string json = global_automation_storage.saveToJson();
-  ESP_LOGI(TAG, "Saving automation: %s", json.c_str());
-  // Here you would typically save to preferences or flash
+  global_automation_storage->configs().addConfig(*editing_automation_);
 }
 
 void DisplayMenuRenderAutomation::clear_helpers() {
@@ -594,7 +581,10 @@ void DisplayMenuRenderAutomation::clear_helpers() {
   switch_helpers_.clear();
 }
 
-void DisplayMenuRenderAutomation::delete_automation(size_t index) { global_automation_storage.removeConfig(index); }
+void DisplayMenuRenderAutomation::delete_automation(size_t index) {
+  global_automation_storage->configs().removeConfig(index);
+  global_automation_storage->save_configs();
+}
 
 std::string DisplayMenuRenderAutomation::get_trigger_summary(const TriggerConfig &trigger) {
   if (trigger.source == SourceTrigger::None) {
