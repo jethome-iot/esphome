@@ -91,10 +91,6 @@ template<typename... Ts> class AutomationFactory {
  public:
   // Create automation from config
   static std::unique_ptr<Automation<Ts...>> createAutomation(const AutomationConfig &config) {
-    if (!config.enabled) {
-      return nullptr;
-    }
-
     Trigger<Ts...> *trigger = TriggerFactory<Ts...>::createTrigger(config.trigger);
     if (!trigger) {
       ESP_LOGE("automation", "Error create Trigger");
@@ -113,6 +109,8 @@ template<typename... Ts> class AutomationFactory {
       }
     }
 
+    automation->set_enabled(config.enabled);
+
     return automation;
   }
 
@@ -122,9 +120,7 @@ template<typename... Ts> class AutomationFactory {
 
     for (const auto &config : storage.getAllConfigs()) {
       auto automation = createAutomation(config);
-      if (automation) {
-        automations.push_back(std::move(automation));
-      }
+      automations.push_back(std::move(automation));
     }
 
     return automations;
