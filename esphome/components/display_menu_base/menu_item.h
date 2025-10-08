@@ -72,25 +72,23 @@ class MenuItem {
     this->items_.push_back(item);
   }
 
-  void add_item(MenuItem *item, size_t pos) { add_to_index(pos, item); }
+  void add_item(MenuItem *item, size_t pos) {
+    if (pos <= this->items_.size()) {
+      this->items_.insert(this->items_.begin() + pos, item);
+    }
+  }
 
-  void add_before(MenuItem *item, MenuItem *after_item) {
-    auto it = std::find(this->items_.begin(), this->items_.end(), after_item);
+  void add_before(MenuItem *item, MenuItem *ref_item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), ref_item);
     if (it != this->items_.end()) {
       this->items_.emplace(it, item);
     }
   }
 
-  void add_after(MenuItem *item, MenuItem *after_item) {
-    auto it = std::find(this->items_.begin(), this->items_.end(), after_item);
+  void add_after(MenuItem *item, MenuItem *ref_item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), ref_item);
     if (it != this->items_.end()) {
       this->items_.emplace(it + 1, item);
-    }
-  }
-
-  void add_to_index(uint16_t index, MenuItem *item) {
-    if (index <= this->items_.size()) {
-      this->items_.insert(this->items_.begin() + index, item);
     }
   }
 

@@ -434,10 +434,13 @@ bool DisplayMenuComponent::leave_menu_() {
     // Update previous menu if generated
     item = this->displayed_item_;
     if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
-      static_cast<MenuItemMenu *>(item)->clear_items();
-      this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
-      if (this->cursor_index_ >= static_cast<MenuItemMenu *>(item)->items_size()) {
-        this->cursor_index_ = static_cast<MenuItemMenu *>(item)->items_size() - 1;
+      auto *menu_item = static_cast<MenuItemMenu *>(item);
+      menu_item->clear_items();
+      this->generate_to_menu_items_(menu_item);
+
+      // Fix cursor if some items were deleted
+      if (this->cursor_index_ >= menu_item->items_size()) {
+        this->cursor_index_ = menu_item->items_size() - 1;
       }
     }
     this->displayed_item_->on_enter();
