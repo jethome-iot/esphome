@@ -189,7 +189,7 @@ bool AutomationConfigStorage::removeConfig(uint8_t index) {
   return false;
 }
 
-const AutomationConfig *AutomationConfigStorage::getConfig(uint8_t index) const {
+AutomationConfig *AutomationConfigStorage::getConfig(uint8_t index) {
   if (index < configs_.size()) {
     return &(configs_[index]);
   }

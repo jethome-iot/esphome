@@ -72,7 +72,7 @@ class AutomationConfigStorage {
   size_t saveToJson(const char *json_str, size_t max_buffer_size);
 
   void addConfig(const AutomationConfig &config);
-  const AutomationConfig *getConfig(uint8_t index) const;
+  AutomationConfig *getConfig(uint8_t index);
   void updateConfig(uint8_t index, AutomationConfig *);
   bool removeConfig(uint8_t index);
   const std::vector<AutomationConfig> &getAllConfigs() const { return configs_; }

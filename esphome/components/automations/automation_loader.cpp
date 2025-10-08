@@ -51,5 +51,13 @@ void AutomationStorage::save_configs() {
   this->changed_ = true;
 }
 
+void AutomationStorage::set_enable_automation(uint32_t index, bool enable) {
+  if (index < this->automations_.size()) {
+    if (!enable)
+      this->automations_[index]->stop();
+    this->automations_[index]->set_enabled(enable);
+  }
+}
+
 }  // namespace automations
 }  // namespace esphome

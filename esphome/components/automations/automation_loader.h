@@ -33,6 +33,8 @@ class AutomationStorage : public Component {
 
   bool is_changed() { return changed_; }
 
+  void set_enable_automation(uint32_t index, bool enable);
+
  protected:
   std::vector<std::unique_ptr<Automation<>>> automations_;
   ESPPreferenceObject json_obj_;
