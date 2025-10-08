@@ -31,7 +31,7 @@ class AutomationStorage : public Component {
 
   AutomationConfigStorage &configs() { return config_storage_; }
 
-  bool is_consistent() { return changed_; }
+  bool is_changed() { return changed_; }
 
  protected:
   std::vector<std::unique_ptr<Automation<>>> automations_;
