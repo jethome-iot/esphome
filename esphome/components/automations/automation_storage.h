@@ -4,7 +4,7 @@
 #include "esphome/core/preferences.h"
 #include "esphome/core/automation.h"
 #include <vector>
-#include "automation_system.h"
+#include "automation_config.h"
 
 namespace esphome {
 namespace automations {
@@ -39,7 +39,7 @@ class AutomationStorage : public Component {
   std::vector<std::unique_ptr<Automation<>>> automations_;
   ESPPreferenceObject json_obj_;
   AutomationConfigStorage config_storage_;
-  bool changed_{false};  // If automation isn't consistent with configs
+  bool changed_{false};  // If automations aren't consistent with configs
 };
 
 }  // namespace automations

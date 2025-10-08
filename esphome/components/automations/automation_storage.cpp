@@ -1,8 +1,7 @@
 #pragma once
 
-#include "automation_loader.h"
+#include "automation_storage.h"
 #include "automation_factory.h"
-#include "automation_system.h"
 
 namespace esphome {
 

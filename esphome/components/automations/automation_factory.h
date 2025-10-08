@@ -1,5 +1,5 @@
 #pragma once
-#include "automation_system.h"
+#include "automation_config.h"
 #include "esphome/core/application.h"
 #include "esphome/components/binary_sensor/automation.h"
 #include "esphome/components/switch/automation.h"

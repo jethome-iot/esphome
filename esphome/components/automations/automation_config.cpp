@@ -1,4 +1,4 @@
-#include "automation_system.h"
+#include "automation_config.h"
 #include <algorithm>
 #include "esphome/core/helpers.h"
 #include "esphome/components/json/json_util.h"
