@@ -5,7 +5,7 @@ namespace esphome {
 namespace automations {
 namespace EnumUtils {
 
-const char *sourceTriggerToString(SourceTrigger source) {
+const char *source_trigger_to_string(SourceTrigger source) {
   switch (source) {
     case SourceTrigger::Input:
       return "Input";
@@ -14,13 +14,13 @@ const char *sourceTriggerToString(SourceTrigger source) {
   }
 }
 
-SourceTrigger stringToSourceTrigger(const std::string &str) {
+SourceTrigger string_to_source_trigger(const std::string &str) {
   if (str == "Input")
     return SourceTrigger::Input;
   return SourceTrigger::None;
 }
 
-const char *sourceActionToString(SourceAction source) {
+const char *source_action_to_string(SourceAction source) {
   switch (source) {
     case SourceAction::Delay:
       return "Delay";
@@ -31,7 +31,7 @@ const char *sourceActionToString(SourceAction source) {
   }
 }
 
-SourceAction stringToSourceAction(const std::string &str) {
+SourceAction string_to_source_action(const std::string &str) {
   if (str == "Delay")
     return SourceAction::Delay;
   if (str == "Switch")
@@ -40,7 +40,7 @@ SourceAction stringToSourceAction(const std::string &str) {
 }
 
 // TypesInputTrigger
-const char *inputTriggerTypeToString(TypesInputTrigger type) {
+const char *input_trigger_type_to_string(TypesInputTrigger type) {
   switch (type) {
     case TypesInputTrigger::Press:
       return "press";
@@ -53,7 +53,7 @@ const char *inputTriggerTypeToString(TypesInputTrigger type) {
   }
 }
 
-TypesInputTrigger stringToInputTriggerType(const std::string &str) {
+TypesInputTrigger string_to_input_trigger_type(const std::string &str) {
   if (str == "press")
     return TypesInputTrigger::Press;
   if (str == "release")
@@ -64,7 +64,7 @@ TypesInputTrigger stringToInputTriggerType(const std::string &str) {
 }
 
 // TypeSwitchAction
-const char *switchActionTypeToString(TypeSwitchAction type) {
+const char *switch_action_type_to_string(TypeSwitchAction type) {
   switch (type) {
     case TypeSwitchAction::TurnOn:
       return "turn_on";
@@ -77,7 +77,7 @@ const char *switchActionTypeToString(TypeSwitchAction type) {
   }
 }
 
-TypeSwitchAction stringToSwitchActionType(const std::string &str) {
+TypeSwitchAction string_to_switch_action_type(const std::string &str) {
   if (str == "turn_on")
     return TypeSwitchAction::TurnOn;
   if (str == "turn_off")

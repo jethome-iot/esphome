@@ -67,15 +67,15 @@ class AutomationConfigStorage {
   ESPPreferenceObject json_obj_;
 
  public:
-  bool loadFromJson(const char *json_str, size_t max_buffer_size);
-  bool loadFromJson(const JsonArray &array);
-  size_t saveToJson(const char *json_str, size_t max_buffer_size);
+  bool load_from_json(const char *json_str, size_t max_buffer_size);
+  bool load_from_json(const JsonArray &array);
+  size_t save_to_json(const char *json_str, size_t max_buffer_size);
 
-  void addConfig(const AutomationConfig &config);
-  AutomationConfig *getConfig(uint8_t index);
-  void updateConfig(uint8_t index, AutomationConfig *);
-  bool removeConfig(uint8_t index);
-  const std::vector<AutomationConfig> &getAllConfigs() const { return configs_; }
+  void add_config(const AutomationConfig &config);
+  AutomationConfig *get_config(uint8_t index);
+  void update_config(uint8_t index, AutomationConfig *);
+  bool remove_config(uint8_t index);
+  const std::vector<AutomationConfig> &get_all_configs() const { return configs_; }
   void clear() { configs_.clear(); }
 
   size_t size() const { return configs_.size(); }

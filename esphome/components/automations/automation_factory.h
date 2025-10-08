@@ -13,17 +13,17 @@ namespace automations {
 
 template<typename... Ts> class TriggerFactory {
  public:
-  static Trigger<Ts...> *createTrigger(const TriggerConfig &config) {
+  static Trigger<Ts...> *create_trigger(const TriggerConfig &config) {
     switch (config.source) {
       case SourceTrigger::Input:
-        return createInputTrigger(config);
+        return create_input_trigger(config);
       default:
         return nullptr;
     }
   }
 
  private:
-  static Trigger<Ts...> *createInputTrigger(const TriggerConfig &config) {
+  static Trigger<Ts...> *create_input_trigger(const TriggerConfig &config) {
     auto *sensor = App.get_binary_sensor_by_key(config.params.input.input_id);
     if (sensor == nullptr) {
       ESP_LOGE("automation", "Cannot find trigger object_id %s",
@@ -44,24 +44,24 @@ template<typename... Ts> class TriggerFactory {
 
 template<typename... Ts> class ActionFactory {
  public:
-  static Action<Ts...> *createAction(const ActionConfig &config) {
+  static Action<Ts...> *create_action(const ActionConfig &config) {
     switch (config.source) {
       case SourceAction::Switch:
-        return createSwitchAction(config);
+        return create_switch_action(config);
       case SourceAction::Delay:
-        return createDelayAction(config);
+        return create_delay_action(config);
       default:
-        return createEmptyAction();
+        return create_empty_action();
     }
   }
 
  private:
-  static Action<Ts...> *createSwitchAction(const ActionConfig &config) {
+  static Action<Ts...> *create_switch_action(const ActionConfig &config) {
     auto *switch_obj = App.get_switch_by_key(config.params.switch_action.switch_id);
     if (switch_obj == nullptr) {
       ESP_LOGE("automation", "Cannot find switch with object_id %s",
                format_hex_pretty(config.params.switch_action.switch_id).c_str());
-      return createEmptyAction();
+      return create_empty_action();
     }
 
     switch (config.params.switch_action.type) {
@@ -72,16 +72,16 @@ template<typename... Ts> class ActionFactory {
       case TypeSwitchAction::Toggle:
         return new switch_::ToggleAction(switch_obj);
     };
-    return createEmptyAction();
+    return create_empty_action();
   }
 
-  static Action<Ts...> *createDelayAction(const ActionConfig &config) {
+  static Action<Ts...> *create_delay_action(const ActionConfig &config) {
     auto *delay = new DelayAction();
     delay->set_delay(config.params.delay.delay_s * 1000);
     return delay;
   }
 
-  static Action<Ts...> *createEmptyAction() {
+  static Action<Ts...> *create_empty_action() {
     auto *empty = new simple::EmptyAction<Ts...>();
     return empty;
   }
@@ -90,8 +90,8 @@ template<typename... Ts> class ActionFactory {
 template<typename... Ts> class AutomationFactory {
  public:
   // Create automation from config
-  static std::unique_ptr<Automation<Ts...>> createAutomation(const AutomationConfig &config) {
-    Trigger<Ts...> *trigger = TriggerFactory<Ts...>::createTrigger(config.trigger);
+  static std::unique_ptr<Automation<Ts...>> create_automation(const AutomationConfig &config) {
+    Trigger<Ts...> *trigger = TriggerFactory<Ts...>::create_trigger(config.trigger);
     if (!trigger) {
       ESP_LOGE("automation", "Error create Trigger");
       return nullptr;
@@ -100,7 +100,7 @@ template<typename... Ts> class AutomationFactory {
     auto automation = std::make_unique<Automation<Ts...>>(trigger);
 
     for (const auto &action_config : config.actions) {
-      Action<Ts...> *action = ActionFactory<Ts...>::createAction(action_config);
+      Action<Ts...> *action = ActionFactory<Ts...>::create_action(action_config);
       if (action) {
         automation->add_action(action);
       } else {
@@ -114,12 +114,13 @@ template<typename... Ts> class AutomationFactory {
     return automation;
   }
 
-  static std::vector<std::unique_ptr<Automation<Ts...>>> createAllAutomations(const AutomationConfigStorage &storage) {
+  static std::vector<std::unique_ptr<Automation<Ts...>>> create_all_automations(
+      const AutomationConfigStorage &storage) {
     std::vector<std::unique_ptr<Automation<Ts...>>> automations;
     automations.reserve(storage.size());
 
-    for (const auto &config : storage.getAllConfigs()) {
-      auto automation = createAutomation(config);
+    for (const auto &config : storage.get_all_configs()) {
+      auto automation = create_automation(config);
       automations.push_back(std::move(automation));
     }
 

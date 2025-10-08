@@ -12,11 +12,11 @@ static const char *const TAG = "automations";
 TriggerConfig::TriggerConfig() : source(SourceTrigger::None) { memset(&params, 0, sizeof(params)); }
 
 void TriggerConfig::serialize(JsonObject &obj) const {
-  obj["source"] = EnumUtils::sourceTriggerToString(source);
+  obj["source"] = EnumUtils::source_trigger_to_string(source);
 
   switch (source) {
     case SourceTrigger::Input:
-      obj["type"] = EnumUtils::inputTriggerTypeToString(params.input.type);
+      obj["type"] = EnumUtils::input_trigger_type_to_string(params.input.type);
       obj["input_id"] = format_hex(params.input.input_id);
       break;
     default:
@@ -28,11 +28,11 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
   if (!obj.containsKey("source"))
     return false;
 
-  source = EnumUtils::stringToSourceTrigger(obj["source"].as<std::string>());
+  source = EnumUtils::string_to_source_trigger(obj["source"].as<std::string>());
 
   switch (source) {
     case SourceTrigger::Input: {
-      params.input.type = EnumUtils::stringToInputTriggerType(obj["type"].as<std::string>());
+      params.input.type = EnumUtils::string_to_input_trigger_type(obj["type"].as<std::string>());
       std::string id_str = obj["input_id"].as<std::string>();
       params.input.input_id = parse_hex<uint32_t>(id_str).value();
       break;
@@ -47,11 +47,11 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
 ActionConfig::ActionConfig() : source(SourceAction::None) { memset(&params, 0, sizeof(params)); }
 
 void ActionConfig::serialize(JsonObject &obj) const {
-  obj["source"] = EnumUtils::sourceActionToString(source);
+  obj["source"] = EnumUtils::source_action_to_string(source);
 
   switch (source) {
     case SourceAction::Switch:
-      obj["type"] = EnumUtils::switchActionTypeToString(params.switch_action.type);
+      obj["type"] = EnumUtils::switch_action_type_to_string(params.switch_action.type);
       obj["switch_id"] = format_hex(params.switch_action.switch_id);
       break;
     case SourceAction::Delay:
@@ -66,11 +66,11 @@ bool ActionConfig::deserialize(const JsonObject &obj) {
   if (!obj.containsKey("source"))
     return false;
 
-  source = EnumUtils::stringToSourceAction(obj["source"].as<std::string>());
+  source = EnumUtils::string_to_source_action(obj["source"].as<std::string>());
 
   switch (source) {
     case SourceAction::Switch: {
-      params.switch_action.type = EnumUtils::stringToSwitchActionType(obj["type"].as<std::string>());
+      params.switch_action.type = EnumUtils::string_to_switch_action_type(obj["type"].as<std::string>());
       auto id_str = obj["switch_id"].as<std::string>();
       params.switch_action.switch_id = parse_hex<uint32_t>(id_str).value();
       break;
@@ -129,7 +129,7 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
-bool AutomationConfigStorage::loadFromJson(const char *json_str, size_t max_buffer_size) {
+bool AutomationConfigStorage::load_from_json(const char *json_str, size_t max_buffer_size) {
   DynamicJsonDocument doc(max_buffer_size);
   DeserializationError error = deserializeJson(doc, json_str);
 
@@ -137,10 +137,10 @@ bool AutomationConfigStorage::loadFromJson(const char *json_str, size_t max_buff
     return false;
   }
 
-  return loadFromJson(doc.as<JsonArray>());
+  return load_from_json(doc.as<JsonArray>());
 }
 
-bool AutomationConfigStorage::loadFromJson(const JsonArray &array) {
+bool AutomationConfigStorage::load_from_json(const JsonArray &array) {
   configs_.clear();
 
   for (const auto &item : array) {
@@ -153,7 +153,7 @@ bool AutomationConfigStorage::loadFromJson(const JsonArray &array) {
   return true;
 }
 
-size_t AutomationConfigStorage::saveToJson(const char *json_str, size_t max_buffer_size) {
+size_t AutomationConfigStorage::save_to_json(const char *json_str, size_t max_buffer_size) {
   DynamicJsonDocument doc(max_buffer_size);
   JsonArray array = doc.to<JsonArray>();
 
@@ -173,15 +173,15 @@ size_t AutomationConfigStorage::saveToJson(const char *json_str, size_t max_buff
   return json_size;
 }
 
-void AutomationConfigStorage::addConfig(const AutomationConfig &config) { configs_.push_back(config); }
+void AutomationConfigStorage::add_config(const AutomationConfig &config) { configs_.push_back(config); }
 
-void AutomationConfigStorage::updateConfig(uint8_t index, AutomationConfig *config) {
+void AutomationConfigStorage::update_config(uint8_t index, AutomationConfig *config) {
   if (index < configs_.size()) {
     configs_[index] = *config;
   }
 }
 
-bool AutomationConfigStorage::removeConfig(uint8_t index) {
+bool AutomationConfigStorage::remove_config(uint8_t index) {
   if (index < configs_.size()) {
     configs_.erase(configs_.begin() + index);
     return true;
@@ -189,7 +189,7 @@ bool AutomationConfigStorage::removeConfig(uint8_t index) {
   return false;
 }
 
-AutomationConfig *AutomationConfigStorage::getConfig(uint8_t index) {
+AutomationConfig *AutomationConfigStorage::get_config(uint8_t index) {
   if (index < configs_.size()) {
     return &(configs_[index]);
   }

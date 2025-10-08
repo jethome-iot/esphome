@@ -29,24 +29,24 @@ constexpr size_t MAX_ACTION_TYPES = static_cast<size_t>(SourceAction::MAX_ACTION
 
 namespace EnumUtils {
 // SourceTrigger
-const char *sourceTriggerToString(SourceTrigger source);
-SourceTrigger stringToSourceTrigger(const std::string &str);
+const char *source_trigger_to_string(SourceTrigger source);
+SourceTrigger string_to_source_trigger(const std::string &str);
 
 // TypesInputTrigger
-const char *inputTriggerTypeToString(TypesInputTrigger type);
-TypesInputTrigger stringToInputTriggerType(const std::string &str);
+const char *input_trigger_type_to_string(TypesInputTrigger type);
+TypesInputTrigger string_to_input_trigger_type(const std::string &str);
 
 // SourceAction
-const char *sourceActionToString(SourceAction source);
-SourceAction stringToSourceAction(const std::string &str);
+const char *source_action_to_string(SourceAction source);
+SourceAction string_to_source_action(const std::string &str);
 
 // TypeSwitchAction
-const char *switchActionTypeToString(TypeSwitchAction type);
-TypeSwitchAction stringToSwitchActionType(const std::string &str);
+const char *switch_action_type_to_string(TypeSwitchAction type);
+TypeSwitchAction string_to_switch_action_type(const std::string &str);
 
-constexpr size_t triggerToIndex(SourceTrigger source) { return static_cast<size_t>(source); }
+constexpr size_t trigger_to_index(SourceTrigger source) { return static_cast<size_t>(source); }
 
-constexpr size_t actionToIndex(SourceAction source) { return static_cast<size_t>(source); }
+constexpr size_t action_to_index(SourceAction source) { return static_cast<size_t>(source); }
 }  // namespace EnumUtils
 
 }  // namespace automations

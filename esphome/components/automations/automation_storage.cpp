@@ -24,18 +24,18 @@ void AutomationStorage::setup() {
     return;
   }
 
-  res = this->config_storage_.loadFromJson(data.data, JsonData::MAX_DATA_SIZE);
+  res = this->config_storage_.load_from_json(data.data, JsonData::MAX_DATA_SIZE);
 
   if (!res) {
     ESP_LOGD(TAG, "Error json parsing");
   }
 
-  automations_ = std::move(AutomationFactory<>::createAllAutomations(this->config_storage_));
+  automations_ = std::move(AutomationFactory<>::create_all_automations(this->config_storage_));
 };
 
 void AutomationStorage::save_configs() {
   JsonData data;
-  data.size = this->config_storage_.saveToJson(data.data, data.MAX_DATA_SIZE);
+  data.size = this->config_storage_.save_to_json(data.data, data.MAX_DATA_SIZE);
 
   if (data.size == 0) {
     ESP_LOGE(TAG, "Config isn't saved");
