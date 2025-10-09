@@ -69,7 +69,7 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
-ConditionConfig::ConditionConfig() : type(ConditionType::None), sensor_id(0), state(BinarySensorConditionState::True) {}
+ConditionConfig::ConditionConfig() : type(ConditionType::None), sensor_id(0), state(InputConditionState::True) {}
 
 void ConditionConfig::serialize(JsonObject &obj) const {
   obj["type"] = EnumUtils::condition_type_to_string(type);
@@ -84,16 +84,9 @@ void ConditionConfig::serialize(JsonObject &obj) const {
       }
       break;
     }
-    case ConditionType::Not: {
-      if (!sub_conditions.empty()) {
-        JsonObject sub_obj = obj.createNestedObject("condition");
-        sub_conditions[0].serialize(sub_obj);
-      }
-      break;
-    }
-    case ConditionType::BinarySensor:
+    case ConditionType::Input:
       obj["sensor_id"] = format_hex(sensor_id);
-      obj["state"] = EnumUtils::binary_sensor_condition_state_to_string(state);
+      obj["state"] = EnumUtils::input_condition_state_to_string(state);
       break;
     default:
       break;
@@ -120,20 +113,11 @@ bool ConditionConfig::deserialize(const JsonObject &obj) {
       }
       break;
     }
-    case ConditionType::Not: {
-      if (obj.containsKey("condition")) {
-        ConditionConfig sub_condition;
-        if (sub_condition.deserialize(obj["condition"].as<JsonObject>())) {
-          sub_conditions.push_back(sub_condition);
-        }
-      }
-      break;
-    }
-    case ConditionType::BinarySensor: {
+    case ConditionType::Input: {
       std::string id_str = obj["sensor_id"].as<std::string>();
       sensor_id = parse_hex<uint32_t>(id_str).value();
       if (obj.containsKey("state")) {
-        state = EnumUtils::string_to_binary_sensor_condition_state(obj["state"].as<std::string>());
+        state = EnumUtils::string_to_input_condition_state(obj["state"].as<std::string>());
       }
       break;
     }

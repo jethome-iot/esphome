@@ -122,10 +122,8 @@ const char *condition_type_to_string(ConditionType type) {
       return "and";
     case ConditionType::Or:
       return "or";
-    case ConditionType::Not:
-      return "not";
-    case ConditionType::BinarySensor:
-      return "binary_sensor";
+    case ConditionType::Input:
+      return "input";
     default:
       return "none";
   }
@@ -136,29 +134,27 @@ ConditionType string_to_condition_type(const std::string &str) {
     return ConditionType::And;
   if (str == "or")
     return ConditionType::Or;
-  if (str == "not")
-    return ConditionType::Not;
-  if (str == "binary_sensor")
-    return ConditionType::BinarySensor;
+  if (str == "input")
+    return ConditionType::Input;
   return ConditionType::None;
 }
 
-// BinarySensorConditionState
-const char *binary_sensor_condition_state_to_string(BinarySensorConditionState state) {
+// InputConditionState
+const char *input_condition_state_to_string(InputConditionState state) {
   switch (state) {
-    case BinarySensorConditionState::True:
+    case InputConditionState::True:
       return "true";
-    case BinarySensorConditionState::False:
+    case InputConditionState::False:
       return "false";
     default:
       return "false";
   }
 }
 
-BinarySensorConditionState string_to_binary_sensor_condition_state(const std::string &str) {
+InputConditionState string_to_input_condition_state(const std::string &str) {
   if (str == "true")
-    return BinarySensorConditionState::True;
-  return BinarySensorConditionState::False;
+    return InputConditionState::True;
+  return InputConditionState::False;
 }
 
 }  // namespace EnumUtils

@@ -14,13 +14,12 @@ class ConditionFactory {
   static Condition<> *create_condition(const ConditionConfig &config);
 
  private:
-  // Helper to create binary sensor condition
-  static Condition<> *create_binary_sensor_condition(const ConditionConfig &config);
+  // Helper to create input (binary sensor) condition
+  static Condition<> *create_input_condition(const ConditionConfig &config);
 
   // Helper to create composite conditions
   static Condition<> *create_and_condition(const ConditionConfig &config);
   static Condition<> *create_or_condition(const ConditionConfig &config);
-  static Condition<> *create_not_condition(const ConditionConfig &config);
 };
 
 }  // namespace automations

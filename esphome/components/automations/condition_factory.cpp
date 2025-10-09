@@ -15,21 +15,19 @@ Condition<> *ConditionFactory::create_condition(const ConditionConfig &config) {
   }
 
   switch (config.type) {
-    case ConditionType::BinarySensor:
-      return create_binary_sensor_condition(config);
+    case ConditionType::Input:
+      return create_input_condition(config);
     case ConditionType::And:
       return create_and_condition(config);
     case ConditionType::Or:
       return create_or_condition(config);
-    case ConditionType::Not:
-      return create_not_condition(config);
     default:
       ESP_LOGW(TAG, "Unknown condition type");
       return nullptr;
   }
 }
 
-Condition<> *ConditionFactory::create_binary_sensor_condition(const ConditionConfig &config) {
+Condition<> *ConditionFactory::create_input_condition(const ConditionConfig &config) {
   // Find the binary sensor by ID using the efficient lookup method
   auto *sensor = App.get_binary_sensor_by_key(config.sensor_id);
 
@@ -38,7 +36,7 @@ Condition<> *ConditionFactory::create_binary_sensor_condition(const ConditionCon
     return nullptr;
   }
 
-  bool expected_state = (config.state == BinarySensorConditionState::True);
+  bool expected_state = (config.state == InputConditionState::True);
   return new binary_sensor::BinarySensorCondition<>(sensor, expected_state);
 }
 
@@ -76,21 +74,6 @@ Condition<> *ConditionFactory::create_or_condition(const ConditionConfig &config
   }
 
   return new OrCondition<>(conditions);
-}
-
-Condition<> *ConditionFactory::create_not_condition(const ConditionConfig &config) {
-  if (config.sub_conditions.empty()) {
-    ESP_LOGW(TAG, "NOT condition has no sub-condition");
-    return nullptr;
-  }
-
-  Condition<> *sub_condition = create_condition(config.sub_conditions[0]);
-  if (!sub_condition) {
-    ESP_LOGW(TAG, "Failed to create sub-condition for NOT");
-    return nullptr;
-  }
-
-  return new NotCondition<>(sub_condition);
 }
 
 }  // namespace automations

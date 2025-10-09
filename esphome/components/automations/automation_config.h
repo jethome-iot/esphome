@@ -39,12 +39,12 @@ struct TriggerConfig {
 struct ConditionConfig {
   ConditionType type = ConditionType::None;
 
-  // For composite conditions (And, Or, Not)
+  // For composite conditions (And, Or)
   std::vector<ConditionConfig> sub_conditions;
 
-  // For BinarySensor condition
+  // For Input condition
   uint32_t sensor_id = 0;
-  BinarySensorConditionState state = BinarySensorConditionState::True;
+  InputConditionState state = InputConditionState::True;
 
   ConditionConfig();
   ~ConditionConfig() = default;

@@ -31,9 +31,9 @@ enum class TypeSwitchAction : uint8_t {
   Toggle,
 };
 
-enum class ConditionType : uint8_t { None = 0, And, Or, Not, BinarySensor, MAX_CONDITION_TYPES };
+enum class ConditionType : uint8_t { None = 0, And, Or, Input, MAX_CONDITION_TYPES };
 
-enum class BinarySensorConditionState : uint8_t {
+enum class InputConditionState : uint8_t {
   False = 0,
   True = 1,
 };
@@ -67,9 +67,9 @@ TypeSwitchAction string_to_switch_action_type(const std::string &str);
 const char *condition_type_to_string(ConditionType type);
 ConditionType string_to_condition_type(const std::string &str);
 
-// BinarySensorConditionState
-const char *binary_sensor_condition_state_to_string(BinarySensorConditionState state);
-BinarySensorConditionState string_to_binary_sensor_condition_state(const std::string &str);
+// InputConditionState
+const char *input_condition_state_to_string(InputConditionState state);
+InputConditionState string_to_input_condition_state(const std::string &str);
 
 constexpr size_t trigger_to_index(SourceTrigger source) { return static_cast<size_t>(source); }
 
