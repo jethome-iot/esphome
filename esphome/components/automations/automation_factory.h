@@ -5,11 +5,17 @@
 #include "esphome/components/switch/automation.h"
 #include "esphome/core/base_automation.h"
 #include "esphome/core/automation.h"
-#include "esphome/core/log.h"
 #include "esphome/components/simple/simple_action.h"
+#include <string>
 
 namespace esphome {
 namespace automations {
+
+// Logging helpers (implemented in automation_factory.cpp)
+void log_trigger_not_found(const std::string &object_id);
+void log_switch_not_found(const std::string &object_id);
+void log_trigger_creation_error();
+void log_action_creation_error();
 
 template<typename... Ts> class TriggerFactory {
  public:
@@ -26,8 +32,7 @@ template<typename... Ts> class TriggerFactory {
   static Trigger<Ts...> *create_input_trigger(const TriggerConfig &config) {
     auto *sensor = App.get_binary_sensor_by_key(config.params.input.input_id);
     if (sensor == nullptr) {
-      ESP_LOGE("automation", "Cannot find trigger object_id %s",
-               format_hex_pretty(config.params.input.input_id).c_str());
+      log_trigger_not_found(format_hex_pretty(config.params.input.input_id));
       return nullptr;
     }
     switch (config.params.input.type) {
@@ -59,8 +64,7 @@ template<typename... Ts> class ActionFactory {
   static Action<Ts...> *create_switch_action(const ActionConfig &config) {
     auto *switch_obj = App.get_switch_by_key(config.params.switch_action.switch_id);
     if (switch_obj == nullptr) {
-      ESP_LOGE("automation", "Cannot find switch with object_id %s",
-               format_hex_pretty(config.params.switch_action.switch_id).c_str());
+      log_switch_not_found(format_hex_pretty(config.params.switch_action.switch_id));
       return create_empty_action();
     }
 
@@ -93,7 +97,7 @@ template<typename... Ts> class AutomationFactory {
   static std::unique_ptr<Automation<Ts...>> create_automation(const AutomationConfig &config) {
     Trigger<Ts...> *trigger = TriggerFactory<Ts...>::create_trigger(config.trigger);
     if (!trigger) {
-      ESP_LOGE("automation", "Error create Trigger");
+      log_trigger_creation_error();
       return nullptr;
     }
 
@@ -104,7 +108,7 @@ template<typename... Ts> class AutomationFactory {
       if (action) {
         automation->add_action(action);
       } else {
-        ESP_LOGE("automation", "Error create Action");
+        log_action_creation_error();
         return nullptr;
       }
     }
