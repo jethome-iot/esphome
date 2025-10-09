@@ -23,7 +23,7 @@ class AutomationStorage : public Component {
 
   void setup() override;
 
-  float get_setup_priority() const override { return setup_priority::HARDWARE + 1; }
+  float get_setup_priority() const override { return setup_priority::DATA - 1; }
 
   void dump_config() override{};
 
