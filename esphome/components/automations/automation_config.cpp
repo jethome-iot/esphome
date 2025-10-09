@@ -69,7 +69,14 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
-ConditionConfig::ConditionConfig() : type(ConditionType::None), sensor_id(0), state(InputConditionState::True) {}
+ConditionConfig::ConditionConfig()
+    : type(ConditionType::None),
+      sensor_id(0),
+      state(InputConditionState::True),
+      temperature_type(TypesTemperatureCondition::None),
+      threshold(0.0f),
+      min_threshold(0.0f),
+      max_threshold(0.0f) {}
 
 void ConditionConfig::serialize(JsonObject &obj) const {
   obj["type"] = EnumUtils::condition_type_to_string(type);
@@ -87,6 +94,17 @@ void ConditionConfig::serialize(JsonObject &obj) const {
     case ConditionType::Input:
       obj["sensor_id"] = format_hex(sensor_id);
       obj["state"] = EnumUtils::input_condition_state_to_string(state);
+      break;
+    case ConditionType::Temperature:
+      obj["sensor_id"] = format_hex(sensor_id);
+      obj["temperature_type"] = EnumUtils::temperature_condition_type_to_string(temperature_type);
+      if (temperature_type == TypesTemperatureCondition::Below ||
+          temperature_type == TypesTemperatureCondition::Above) {
+        obj["threshold"] = threshold;
+      } else if (temperature_type == TypesTemperatureCondition::Range) {
+        obj["min_threshold"] = min_threshold;
+        obj["max_threshold"] = max_threshold;
+      }
       break;
     default:
       break;
@@ -118,6 +136,20 @@ bool ConditionConfig::deserialize(const JsonObject &obj) {
       sensor_id = parse_hex<uint32_t>(id_str).value();
       if (obj.containsKey("state")) {
         state = EnumUtils::string_to_input_condition_state(obj["state"].as<std::string>());
+      }
+      break;
+    }
+    case ConditionType::Temperature: {
+      std::string id_str = obj["sensor_id"].as<std::string>();
+      sensor_id = parse_hex<uint32_t>(id_str).value();
+      temperature_type = EnumUtils::string_to_temperature_condition_type(obj["temperature_type"].as<std::string>());
+
+      if (temperature_type == TypesTemperatureCondition::Below ||
+          temperature_type == TypesTemperatureCondition::Above) {
+        threshold = obj["threshold"].as<float>();
+      } else if (temperature_type == TypesTemperatureCondition::Range) {
+        min_threshold = obj["min_threshold"].as<float>();
+        max_threshold = obj["max_threshold"].as<float>();
       }
       break;
     }

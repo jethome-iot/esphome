@@ -124,6 +124,8 @@ const char *condition_type_to_string(ConditionType type) {
       return "or";
     case ConditionType::Input:
       return "input";
+    case ConditionType::Temperature:
+      return "temperature";
     default:
       return "none";
   }
@@ -136,6 +138,8 @@ ConditionType string_to_condition_type(const std::string &str) {
     return ConditionType::Or;
   if (str == "input")
     return ConditionType::Input;
+  if (str == "temperature")
+    return ConditionType::Temperature;
   return ConditionType::None;
 }
 
@@ -155,6 +159,30 @@ InputConditionState string_to_input_condition_state(const std::string &str) {
   if (str == "true")
     return InputConditionState::True;
   return InputConditionState::False;
+}
+
+// TypesTemperatureCondition
+const char *temperature_condition_type_to_string(TypesTemperatureCondition type) {
+  switch (type) {
+    case TypesTemperatureCondition::Below:
+      return "below";
+    case TypesTemperatureCondition::Above:
+      return "above";
+    case TypesTemperatureCondition::Range:
+      return "range";
+    default:
+      return "none";
+  }
+}
+
+TypesTemperatureCondition string_to_temperature_condition_type(const std::string &str) {
+  if (str == "below")
+    return TypesTemperatureCondition::Below;
+  if (str == "above")
+    return TypesTemperatureCondition::Above;
+  if (str == "range")
+    return TypesTemperatureCondition::Range;
+  return TypesTemperatureCondition::None;
 }
 
 }  // namespace EnumUtils

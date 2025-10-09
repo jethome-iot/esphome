@@ -46,6 +46,12 @@ struct ConditionConfig {
   uint32_t sensor_id = 0;
   InputConditionState state = InputConditionState::True;
 
+  // For Temperature condition
+  TypesTemperatureCondition temperature_type = TypesTemperatureCondition::None;
+  float threshold = 0.0f;      // For Below/Above conditions
+  float min_threshold = 0.0f;  // For Range condition
+  float max_threshold = 0.0f;  // For Range condition
+
   ConditionConfig();
   ~ConditionConfig() = default;
   ConditionConfig(const ConditionConfig &other) = default;

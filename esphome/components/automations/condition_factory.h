@@ -3,6 +3,7 @@
 #include "esphome/core/automation.h"
 #include "automation_config.h"
 #include "esphome/components/binary_sensor/binary_sensor.h"
+#include "esphome/components/sensor/sensor.h"
 
 namespace esphome {
 namespace automations {
@@ -20,6 +21,9 @@ class ConditionFactory {
   // Helper to create composite conditions
   static Condition<> *create_and_condition(const ConditionConfig &config);
   static Condition<> *create_or_condition(const ConditionConfig &config);
+
+  // Helper to create temperature condition
+  static Condition<> *create_temperature_condition(const ConditionConfig &config);
 };
 
 }  // namespace automations

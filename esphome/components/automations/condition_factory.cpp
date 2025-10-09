@@ -1,6 +1,7 @@
 #include "condition_factory.h"
 #include "esphome/core/base_automation.h"
 #include "esphome/components/binary_sensor/automation.h"
+#include "esphome/components/sensor/automation.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 
@@ -17,6 +18,8 @@ Condition<> *ConditionFactory::create_condition(const ConditionConfig &config) {
   switch (config.type) {
     case ConditionType::Input:
       return create_input_condition(config);
+    case ConditionType::Temperature:
+      return create_temperature_condition(config);
     case ConditionType::And:
       return create_and_condition(config);
     case ConditionType::Or:
@@ -74,6 +77,47 @@ Condition<> *ConditionFactory::create_or_condition(const ConditionConfig &config
   }
 
   return new OrCondition<>(conditions);
+}
+
+Condition<> *ConditionFactory::create_temperature_condition(const ConditionConfig &config) {
+  // Find the temperature sensor by ID
+  auto *sensor = App.get_sensor_by_key(config.sensor_id);
+
+  if (!sensor) {
+    ESP_LOGW(TAG, "Temperature sensor with ID 0x%08X not found", config.sensor_id);
+    return nullptr;
+  }
+
+  // Create the appropriate range based on the temperature condition type
+  float min_value, max_value;
+
+  switch (config.temperature_type) {
+    case TypesTemperatureCondition::Below:
+      // Temperature < threshold
+      min_value = NAN;  // No lower limit
+      max_value = config.threshold;
+      break;
+
+    case TypesTemperatureCondition::Above:
+      // Temperature > threshold
+      min_value = config.threshold;
+      max_value = NAN;  // No upper limit
+      break;
+
+    case TypesTemperatureCondition::Range:
+      // min_threshold < Temperature < max_threshold
+      min_value = config.min_threshold;
+      max_value = config.max_threshold;
+      break;
+
+    default:
+      ESP_LOGW(TAG, "Invalid temperature condition type");
+      return nullptr;
+  }
+  auto *sensor_cond = new sensor::SensorInRangeCondition<>(sensor);
+  sensor_cond->set_min(min_value);
+  sensor_cond->set_max(max_value);
+  return sensor_cond;
 }
 
 }  // namespace automations
