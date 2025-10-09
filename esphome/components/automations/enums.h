@@ -6,13 +6,20 @@
 namespace esphome {
 namespace automations {
 
-enum class SourceTrigger : uint8_t { None = 0, Input, MAX_TRIGGER_TYPES };
+enum class SourceTrigger : uint8_t { None = 0, Input, Temperature, MAX_TRIGGER_TYPES };
 
 enum class TypesInputTrigger : uint8_t {
   None,
   Press,
   Release,
   Click,
+};
+
+enum class TypesTemperatureTrigger : uint8_t {
+  None,
+  Below,
+  Above,
+  Range,
 };
 
 enum class SourceAction : uint8_t { None = 0, Delay, Switch, MAX_ACTION_TYPES };
@@ -35,6 +42,10 @@ SourceTrigger string_to_source_trigger(const std::string &str);
 // TypesInputTrigger
 const char *input_trigger_type_to_string(TypesInputTrigger type);
 TypesInputTrigger string_to_input_trigger_type(const std::string &str);
+
+// TypesTemperatureTrigger
+const char *temperature_trigger_type_to_string(TypesTemperatureTrigger type);
+TypesTemperatureTrigger string_to_temperature_trigger_type(const std::string &str);
 
 // SourceAction
 const char *source_action_to_string(SourceAction source);

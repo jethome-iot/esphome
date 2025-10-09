@@ -16,6 +16,14 @@ struct TriggerConfig {
       uint32_t input_id;
     } input;
 
+    struct {
+      TypesTemperatureTrigger type;
+      uint32_t sensor_id;
+      float threshold;      // For Below/Above triggers
+      float min_threshold;  // For Range trigger
+      float max_threshold;  // For Range trigger
+    } temperature;
+
     // Other
   } params;
 

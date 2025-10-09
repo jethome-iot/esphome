@@ -19,6 +19,17 @@ void TriggerConfig::serialize(JsonObject &obj) const {
       obj["type"] = EnumUtils::input_trigger_type_to_string(params.input.type);
       obj["input_id"] = format_hex(params.input.input_id);
       break;
+    case SourceTrigger::Temperature:
+      obj["type"] = EnumUtils::temperature_trigger_type_to_string(params.temperature.type);
+      obj["sensor_id"] = format_hex(params.temperature.sensor_id);
+      if (params.temperature.type == TypesTemperatureTrigger::Below ||
+          params.temperature.type == TypesTemperatureTrigger::Above) {
+        obj["threshold"] = params.temperature.threshold;
+      } else if (params.temperature.type == TypesTemperatureTrigger::Range) {
+        obj["min_threshold"] = params.temperature.min_threshold;
+        obj["max_threshold"] = params.temperature.max_threshold;
+      }
+      break;
     default:
       break;
   }
@@ -35,6 +46,20 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
       params.input.type = EnumUtils::string_to_input_trigger_type(obj["type"].as<std::string>());
       std::string id_str = obj["input_id"].as<std::string>();
       params.input.input_id = parse_hex<uint32_t>(id_str).value();
+      break;
+    }
+    case SourceTrigger::Temperature: {
+      params.temperature.type = EnumUtils::string_to_temperature_trigger_type(obj["type"].as<std::string>());
+      std::string id_str = obj["sensor_id"].as<std::string>();
+      params.temperature.sensor_id = parse_hex<uint32_t>(id_str).value();
+
+      if (params.temperature.type == TypesTemperatureTrigger::Below ||
+          params.temperature.type == TypesTemperatureTrigger::Above) {
+        params.temperature.threshold = obj["threshold"].as<float>();
+      } else if (params.temperature.type == TypesTemperatureTrigger::Range) {
+        params.temperature.min_threshold = obj["min_threshold"].as<float>();
+        params.temperature.max_threshold = obj["max_threshold"].as<float>();
+      }
       break;
     }
     default:

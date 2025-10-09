@@ -9,6 +9,8 @@ const char *source_trigger_to_string(SourceTrigger source) {
   switch (source) {
     case SourceTrigger::Input:
       return "Input";
+    case SourceTrigger::Temperature:
+      return "Temperature";
     default:
       return "None";
   }
@@ -17,6 +19,8 @@ const char *source_trigger_to_string(SourceTrigger source) {
 SourceTrigger string_to_source_trigger(const std::string &str) {
   if (str == "Input")
     return SourceTrigger::Input;
+  if (str == "Temperature")
+    return SourceTrigger::Temperature;
   return SourceTrigger::None;
 }
 
@@ -61,6 +65,30 @@ TypesInputTrigger string_to_input_trigger_type(const std::string &str) {
   if (str == "click")
     return TypesInputTrigger::Click;
   return TypesInputTrigger::None;
+}
+
+// TypesTemperatureTrigger
+const char *temperature_trigger_type_to_string(TypesTemperatureTrigger type) {
+  switch (type) {
+    case TypesTemperatureTrigger::Below:
+      return "below";
+    case TypesTemperatureTrigger::Above:
+      return "above";
+    case TypesTemperatureTrigger::Range:
+      return "range";
+    default:
+      return "none";
+  }
+}
+
+TypesTemperatureTrigger string_to_temperature_trigger_type(const std::string &str) {
+  if (str == "below")
+    return TypesTemperatureTrigger::Below;
+  if (str == "above")
+    return TypesTemperatureTrigger::Above;
+  if (str == "range")
+    return TypesTemperatureTrigger::Range;
+  return TypesTemperatureTrigger::None;
 }
 
 // TypeSwitchAction

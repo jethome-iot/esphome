@@ -6,6 +6,8 @@
 #include "esphome/core/base_automation.h"
 #include "esphome/core/automation.h"
 #include "esphome/components/simple/simple_action.h"
+#include "temperature_triggers.h"
+#include "esphome/components/sensor/sensor.h"
 #include <string>
 
 namespace esphome {
@@ -14,6 +16,7 @@ namespace automations {
 // Logging helpers (implemented in automation_factory.cpp)
 void log_trigger_not_found(const std::string &object_id);
 void log_switch_not_found(const std::string &object_id);
+void log_sensor_not_found(const std::string &object_id);
 void log_trigger_creation_error();
 void log_action_creation_error();
 
@@ -23,6 +26,8 @@ template<typename... Ts> class TriggerFactory {
     switch (config.source) {
       case SourceTrigger::Input:
         return create_input_trigger(config);
+      case SourceTrigger::Temperature:
+        return create_temperature_trigger(config);
       default:
         return nullptr;
     }
@@ -44,6 +49,26 @@ template<typename... Ts> class TriggerFactory {
         return new binary_sensor::ClickTrigger(sensor, 200, 1000);
     };
     return nullptr;
+  }
+
+  static Trigger<Ts...> *create_temperature_trigger(const TriggerConfig &config) {
+    auto *sensor = App.get_sensor_by_key(config.params.temperature.sensor_id);
+    if (sensor == nullptr) {
+      log_sensor_not_found(format_hex_pretty(config.params.temperature.sensor_id));
+      return nullptr;
+    }
+
+    switch (config.params.temperature.type) {
+      case TypesTemperatureTrigger::Below:
+        return new TemperatureBelowTrigger(sensor, config.params.temperature.threshold);
+      case TypesTemperatureTrigger::Above:
+        return new TemperatureAboveTrigger(sensor, config.params.temperature.threshold);
+      case TypesTemperatureTrigger::Range:
+        return new TemperatureRangeTrigger(sensor, config.params.temperature.min_threshold,
+                                           config.params.temperature.max_threshold);
+      default:
+        return nullptr;
+    }
   }
 };
 
