@@ -36,6 +36,26 @@ struct TriggerConfig {
   bool deserialize(const JsonObject &obj);
 };
 
+struct ConditionConfig {
+  ConditionType type = ConditionType::None;
+
+  // For composite conditions (And, Or, Not)
+  std::vector<ConditionConfig> sub_conditions;
+
+  // For BinarySensor condition
+  uint32_t sensor_id = 0;
+  BinarySensorConditionState state = BinarySensorConditionState::True;
+
+  ConditionConfig();
+  ~ConditionConfig() = default;
+  ConditionConfig(const ConditionConfig &other) = default;
+  ConditionConfig &operator=(const ConditionConfig &other) = default;
+
+  void serialize(JsonObject &obj) const;
+  bool deserialize(const JsonObject &obj);
+  bool is_valid() const { return type != ConditionType::None; }
+};
+
 struct ActionConfig {
   SourceAction source = SourceAction::None;
 
@@ -63,6 +83,7 @@ struct AutomationConfig {
   std::string name;
   bool enabled = true;
   TriggerConfig trigger;
+  ConditionConfig condition;  // Optional condition - check type != None
   std::vector<ActionConfig> actions;
 
   void serialize(JsonObject &obj) const;

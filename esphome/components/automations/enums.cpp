@@ -115,6 +115,52 @@ TypeSwitchAction string_to_switch_action_type(const std::string &str) {
   return TypeSwitchAction::None;
 }
 
+// ConditionType
+const char *condition_type_to_string(ConditionType type) {
+  switch (type) {
+    case ConditionType::And:
+      return "and";
+    case ConditionType::Or:
+      return "or";
+    case ConditionType::Not:
+      return "not";
+    case ConditionType::BinarySensor:
+      return "binary_sensor";
+    default:
+      return "none";
+  }
+}
+
+ConditionType string_to_condition_type(const std::string &str) {
+  if (str == "and")
+    return ConditionType::And;
+  if (str == "or")
+    return ConditionType::Or;
+  if (str == "not")
+    return ConditionType::Not;
+  if (str == "binary_sensor")
+    return ConditionType::BinarySensor;
+  return ConditionType::None;
+}
+
+// BinarySensorConditionState
+const char *binary_sensor_condition_state_to_string(BinarySensorConditionState state) {
+  switch (state) {
+    case BinarySensorConditionState::True:
+      return "true";
+    case BinarySensorConditionState::False:
+      return "false";
+    default:
+      return "false";
+  }
+}
+
+BinarySensorConditionState string_to_binary_sensor_condition_state(const std::string &str) {
+  if (str == "true")
+    return BinarySensorConditionState::True;
+  return BinarySensorConditionState::False;
+}
+
 }  // namespace EnumUtils
 
 }  // namespace automations

@@ -69,6 +69,81 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
   return true;
 }
 
+ConditionConfig::ConditionConfig() : type(ConditionType::None), sensor_id(0), state(BinarySensorConditionState::True) {}
+
+void ConditionConfig::serialize(JsonObject &obj) const {
+  obj["type"] = EnumUtils::condition_type_to_string(type);
+
+  switch (type) {
+    case ConditionType::And:
+    case ConditionType::Or: {
+      JsonArray sub_array = obj.createNestedArray("conditions");
+      for (const auto &sub : sub_conditions) {
+        JsonObject sub_obj = sub_array.createNestedObject();
+        sub.serialize(sub_obj);
+      }
+      break;
+    }
+    case ConditionType::Not: {
+      if (!sub_conditions.empty()) {
+        JsonObject sub_obj = obj.createNestedObject("condition");
+        sub_conditions[0].serialize(sub_obj);
+      }
+      break;
+    }
+    case ConditionType::BinarySensor:
+      obj["sensor_id"] = format_hex(sensor_id);
+      obj["state"] = EnumUtils::binary_sensor_condition_state_to_string(state);
+      break;
+    default:
+      break;
+  }
+}
+
+bool ConditionConfig::deserialize(const JsonObject &obj) {
+  if (!obj.containsKey("type"))
+    return false;
+
+  type = EnumUtils::string_to_condition_type(obj["type"].as<std::string>());
+
+  switch (type) {
+    case ConditionType::And:
+    case ConditionType::Or: {
+      if (obj.containsKey("conditions")) {
+        JsonArray sub_array = obj["conditions"].as<JsonArray>();
+        for (const auto &sub_obj : sub_array) {
+          ConditionConfig sub_condition;
+          if (sub_condition.deserialize(sub_obj.as<JsonObject>())) {
+            sub_conditions.push_back(sub_condition);
+          }
+        }
+      }
+      break;
+    }
+    case ConditionType::Not: {
+      if (obj.containsKey("condition")) {
+        ConditionConfig sub_condition;
+        if (sub_condition.deserialize(obj["condition"].as<JsonObject>())) {
+          sub_conditions.push_back(sub_condition);
+        }
+      }
+      break;
+    }
+    case ConditionType::BinarySensor: {
+      std::string id_str = obj["sensor_id"].as<std::string>();
+      sensor_id = parse_hex<uint32_t>(id_str).value();
+      if (obj.containsKey("state")) {
+        state = EnumUtils::string_to_binary_sensor_condition_state(obj["state"].as<std::string>());
+      }
+      break;
+    }
+    default:
+      break;
+  }
+
+  return true;
+}
+
 ActionConfig::ActionConfig() : source(SourceAction::None) { memset(&params, 0, sizeof(params)); }
 
 void ActionConfig::serialize(JsonObject &obj) const {
@@ -118,6 +193,12 @@ void AutomationConfig::serialize(JsonObject &obj) const {
   JsonObject trigger_obj = obj.createNestedObject("trigger");
   trigger.serialize(trigger_obj);
 
+  // Serialize condition if it exists
+  if (condition.is_valid()) {
+    JsonObject condition_obj = obj.createNestedObject("condition");
+    condition.serialize(condition_obj);
+  }
+
   JsonArray actions_array = obj.createNestedArray("actions");
   for (const auto &action : actions) {
     JsonObject action_obj = actions_array.createNestedObject();
@@ -136,6 +217,14 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
   if (!trigger.deserialize(obj["trigger"].as<JsonObject>())) {
     ESP_LOGI("Alex", "Failed load trigger");
     return false;
+  }
+
+  // Deserialize condition if it exists
+  if (obj.containsKey("condition")) {
+    if (!condition.deserialize(obj["condition"].as<JsonObject>())) {
+      ESP_LOGI("Alex", "Failed to load condition");
+      // Condition is optional, so we don't return false here
+    }
   }
 
   if (obj.containsKey("actions")) {

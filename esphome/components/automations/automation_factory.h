@@ -1,5 +1,6 @@
 #pragma once
 #include "automation_config.h"
+#include "condition_factory.h"
 #include "esphome/core/application.h"
 #include "esphome/components/binary_sensor/automation.h"
 #include "esphome/components/switch/automation.h"
@@ -128,13 +129,51 @@ template<typename... Ts> class AutomationFactory {
 
     auto automation = std::make_unique<Automation<Ts...>>(trigger);
 
-    for (const auto &action_config : config.actions) {
-      Action<Ts...> *action = ActionFactory<Ts...>::create_action(action_config);
-      if (action) {
-        automation->add_action(action);
+    // Check if we have a condition - if so, wrap actions in IfAction
+    if (config.condition.is_valid()) {
+      Condition<> *condition = ConditionFactory::create_condition(config.condition);
+      if (condition) {
+        // Create IfAction with the condition
+        auto *if_action = new IfAction<Ts...>(condition);
+
+        // Add all actions to the "then" branch of the IfAction
+        std::vector<Action<Ts...> *> then_actions;
+        for (const auto &action_config : config.actions) {
+          Action<Ts...> *action = ActionFactory<Ts...>::create_action(action_config);
+          if (action) {
+            then_actions.push_back(action);
+          } else {
+            log_action_creation_error();
+            delete if_action;
+            return nullptr;
+          }
+        }
+        if_action->add_then(then_actions);
+
+        // Add the IfAction to the automation
+        automation->add_action(if_action);
       } else {
-        log_action_creation_error();
-        return nullptr;
+        // Failed to create condition, fall back to direct actions
+        for (const auto &action_config : config.actions) {
+          Action<Ts...> *action = ActionFactory<Ts...>::create_action(action_config);
+          if (action) {
+            automation->add_action(action);
+          } else {
+            log_action_creation_error();
+            return nullptr;
+          }
+        }
+      }
+    } else {
+      // No condition, add actions directly
+      for (const auto &action_config : config.actions) {
+        Action<Ts...> *action = ActionFactory<Ts...>::create_action(action_config);
+        if (action) {
+          automation->add_action(action);
+        } else {
+          log_action_creation_error();
+          return nullptr;
+        }
       }
     }
 
