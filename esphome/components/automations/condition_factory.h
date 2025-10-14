@@ -21,6 +21,7 @@ class ConditionFactory {
   // Helper to create composite conditions
   static Condition<> *create_and_condition(const ConditionConfig &config);
   static Condition<> *create_or_condition(const ConditionConfig &config);
+  static Condition<> *create_xor_condition(const ConditionConfig &config);
 
   // Helper to create temperature condition
   static Condition<> *create_temperature_condition(const ConditionConfig &config);

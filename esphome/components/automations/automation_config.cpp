@@ -83,7 +83,8 @@ void ConditionConfig::serialize(JsonObject &obj) const {
 
   switch (type) {
     case ConditionType::And:
-    case ConditionType::Or: {
+    case ConditionType::Or:
+    case ConditionType::Xor: {
       JsonArray sub_array = obj.createNestedArray("conditions");
       for (const auto &sub : sub_conditions) {
         JsonObject sub_obj = sub_array.createNestedObject();
@@ -119,7 +120,8 @@ bool ConditionConfig::deserialize(const JsonObject &obj) {
 
   switch (type) {
     case ConditionType::And:
-    case ConditionType::Or: {
+    case ConditionType::Or:
+    case ConditionType::Xor: {
       if (obj.containsKey("conditions")) {
         JsonArray sub_array = obj["conditions"].as<JsonArray>();
         for (const auto &sub_obj : sub_array) {

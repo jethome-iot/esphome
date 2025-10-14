@@ -31,7 +31,7 @@ enum class TypeSwitchAction : uint8_t {
   Toggle,
 };
 
-enum class ConditionType : uint8_t { None = 0, And, Or, Input, Temperature, MAX_CONDITION_TYPES };
+enum class ConditionType : uint8_t { None = 0, And, Or, Xor, Input, Temperature, MAX_CONDITION_TYPES };
 
 enum class InputConditionState : uint8_t {
   False = 0,

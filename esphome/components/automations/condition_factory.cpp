@@ -24,6 +24,8 @@ Condition<> *ConditionFactory::create_condition(const ConditionConfig &config) {
       return create_and_condition(config);
     case ConditionType::Or:
       return create_or_condition(config);
+    case ConditionType::Xor:
+      return create_xor_condition(config);
     default:
       ESP_LOGW(TAG, "Unknown condition type");
       return nullptr;
@@ -77,6 +79,24 @@ Condition<> *ConditionFactory::create_or_condition(const ConditionConfig &config
   }
 
   return new OrCondition<>(conditions);
+}
+
+Condition<> *ConditionFactory::create_xor_condition(const ConditionConfig &config) {
+  std::vector<Condition<> *> conditions;
+
+  for (const auto &sub_config : config.sub_conditions) {
+    Condition<> *sub_condition = create_condition(sub_config);
+    if (sub_condition) {
+      conditions.push_back(sub_condition);
+    }
+  }
+
+  if (conditions.empty()) {
+    ESP_LOGW(TAG, "XOR condition has no valid sub-conditions");
+    return nullptr;
+  }
+
+  return new XorCondition<>(conditions);
 }
 
 Condition<> *ConditionFactory::create_temperature_condition(const ConditionConfig &config) {

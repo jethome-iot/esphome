@@ -122,6 +122,8 @@ const char *condition_type_to_string(ConditionType type) {
       return "and";
     case ConditionType::Or:
       return "or";
+    case ConditionType::Xor:
+      return "xor";
     case ConditionType::Input:
       return "input";
     case ConditionType::Temperature:
@@ -136,6 +138,8 @@ ConditionType string_to_condition_type(const std::string &str) {
     return ConditionType::And;
   if (str == "or")
     return ConditionType::Or;
+  if (str == "xor")
+    return ConditionType::Xor;
   if (str == "input")
     return ConditionType::Input;
   if (str == "temperature")
