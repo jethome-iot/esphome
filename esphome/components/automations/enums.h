@@ -13,6 +13,7 @@ enum class TypesInputTrigger : uint8_t {
   Press,
   Release,
   Click,
+  StateChange,
 };
 
 enum class TypesTemperatureTrigger : uint8_t {

@@ -7,7 +7,7 @@
 #include "esphome/core/base_automation.h"
 #include "esphome/core/automation.h"
 #include "esphome/components/simple/simple_action.h"
-#include "temperature_triggers.h"
+#include "automation_triggers.h"
 #include "esphome/components/sensor/sensor.h"
 #include <string>
 
@@ -48,6 +48,8 @@ template<typename... Ts> class TriggerFactory {
         return new binary_sensor::ReleaseTrigger(sensor);
       case TypesInputTrigger::Click:
         return new binary_sensor::ClickTrigger(sensor, 200, 1000);
+      case TypesInputTrigger::StateChange:
+        return new InputStateChangeTrigger(sensor);
     };
     return nullptr;
   }

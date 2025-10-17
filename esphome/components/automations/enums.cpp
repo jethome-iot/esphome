@@ -52,6 +52,8 @@ const char *input_trigger_type_to_string(TypesInputTrigger type) {
       return "release";
     case TypesInputTrigger::Click:
       return "click";
+    case TypesInputTrigger::StateChange:
+      return "state_change";
     default:
       return "none";
   }
@@ -64,6 +66,8 @@ TypesInputTrigger string_to_input_trigger_type(const std::string &str) {
     return TypesInputTrigger::Release;
   if (str == "click")
     return TypesInputTrigger::Click;
+  if (str == "state_change")
+    return TypesInputTrigger::StateChange;
   return TypesInputTrigger::None;
 }
 

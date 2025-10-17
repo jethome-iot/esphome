@@ -1,9 +1,18 @@
 #pragma once
 #include "esphome/core/automation.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/binary_sensor/binary_sensor.h"
 
 namespace esphome {
 namespace automations {
+
+// Input trigger: fires on any binary sensor state change
+class InputStateChangeTrigger : public Trigger<> {
+ public:
+  explicit InputStateChangeTrigger(binary_sensor::BinarySensor *parent) {
+    parent->add_on_state_callback([this](bool state) { this->trigger(); });
+  }
+};
 
 // Trigger that fires when temperature goes below a threshold
 class TemperatureBelowTrigger : public Trigger<> {
