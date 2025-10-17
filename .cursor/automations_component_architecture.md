@@ -1,0 +1,588 @@
+## ESPHome Automations Component Architecture
+
+### **Overview**
+
+The `automations` component is a **runtime-configurable automation system** that extends ESPHome's core automation framework. Unlike traditional ESPHome automations defined at compile-time in YAML, this component allows automations to be:
+- **Stored persistently** in flash memory as JSON (up to 4KB)
+- **Created dynamically** at runtime from stored configurations
+- **Modified at runtime** (enabled/disabled, added, removed)
+- **Restored automatically** after device reboot
+
+This enables dynamic automation management for embedded devices without requiring recompilation.
+
+---
+
+### **Component Location**
+
+`esphome/components/automations/`
+
+**Files:**
+- `__init__.py` - Python codegen integration
+- `automation_config.h/cpp` - Configuration data structures and JSON serialization
+- `automation_storage.h/cpp` - Component for loading/managing automations
+- `automation_factory.h/cpp` - Factory classes for creating automation objects
+- `condition_factory.h/cpp` - Factory for creating condition objects
+- `temperature_triggers.h` - Temperature-specific trigger implementations
+- `enums.h/cpp` - Type-safe enumerations with string conversion
+
+---
+
+### **Five-Layer Architecture**
+
+#### **1. Configuration Layer** (`automation_config.h/cpp`)
+
+Defines the data structures that represent automations in a serializable format.
+
+**Core Structures:**
+
+```cpp
+struct TriggerConfig {
+  SourceTrigger source;  // Input, Temperature, None
+  union {
+    struct { TypesInputTrigger type; uint32_t input_id; } input;
+    struct { 
+      TypesTemperatureTrigger type; 
+      uint32_t sensor_id;
+      float threshold, min_threshold, max_threshold;
+    } temperature;
+  } params;
+};
+
+struct ConditionConfig {
+  ConditionType type;  // None, And, Or, Xor, Input, Temperature
+  std::vector<ConditionConfig> sub_conditions;  // Recursive!
+  uint32_t sensor_id;
+  InputConditionState state;
+  TypesTemperatureCondition temperature_type;
+  float threshold, min_threshold, max_threshold;
+};
+
+struct ActionConfig {
+  SourceAction source;  // None, Delay, Switch
+  union {
+    struct { TypeSwitchAction type; uint32_t switch_id; } switch_action;
+    struct { uint32_t delay_s; } delay;
+  } params;
+};
+
+struct AutomationConfig {
+  std::string name;
+  bool enabled;
+  TriggerConfig trigger;
+  ConditionConfig condition;  // Optional (check is_valid())
+  std::vector<ActionConfig> actions;
+};
+```
+
+**Key Features:**
+- **Union types** for memory-efficient polymorphic parameters
+- **Recursive ConditionConfig** supports nested logical operations
+- **JSON serialization/deserialization** via ArduinoJson
+- **Entity IDs** stored as `uint32_t` hashes for fast lookup
+
+**AutomationConfigStorage:**
+- Manages `std::vector<AutomationConfig>`
+- Provides CRUD operations: `add_config()`, `get_config()`, `update_config()`, `remove_config()`
+- JSON serialization: `load_from_json()`, `save_to_json()`
+
+---
+
+#### **2. Storage Layer** (`automation_storage.h/cpp`)
+
+Responsible for persistent storage and lifecycle management.
+
+```cpp
+class AutomationStorage : public Component {
+  std::vector<std::unique_ptr<Automation<>>> automations_;
+  ESPPreferenceObject json_obj_;
+  AutomationConfigStorage config_storage_;
+  bool changed_;  // Tracks if automations need rebuilding
+};
+```
+
+**Key Features:**
+- **ESPHome Component** with setup priority `DATA - 1` (loads early)
+- **ESPPreferences integration** for flash storage persistence
+- **Global singleton** `global_automation_storage` for system-wide access
+- **4KB JSON buffer** maximum (`JsonData::MAX_DATA_SIZE`)
+
+**Lifecycle:**
+1. `setup()` - Loads JSON from flash via ESPPreferences
+2. Deserializes into `AutomationConfigStorage`
+3. Uses `AutomationFactory` to create runtime `Automation<>` objects
+4. Stores in `automations_` vector
+5. Runtime modifications set `changed_` flag for rebuilding
+
+---
+
+#### **3. Factory Layer** (`automation_factory.h`, `condition_factory.h/cpp`)
+
+Implements the **Factory Pattern** to dynamically create automation objects from configurations.
+
+**TriggerFactory<Ts...>:**
+```cpp
+static Trigger<Ts...> *create_trigger(const TriggerConfig &config) {
+  switch (config.source) {
+    case SourceTrigger::Input:
+      return create_input_trigger(config);  // Press/Release/Click
+    case SourceTrigger::Temperature:
+      return create_temperature_trigger(config);  // Above/Below/Range
+  }
+}
+```
+
+**ActionFactory<Ts...>:**
+```cpp
+static Action<Ts...> *create_action(const ActionConfig &config) {
+  switch (config.source) {
+    case SourceAction::Switch:
+      return create_switch_action(config);  // TurnOn/TurnOff/Toggle
+    case SourceAction::Delay:
+      return create_delay_action(config);
+    default:
+      return create_empty_action();  // Graceful degradation
+  }
+}
+```
+
+**ConditionFactory:**
+```cpp
+static Condition<> *create_condition(const ConditionConfig &config) {
+  switch (config.type) {
+    case ConditionType::Input:
+      return new BinarySensorCondition<>(sensor, expected_state);
+    case ConditionType::Temperature:
+      return new SensorInRangeCondition<>(sensor, min, max);
+    case ConditionType::And:
+    case ConditionType::Or:
+    case ConditionType::Xor:
+      return create_composite_condition(config);  // Recursive!
+  }
+}
+```
+
+**AutomationFactory<Ts...>:**
+- Orchestrates full automation creation
+- **Condition wrapping**: When a condition exists, wraps all actions in an `IfAction<>`
+- **Error handling**: Returns `nullptr` on failure, logs warnings
+- **Memory management**: Returns `std::unique_ptr<Automation<>>`
+
+**Entity Lookup:**
+Uses efficient hash-based lookup from global `App`:
+- `App.get_binary_sensor_by_key(uint32_t hash)`
+- `App.get_sensor_by_key(uint32_t hash)`
+- `App.get_switch_by_key(uint32_t hash)`
+
+---
+
+#### **4. Temperature Support** (`temperature_triggers.h`)
+
+Specialized triggers for temperature monitoring with **edge detection**.
+
+**TemperatureBelowTrigger:**
+```cpp
+class TemperatureBelowTrigger : public Trigger<> {
+  sensor::Sensor *sensor_;
+  float threshold_;
+  bool was_above_;  // State tracking for edge detection
+  
+  void on_state_(float state) {
+    if (was_above_ && state < threshold_) {
+      this->trigger();  // Fire on downward crossing
+      was_above_ = false;
+    } else if (state >= threshold_) {
+      was_above_ = true;
+    }
+  }
+};
+```
+
+**TemperatureAboveTrigger:**
+- Fires when temperature **crosses upward** above threshold
+- Uses `was_below_` flag for edge detection
+
+**TemperatureRangeTrigger:**
+- Fires when temperature **enters range** from outside
+- Uses `was_outside_` flag
+- Range defined by `[min, max]` inclusive
+
+**Design Philosophy:**
+- **Edge-triggered, not level-triggered** - fires only on state transitions
+- **NaN handling** - ignores invalid sensor readings
+- **Callback-based** - uses `sensor->add_on_state_callback()`
+
+---
+
+#### **5. Enums System** (`enums.h/cpp`)
+
+Type-safe enumerations with **bidirectional string conversion** for JSON serialization.
+
+**Trigger Types:**
+```cpp
+enum class SourceTrigger : uint8_t { None, Input, Temperature, MAX_TRIGGER_TYPES };
+enum class TypesInputTrigger : uint8_t { None, Press, Release, Click };
+enum class TypesTemperatureTrigger : uint8_t { None, Below, Above, Range };
+```
+
+**Action Types:**
+```cpp
+enum class SourceAction : uint8_t { None, Delay, Switch, MAX_ACTION_TYPES };
+enum class TypeSwitchAction : uint8_t { None, TurnOn, TurnOff, Toggle };
+```
+
+**Condition Types:**
+```cpp
+enum class ConditionType : uint8_t { None, And, Or, Xor, Input, Temperature, MAX_CONDITION_TYPES };
+enum class InputConditionState : uint8_t { False = 0, True = 1 };
+enum class TypesTemperatureCondition : uint8_t { None, Below, Above, Range };
+```
+
+**EnumUtils Namespace:**
+- `source_trigger_to_string()` / `string_to_source_trigger()`
+- `temperature_trigger_type_to_string()` / `string_to_temperature_trigger_type()`
+- `condition_type_to_string()` / `string_to_condition_type()`
+- And more... (complete bidirectional conversion for all enums)
+
+**Constants:**
+```cpp
+constexpr size_t MAX_TRIGGER_TYPES = static_cast<size_t>(SourceTrigger::MAX_TRIGGER_TYPES);
+constexpr size_t MAX_ACTION_TYPES = static_cast<size_t>(SourceAction::MAX_ACTION_TYPES);
+constexpr size_t MAX_CONDITION_TYPES = static_cast<size_t>(ConditionType::MAX_CONDITION_TYPES);
+```
+
+---
+
+### **Supported Elements**
+
+#### **Triggers**
+| Type | Variants | Description |
+|------|----------|-------------|
+| **Input** | Press | Binary sensor pressed (state → true) |
+| | Release | Binary sensor released (state → false) |
+| | Click | Press and release within 200-1000ms |
+| **Temperature** | Below | Temperature crosses below threshold |
+| | Above | Temperature crosses above threshold |
+| | Range | Temperature enters [min, max] range |
+
+#### **Conditions**
+| Type | Description |
+|------|-------------|
+| **Input** | Binary sensor current state (true/false) |
+| **Temperature** | Sensor value in range (below/above/range) |
+| **And** | All sub-conditions must be true |
+| **Or** | At least one sub-condition true |
+| **Xor** | Exactly one sub-condition true |
+
+#### **Actions**
+| Type | Variants | Description |
+|------|----------|-------------|
+| **Switch** | TurnOn | Set switch to ON |
+| | TurnOff | Set switch to OFF |
+| | Toggle | Flip switch state |
+| **Delay** | - | Wait specified seconds |
+
+---
+
+### **Data Flow Example**
+
+#### **Runtime Creation Flow:**
+
+```
+1. Device Boot
+   ↓
+2. AutomationStorage::setup()
+   ↓
+3. Load JSON from ESPPreferences
+   ↓
+4. AutomationConfigStorage::load_from_json()
+   ↓
+5. Parse JSON → std::vector<AutomationConfig>
+   ↓
+6. For each config:
+   ├─→ AutomationFactory::create_automation()
+   │   ├─→ TriggerFactory::create_trigger()
+   │   │   └─→ App.get_sensor_by_key() / get_binary_sensor_by_key()
+   │   ├─→ ConditionFactory::create_condition() (optional)
+   │   │   └─→ Recursively create sub-conditions
+   │   └─→ ActionFactory::create_action() (for each action)
+   │       └─→ App.get_switch_by_key()
+   ↓
+7. Store in automations_ vector
+   ↓
+8. Automations active in ESPHome runtime
+```
+
+#### **Condition Wrapping Example:**
+
+When an automation has a condition:
+```
+Automation {
+  trigger: TemperatureAboveTrigger(25°C)
+  condition: InputCondition(door_sensor == closed)
+  actions: [TurnOnAction(fan), DelayAction(60s), TurnOffAction(fan)]
+}
+```
+
+Gets transformed to:
+```
+Automation {
+  trigger: TemperatureAboveTrigger(25°C)
+  actions: [
+    IfAction(
+      condition: InputCondition(door_sensor == closed)
+      then: [TurnOnAction(fan), DelayAction(60s), TurnOffAction(fan)]
+      else: []
+    )
+  ]
+}
+```
+
+---
+
+### **JSON Format Example**
+
+```json
+[
+  {
+    "name": "Cool Room When Hot",
+    "enabled": true,
+    "trigger": {
+      "source": "temperature",
+      "type": "above",
+      "sensor_id": "0x12345678",
+      "threshold": 25.0
+    },
+    "condition": {
+      "type": "and",
+      "conditions": [
+        {
+          "type": "input",
+          "sensor_id": "0xABCDEF00",
+          "state": "true"
+        },
+        {
+          "type": "temperature",
+          "sensor_id": "0x87654321",
+          "temperature_type": "below",
+          "threshold": 30.0
+        }
+      ]
+    },
+    "actions": [
+      {
+        "source": "switch",
+        "type": "turn_on",
+        "switch_id": "0x11223344"
+      },
+      {
+        "source": "delay",
+        "delay_s": 60
+      },
+      {
+        "source": "switch",
+        "type": "turn_off",
+        "switch_id": "0x11223344"
+      }
+    ]
+  }
+]
+```
+
+---
+
+### **Design Patterns**
+
+#### **1. Factory Pattern**
+- `TriggerFactory`, `ActionFactory`, `ConditionFactory`, `AutomationFactory`
+- Decouples object creation from configuration
+- Enables runtime polymorphism
+
+#### **2. Singleton Pattern**
+- `global_automation_storage` for system-wide access
+- Follows ESPHome's global component pattern
+
+#### **3. Strategy Pattern**
+- Pluggable triggers, conditions, and actions
+- Interface-based composition
+
+#### **4. Composite Pattern**
+- Recursive `ConditionConfig` structure
+- And/Or/Xor conditions contain sub-conditions
+- Enables complex logical expressions
+
+#### **5. Template Metaprogramming**
+- `Trigger<Ts...>`, `Action<Ts...>`, `Condition<Ts...>`
+- Type-safe parameter passing
+- Zero-cost abstraction
+
+---
+
+### **Memory Optimization Techniques**
+
+#### **1. Union Types**
+- `TriggerConfig::params` and `ActionConfig::params` use unions
+- Only stores data for the active variant
+- Reduces memory footprint
+
+#### **2. Hash-based Entity IDs**
+- Store `uint32_t` hashes instead of strings
+- Enables O(1) lookup via `App.get_*_by_key()`
+- Reduces storage and improves performance
+
+#### **3. Reserved Vector Capacity**
+```cpp
+std::vector<std::unique_ptr<Automation<>>> automations;
+automations.reserve(storage.size());  // Pre-allocate
+```
+- Avoids reallocations during creation
+- Prevents heap fragmentation
+
+#### **4. Static Buffer for JSON**
+```cpp
+struct JsonData {
+  static constexpr size_t MAX_DATA_SIZE = 4096;
+  char data[MAX_DATA_SIZE];
+  size_t size;
+};
+```
+- Fixed-size buffer stored in preferences
+- No dynamic allocation for storage
+
+#### **5. Move Semantics**
+```cpp
+std::unique_ptr<Automation<>> automation = create_automation(config);
+automations.push_back(std::move(automation));
+```
+- Efficient ownership transfer
+- No unnecessary copies
+
+---
+
+### **Key Features**
+
+✅ **Persistent Storage** - JSON configurations survive reboots  
+✅ **Dynamic Creation** - Automations created at runtime from configs  
+✅ **Entity Lookup** - Hash-based O(1) entity retrieval  
+✅ **Recursive Conditions** - Complex logical expressions (And/Or/Xor trees)  
+✅ **Edge Detection** - Temperature triggers fire on state transitions  
+✅ **Graceful Degradation** - Missing entities → empty actions  
+✅ **Type Safety** - Enum-based type system with validation  
+✅ **Memory Efficient** - Unions, pre-allocation, move semantics  
+
+---
+
+### **Integration with Core ESPHome**
+
+The component leverages core ESPHome infrastructure:
+
+**From `esphome/core/`:**
+- `Component` base class and lifecycle
+- `Trigger<Ts...>`, `Condition<Ts...>`, `Action<Ts...>` templates
+- `Automation<Ts...>` orchestration
+- `AndCondition`, `OrCondition`, `XorCondition` implementations
+- `IfAction`, `DelayAction` built-in actions
+- `ESPPreferenceObject` for flash storage
+- `Application` global singleton for entity lookup
+
+**From `esphome/components/`:**
+- `binary_sensor::PressTrigger`, `ReleaseTrigger`, `ClickTrigger`
+- `binary_sensor::BinarySensorCondition`
+- `sensor::SensorInRangeCondition`
+- `switch_::TurnOnAction`, `TurnOffAction`, `ToggleAction`
+- `simple::EmptyAction` for error handling
+
+---
+
+### **Setup Priority**
+
+```cpp
+float get_setup_priority() const override { 
+  return setup_priority::DATA - 1; 
+}
+```
+
+**Runs at priority `DATA - 1`:**
+- After buses (I2C, SPI, UART)
+- After GPIO initialization
+- After hardware setup
+- **Before** most sensors/switches initialize
+- Ensures entities exist before automation creation
+
+---
+
+### **Python Integration** (`__init__.py`)
+
+```python
+automations_ns = cg.esphome_ns.namespace("automations")
+AutomationStorageComponent = automations_ns.class_("AutomationStorage", cg.Component)
+
+CONFIG_SCHEMA = cv.Schema({
+    cv.GenerateID(): cv.declare_id(AutomationStorageComponent),
+})
+
+async def to_code(config):
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+```
+
+Minimal Python wrapper - most logic in C++ for performance.
+
+---
+
+### **Future Extension Points**
+
+**New Trigger Types:**
+- Add enum to `SourceTrigger`
+- Implement in `TriggerFactory::create_trigger()`
+- Add config struct to `TriggerConfig::params` union
+- Implement serialization in `automation_config.cpp`
+
+**New Condition Types:**
+- Add enum to `ConditionType`
+- Implement in `ConditionFactory::create_condition()`
+- Add fields to `ConditionConfig`
+
+**New Action Types:**
+- Add enum to `SourceAction`
+- Implement in `ActionFactory::create_action()`
+- Add config struct to `ActionConfig::params` union
+
+The architecture is designed for extensibility through the factory pattern.
+
+---
+
+### **Testing Considerations**
+
+**Unit Testing:**
+- JSON serialization/deserialization round-trips
+- Enum string conversion bidirectionality
+- Factory creation with valid/invalid configs
+- Edge detection in temperature triggers
+
+**Integration Testing:**
+- Full automation lifecycle (store → load → execute)
+- Entity lookup failures (missing sensors/switches)
+- Condition tree evaluation
+- Runtime enable/disable
+
+**Component Testing:**
+- Memory constraints (4KB JSON limit)
+- Flash storage persistence
+- Multiple automations interaction
+- Performance under load
+
+---
+
+## Summary
+
+The **automations component** brings **runtime configurability** to ESPHome's compile-time automation system. Through a five-layer architecture combining persistent storage, factory-based creation, and recursive data structures, it enables dynamic automation management on resource-constrained embedded devices.
+
+Key innovations:
+- **JSON-based flash storage** for persistence
+- **Factory pattern** for runtime object creation
+- **Recursive condition trees** for complex logic
+- **Edge-triggered temperature monitoring** for efficiency
+- **Memory-optimized** through unions and move semantics
+
+This design allows automations to be modified without recompilation, enabling user-friendly automation editors and dynamic device behavior.
+
