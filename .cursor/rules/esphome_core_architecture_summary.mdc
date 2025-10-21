@@ -1,0 +1,243 @@
+---
+alwaysApply: true
+---
+
+## ESPHome Core Architecture Summary
+
+### **Core Components**
+
+#### 1. **Application (`application.h`)**
+- **Central coordinator** - Global singleton `App` that manages the entire system
+- **Entity Registry** - Registers and maintains all entities (sensors, switches, lights, etc.)
+- **Component Management** - Handles component lifecycle (setup, loop, teardown)
+- **Optimized Looping** - Uses partitioned vector design for active/inactive components
+  - Active components in front partition, inactive at back
+  - Eliminates branch mispredictions in hot loop path
+- **Entity Lookup** - Efficient hash-based lookup via `get_*_by_key()` methods
+- **Socket Monitoring** - Optional `select()`-based socket monitoring for network components
+
+#### 2. **Component System (`component.h`)**
+- **Base Class** - `Component` is the foundation for all ESPHome components
+- **Lifecycle Methods**:
+  - `setup()` - Initialization (called once)
+  - `loop()` - Repeated execution
+  - `dump_config()` - Configuration output
+  - `teardown()` - Graceful shutdown
+- **Setup Priority** - Determines initialization order (BUS → IO → HARDWARE → DATA → PROCESSOR → WIFI → AFTER_CONNECTION)
+- **State Management** - Component states: CONSTRUCTION → SETUP → LOOP (or FAILED)
+- **Status System** - Warning/error tracking for diagnostics
+- **Loop Control** - Can disable/enable loop dynamically to save CPU
+- **Polling Component** - Subclass for periodic updates with configurable intervals
+
+#### 3. **Automation System (`automation.h`, `base_automation.h`)**
+The automation system follows a **Trigger → Condition → Action** pattern:
+
+**Core Classes:**
+- **`Trigger<Ts...>`** - Event source that initiates automation
+- **`Condition<Ts...>`** - Boolean check (must be instant, no delays)
+- **`Action<Ts...>`** - Operation to perform
+- **`Automation<Ts...>`** - Binds trigger to action list
+- **`ActionList<Ts...>`** - Manages chain of actions
+
+**Built-in Conditions** (from `base_automation.h`):
+- `AndCondition` - All sub-conditions must be true
+- `OrCondition` - At least one sub-condition must be true
+- **`XorCondition`** - **Exactly one** sub-condition must be true (the recent addition!)
+- `NotCondition` - Inverts condition result
+- `LambdaCondition` - Custom lambda-based logic
+
+**Built-in Actions**:
+- `DelayAction` - Wait specified time
+- `IfAction` - Conditional branching with then/else
+- `WhileAction` - Loop while condition is true
+- `RepeatAction` - Execute N times
+- `WaitUntilAction` - Block until condition is true
+- `LambdaAction` - Custom lambda-based action
+
+**Key Feature**: **`TemplatableValue<T, X...>`**
+- Stores either a static value OR a lambda function
+- Allows runtime-evaluated parameters in automations
+- Used throughout the system for flexible configuration
+
+#### 4. **Scheduler (`scheduler.h`)**
+- **Time-based Callbacks** - Manages timeouts, intervals, and retries
+- **64-bit Time Handling** - Handles millis() rollover for long-running devices
+- **Optimized Name Storage** - Tagged union for static vs. dynamic strings
+- **Deferred Execution** - FIFO queue for `defer()` calls
+- **Thread Safety** - Mutex-protected for multi-core systems
+
+#### 5. **Entity System (`entity_base.h`)**
+- **`EntityBase`** - Base class for all user-facing entities
+- **Identity** - Name, object_id, hash-based unique ID
+- **Metadata** - Icon, device class, entity category, internal flag
+- **Device Association** - Links entities to devices/areas
+- **`StatefulEntityBase<T>`** - Entities with state tracking
+  - State change callbacks
+  - Previous/current state tracking
+  - Trigger on initial state control
+
+#### 6. **Logging System (`log.h`)**
+- **Log Levels** - NONE, ERROR, WARN, INFO, CONFIG, DEBUG, VERBOSE, VERY_VERBOSE
+- **Colored Output** - ANSI color codes for terminal
+- **Compile-time Filtering** - Logs compiled out if below log level
+- **Tag-based** - Each component uses unique tag for filtering
+- **Flash Storage** - Optional: Store format strings in flash to save RAM
+
+#### 7. **Helper Utilities (`helpers.h`)**
+- **STL Backports** - `bit_cast`, `byteswap`, `make_unique`
+- **Mathematics** - `remap()`, CRC calculations, hashing
+- **Bit Manipulation** - Encoding/decoding multi-byte values
+- **Platform Abstraction** - Cross-platform utilities
+- **Mutex Wrapper** - Thread safety primitives
+
+### **Design Patterns Used**
+
+1. **Template Metaprogramming** - Variadic templates for flexible automation parameters
+2. **CRTP (Curiously Recurring Template Pattern)** - Component inheritance
+3. **Observer Pattern** - Entity state callbacks
+4. **Factory Pattern** - Component creation and registration
+5. **Singleton** - Global `App` instance
+6. **Strategy Pattern** - Pluggable conditions/actions
+7. **Chain of Responsibility** - Action lists
+
+### **Memory Optimization Techniques**
+
+1. **Bit-packing** - Flags compressed into single bytes
+2. **Tagged Unions** - Reduce memory for variant types
+3. **Partitioned Vectors** - Eliminate runtime checks in hot paths
+4. **Static String Optimization** - Avoid dynamic allocation where possible
+5. **Component Reservation** - Pre-allocate vectors to avoid fragmentation
+
+### **Key Files Overview**
+
+| File | Purpose |
+|------|---------|
+| `application.h/cpp` | Central application coordinator |
+| `component.h/cpp` | Base component class |
+| `automation.h` | Core automation templates |
+| `base_automation.h` | Built-in conditions and actions |
+| `entity_base.h/cpp` | Entity system foundation |
+| `scheduler.h/cpp` | Time-based task scheduling |
+| `helpers.h/cpp` | Utility functions |
+| `log.h/cpp` | Logging infrastructure |
+| `defines.h` | Feature flags and macros |
+| `hal.h` | Hardware abstraction layer |## ESPHome Core Architecture Summary
+
+### **Core Components**
+
+#### 1. **Application (`application.h`)**
+- **Central coordinator** - Global singleton `App` that manages the entire system
+- **Entity Registry** - Registers and maintains all entities (sensors, switches, lights, etc.)
+- **Component Management** - Handles component lifecycle (setup, loop, teardown)
+- **Optimized Looping** - Uses partitioned vector design for active/inactive components
+  - Active components in front partition, inactive at back
+  - Eliminates branch mispredictions in hot loop path
+- **Entity Lookup** - Efficient hash-based lookup via `get_*_by_key()` methods
+- **Socket Monitoring** - Optional `select()`-based socket monitoring for network components
+
+#### 2. **Component System (`component.h`)**
+- **Base Class** - `Component` is the foundation for all ESPHome components
+- **Lifecycle Methods**:
+  - `setup()` - Initialization (called once)
+  - `loop()` - Repeated execution
+  - `dump_config()` - Configuration output
+  - `teardown()` - Graceful shutdown
+- **Setup Priority** - Determines initialization order (BUS → IO → HARDWARE → DATA → PROCESSOR → WIFI → AFTER_CONNECTION)
+- **State Management** - Component states: CONSTRUCTION → SETUP → LOOP (or FAILED)
+- **Status System** - Warning/error tracking for diagnostics
+- **Loop Control** - Can disable/enable loop dynamically to save CPU
+- **Polling Component** - Subclass for periodic updates with configurable intervals
+
+#### 3. **Automation System (`automation.h`, `base_automation.h`)**
+The automation system follows a **Trigger → Condition → Action** pattern:
+
+**Core Classes:**
+- **`Trigger<Ts...>`** - Event source that initiates automation
+- **`Condition<Ts...>`** - Boolean check (must be instant, no delays)
+- **`Action<Ts...>`** - Operation to perform
+- **`Automation<Ts...>`** - Binds trigger to action list
+- **`ActionList<Ts...>`** - Manages chain of actions
+
+**Built-in Conditions** (from `base_automation.h`):
+- `AndCondition` - All sub-conditions must be true
+- `OrCondition` - At least one sub-condition must be true
+- **`XorCondition`** - **Exactly one** sub-condition must be true (the recent addition!)
+- `NotCondition` - Inverts condition result
+- `LambdaCondition` - Custom lambda-based logic
+
+**Built-in Actions**:
+- `DelayAction` - Wait specified time
+- `IfAction` - Conditional branching with then/else
+- `WhileAction` - Loop while condition is true
+- `RepeatAction` - Execute N times
+- `WaitUntilAction` - Block until condition is true
+- `LambdaAction` - Custom lambda-based action
+
+**Key Feature**: **`TemplatableValue<T, X...>`**
+- Stores either a static value OR a lambda function
+- Allows runtime-evaluated parameters in automations
+- Used throughout the system for flexible configuration
+
+#### 4. **Scheduler (`scheduler.h`)**
+- **Time-based Callbacks** - Manages timeouts, intervals, and retries
+- **64-bit Time Handling** - Handles millis() rollover for long-running devices
+- **Optimized Name Storage** - Tagged union for static vs. dynamic strings
+- **Deferred Execution** - FIFO queue for `defer()` calls
+- **Thread Safety** - Mutex-protected for multi-core systems
+
+#### 5. **Entity System (`entity_base.h`)**
+- **`EntityBase`** - Base class for all user-facing entities
+- **Identity** - Name, object_id, hash-based unique ID
+- **Metadata** - Icon, device class, entity category, internal flag
+- **Device Association** - Links entities to devices/areas
+- **`StatefulEntityBase<T>`** - Entities with state tracking
+  - State change callbacks
+  - Previous/current state tracking
+  - Trigger on initial state control
+
+#### 6. **Logging System (`log.h`)**
+- **Log Levels** - NONE, ERROR, WARN, INFO, CONFIG, DEBUG, VERBOSE, VERY_VERBOSE
+- **Colored Output** - ANSI color codes for terminal
+- **Compile-time Filtering** - Logs compiled out if below log level
+- **Tag-based** - Each component uses unique tag for filtering
+- **Flash Storage** - Optional: Store format strings in flash to save RAM
+
+#### 7. **Helper Utilities (`helpers.h`)**
+- **STL Backports** - `bit_cast`, `byteswap`, `make_unique`
+- **Mathematics** - `remap()`, CRC calculations, hashing
+- **Bit Manipulation** - Encoding/decoding multi-byte values
+- **Platform Abstraction** - Cross-platform utilities
+- **Mutex Wrapper** - Thread safety primitives
+
+### **Design Patterns Used**
+
+1. **Template Metaprogramming** - Variadic templates for flexible automation parameters
+2. **CRTP (Curiously Recurring Template Pattern)** - Component inheritance
+3. **Observer Pattern** - Entity state callbacks
+4. **Factory Pattern** - Component creation and registration
+5. **Singleton** - Global `App` instance
+6. **Strategy Pattern** - Pluggable conditions/actions
+7. **Chain of Responsibility** - Action lists
+
+### **Memory Optimization Techniques**
+
+1. **Bit-packing** - Flags compressed into single bytes
+2. **Tagged Unions** - Reduce memory for variant types
+3. **Partitioned Vectors** - Eliminate runtime checks in hot paths
+4. **Static String Optimization** - Avoid dynamic allocation where possible
+5. **Component Reservation** - Pre-allocate vectors to avoid fragmentation
+
+### **Key Files Overview**
+
+| File | Purpose |
+|------|---------|
+| `application.h/cpp` | Central application coordinator |
+| `component.h/cpp` | Base component class |
+| `automation.h` | Core automation templates |
+| `base_automation.h` | Built-in conditions and actions |
+| `entity_base.h/cpp` | Entity system foundation |
+| `scheduler.h/cpp` | Time-based task scheduling |
+| `helpers.h/cpp` | Utility functions |
+| `log.h/cpp` | Logging infrastructure |
+| `defines.h` | Feature flags and macros |
+| `hal.h` | Hardware abstraction layer |

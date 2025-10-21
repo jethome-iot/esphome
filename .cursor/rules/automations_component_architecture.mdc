@@ -1,32 +1,6 @@
-## ESPHome Automations Component Architecture
-
-### **Overview**
-
-The `automations` component is a **runtime-configurable automation system** that extends ESPHome's core automation framework. Unlike traditional ESPHome automations defined at compile-time in YAML, this component allows automations to be:
-- **Stored persistently** in flash memory as JSON (up to 4KB)
-- **Created dynamically** at runtime from stored configurations
-- **Modified at runtime** (enabled/disabled, added, removed)
-- **Restored automatically** after device reboot
-
-This enables dynamic automation management for embedded devices without requiring recompilation.
-
 ---
-
-### **Component Location**
-
-`esphome/components/automations/`
-
-**Files:**
-- `__init__.py` - Python codegen integration
-- `automation_config.h/cpp` - Configuration data structures and JSON serialization
-- `automation_storage.h/cpp` - Component for loading/managing automations
-- `automation_factory.h/cpp` - Factory classes for creating automation objects
-- `condition_factory.h/cpp` - Factory for creating condition objects
-- `temperature_triggers.h` - Temperature-specific trigger implementations
-- `enums.h/cpp` - Type-safe enumerations with string conversion
-
+alwaysApply: false
 ---
-
 ### **Five-Layer Architecture**
 
 #### **1. Configuration Layer** (`automation_config.h/cpp`)
