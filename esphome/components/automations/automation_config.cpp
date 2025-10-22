@@ -285,7 +285,7 @@ bool AutomationConfigStorage::load_from_json(const JsonArray &array) {
   return true;
 }
 
-size_t AutomationConfigStorage::save_to_json(const char *json_str, size_t max_buffer_size) {
+size_t AutomationConfigStorage::save_to_json(char *json_str, size_t max_buffer_size) {
   DynamicJsonDocument doc(max_buffer_size);
   JsonArray array = doc.to<JsonArray>();
 
