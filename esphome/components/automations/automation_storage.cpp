@@ -1,5 +1,3 @@
-#pragma once
-
 #include "automation_storage.h"
 #include "automation_factory.h"
 
@@ -217,11 +215,11 @@ void AutomationStorage::save_configs() {
   size_t measured_size = 0;
   {
     // Create temporary document to measure size
-    DynamicJsonDocument doc(current_buffer_size_);
+    JsonDocument doc;
     JsonArray array = doc.to<JsonArray>();
 
     for (const auto &config : this->config_storage_.get_all_configs()) {
-      JsonObject obj = array.createNestedObject();
+      JsonObject obj = array.add<JsonObject>();
       config.serialize(obj);
     }
 
