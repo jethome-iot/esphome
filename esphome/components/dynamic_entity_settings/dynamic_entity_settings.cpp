@@ -20,9 +20,6 @@ void EntitySettingsKeeper::setup() {
       continue;
     SettingsBaseInterface *setting = list[0];
 
-    if (!setting->check_available())
-      continue;
-
     bool res = setting->init();
     if (!res)
       continue;
