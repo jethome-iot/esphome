@@ -1,0 +1,43 @@
+---
+description: Code formatting rules for jethome-esphome
+---
+
+## Code Formatting Rules
+
+### clang-format Requirement
+
+**After generating or editing any `.h` or `.cpp` files, you MUST run clang-format on them.**
+
+This ensures consistent code formatting across the codebase.
+
+#### Environment Setup
+
+**IMPORTANT**: Before running any commands in jethome-esphome, you MUST activate the virtual environment:
+```bash
+source venv/bin/activate
+```
+
+#### How to Apply clang-format
+
+Run clang-format on generated/edited files:
+```bash
+clang-format -i <file.h> <file.cpp>
+```
+
+Or for multiple files:
+```bash
+clang-format -i file1.h file1.cpp file2.h file2.cpp
+```
+
+#### When to Apply
+
+- **Immediately after** creating new `.h` or `.cpp` files
+- **Immediately after** making edits to existing `.h` or `.cpp` files
+- Before proposing the changes to the user
+
+#### Example Workflow
+
+1. Generate/edit C++ header file (`component.h`)
+2. Generate/edit C++ source file (`component.cpp`)
+3. **Run clang-format on both files**
+4. Present the formatted result to the user
