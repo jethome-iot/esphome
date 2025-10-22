@@ -20,10 +20,10 @@ void BinarySensor::publish_initial_state(bool new_state) {
 }
 void BinarySensor::send_state_internal(bool new_state) {
   // copy the new state to the visible property for backwards compatibility, before any callbacks
-  this->state = new_state;
+  this->state = new_state != this->inverted_;
   // Note that set_state_ de-dups and will only trigger callbacks if the state has actually changed
-  if (this->set_state_(new_state)) {
-    ESP_LOGD(TAG, "'%s': New state is %s", this->get_name().c_str(), ONOFF(new_state));
+  if (this->set_state_(this->state)) {
+    ESP_LOGD(TAG, "'%s': New state is %s", this->get_name().c_str(), ONOFF(this->state));
   }
 }
 
@@ -46,6 +46,9 @@ void BinarySensor::add_filters(const std::vector<Filter *> &filters) {
   }
 }
 bool BinarySensor::is_status_binary_sensor() const { return false; }
+
+void BinarySensor::set_inverted(bool inverted) { this->inverted_ = inverted; }
+bool BinarySensor::is_inverted() const { return this->inverted_; }
 
 }  // namespace binary_sensor
 

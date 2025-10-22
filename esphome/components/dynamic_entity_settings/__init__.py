@@ -14,6 +14,10 @@ SwitchSettingsVer1 = dynamic_entity_settings_ns.class_(
     "SwitchSettingsVer1", SettingsBaseInterface
 )
 
+BinarySensorSettingsVer1 = dynamic_entity_settings_ns.class_(
+    "BinarySensorSettingsVer1", SettingsBaseInterface
+)
+
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
@@ -32,5 +36,9 @@ async def to_code(config):
         ID(id="switch_setting_v1_ptr", type=SwitchSettingsVer1)
     )
 
-    dynamic_settings_list = [switch_setting_ver1]
-    cg.add(var.add_settings_list(dynamic_settings_list))
+    binary_sensor_setting_ver1 = cg.new_Pvariable(
+        ID(id="binary_sensor_setting_v1_ptr", type=BinarySensorSettingsVer1)
+    )
+
+    cg.add(var.add_settings_list([switch_setting_ver1]))
+    cg.add(var.add_settings_list([binary_sensor_setting_ver1]))
