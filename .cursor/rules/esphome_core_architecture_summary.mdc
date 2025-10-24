@@ -121,7 +121,7 @@ The automation system follows a **Trigger → Condition → Action** pattern:
 | `helpers.h/cpp` | Utility functions |
 | `log.h/cpp` | Logging infrastructure |
 | `defines.h` | Feature flags and macros |
-| `hal.h` | Hardware abstraction layer |## ESPHome Core Architecture Summary
+| `hal.h` | Hardware abstraction layer |
 
 ### **Core Components**
 
@@ -226,18 +226,3 @@ The automation system follows a **Trigger → Condition → Action** pattern:
 3. **Partitioned Vectors** - Eliminate runtime checks in hot paths
 4. **Static String Optimization** - Avoid dynamic allocation where possible
 5. **Component Reservation** - Pre-allocate vectors to avoid fragmentation
-
-### **Key Files Overview**
-
-| File | Purpose |
-|------|---------|
-| `application.h/cpp` | Central application coordinator |
-| `component.h/cpp` | Base component class |
-| `automation.h` | Core automation templates |
-| `base_automation.h` | Built-in conditions and actions |
-| `entity_base.h/cpp` | Entity system foundation |
-| `scheduler.h/cpp` | Time-based task scheduling |
-| `helpers.h/cpp` | Utility functions |
-| `log.h/cpp` | Logging infrastructure |
-| `defines.h` | Feature flags and macros |
-| `hal.h` | Hardware abstraction layer |
