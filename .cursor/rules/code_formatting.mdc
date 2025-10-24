@@ -1,7 +1,6 @@
 ---
-description: Code formatting rules for jethome-esphome
+alwaysApply: true
 ---
-
 ## Code Formatting Rules
 
 ### clang-format Requirement
