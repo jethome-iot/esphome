@@ -197,6 +197,42 @@ TypesTemperatureCondition string_to_temperature_condition_type(const std::string
   return TypesTemperatureCondition::None;
 }
 
+// CronPreset
+const char *cron_preset_to_string(CronPreset preset) {
+  switch (preset) {
+    case CronPreset::Daily:
+      return "daily";
+    case CronPreset::Hourly:
+      return "hourly";
+    case CronPreset::EveryNMinutes:
+      return "every_n_minutes";
+    case CronPreset::Weekly:
+      return "weekly";
+    case CronPreset::Monthly:
+      return "monthly";
+    case CronPreset::Custom:
+      return "custom";
+    default:
+      return "daily";
+  }
+}
+
+CronPreset string_to_cron_preset(const std::string &str) {
+  if (str == "daily")
+    return CronPreset::Daily;
+  if (str == "hourly")
+    return CronPreset::Hourly;
+  if (str == "every_n_minutes")
+    return CronPreset::EveryNMinutes;
+  if (str == "weekly")
+    return CronPreset::Weekly;
+  if (str == "monthly")
+    return CronPreset::Monthly;
+  if (str == "custom")
+    return CronPreset::Custom;
+  return CronPreset::Daily;
+}
+
 }  // namespace EnumUtils
 
 }  // namespace automations

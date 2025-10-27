@@ -46,6 +46,8 @@ enum class TypesTemperatureCondition : uint8_t {
   Range,
 };
 
+enum class CronPreset : uint8_t { Daily = 0, Hourly, EveryNMinutes, Weekly, Monthly, Custom };
+
 constexpr size_t MAX_TRIGGER_TYPES = static_cast<size_t>(SourceTrigger::MAX_TRIGGER_TYPES);
 constexpr size_t MAX_ACTION_TYPES = static_cast<size_t>(SourceAction::MAX_ACTION_TYPES);
 constexpr size_t MAX_CONDITION_TYPES = static_cast<size_t>(ConditionType::MAX_CONDITION_TYPES);
@@ -82,6 +84,10 @@ InputConditionState string_to_input_condition_state(const std::string &str);
 // TypesTemperatureCondition
 const char *temperature_condition_type_to_string(TypesTemperatureCondition type);
 TypesTemperatureCondition string_to_temperature_condition_type(const std::string &str);
+
+// CronPreset
+const char *cron_preset_to_string(CronPreset preset);
+CronPreset string_to_cron_preset(const std::string &str);
 
 constexpr size_t trigger_to_index(SourceTrigger source) { return static_cast<size_t>(source); }
 

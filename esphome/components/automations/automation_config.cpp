@@ -110,6 +110,7 @@ void TriggerConfig::serialize(JsonObject &obj) const {
       cron_str += " ";
       cron_str += serialize_cron_field(cron_days_of_week, 1, 7);
       obj["cron"] = cron_str;
+      obj["cron_preset"] = EnumUtils::cron_preset_to_string(cron_preset);
       break;
     }
     default:
@@ -174,6 +175,13 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
       cron_days_of_month = deserialize_cron_field(fields[3], 1, 31);
       cron_months = deserialize_cron_field(fields[4], 1, 12);
       cron_days_of_week = deserialize_cron_field(fields[5], 1, 7);
+
+      // Load preset if available, default to Daily for old configs
+      if (obj.containsKey("cron_preset")) {
+        cron_preset = EnumUtils::string_to_cron_preset(obj["cron_preset"].as<std::string>());
+      } else {
+        cron_preset = CronPreset::Daily;  // Default for old configs
+      }
       break;
     }
     default:

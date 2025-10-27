@@ -34,6 +34,7 @@ struct TriggerConfig {
   std::vector<uint8_t> cron_days_of_month;
   std::vector<uint8_t> cron_months;
   std::vector<uint8_t> cron_days_of_week;
+  CronPreset cron_preset = CronPreset::Daily;
 
   TriggerConfig();
   ~TriggerConfig() = default;
