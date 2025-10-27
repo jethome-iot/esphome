@@ -1,6 +1,7 @@
 #include "automation_storage.h"
 #include "automation_factory.h"
 #include "esphome/components/time/real_time_clock.h"
+#include <esp_log.h>
 
 namespace esphome {
 
@@ -214,6 +215,37 @@ void AutomationStorage::setup() {
            buffer_size);
 };
 
+void AutomationStorage::dump_config() {
+  ESP_LOGCONFIG(TAG, "Automation Storage:");
+  ESP_LOGCONFIG(TAG, "  Total Automations: %d", this->config_storage_.size());
+  ESP_LOGCONFIG(TAG, "  Buffer Size: %d bytes", this->current_buffer_size_);
+
+  const auto &configs = this->config_storage_.get_all_configs();
+
+  for (size_t i = 0; i < configs.size(); i++) {
+    const auto &config = configs[i];
+
+    ESP_LOGCONFIG(TAG, "");
+    ESP_LOGCONFIG(TAG, "Automation [%d]: %s", i, config.name.c_str());
+    ESP_LOGCONFIG(TAG, "  Enabled: %s", config.enabled ? "YES" : "NO");
+
+    // Print trigger information
+    print_trigger_info(config.trigger, 2);
+
+    // Print condition information if present
+    if (config.condition.is_valid()) {
+      print_condition_info(config.condition, 2);
+    }
+
+    // Print actions
+    ESP_LOGCONFIG(TAG, "  Actions: %d", config.actions.size());
+    for (size_t j = 0; j < config.actions.size(); j++) {
+      ESP_LOGCONFIG(TAG, "  [%d]:", j);
+      print_action_info(config.actions[j], 4);
+    }
+  }
+}
+
 void AutomationStorage::save_configs() {
   // First, measure the actual JSON size needed
   size_t measured_size = 0;
@@ -294,6 +326,140 @@ void AutomationStorage::set_enable_automation(uint32_t index, bool enable) {
     if (!enable)
       this->automations_[index]->stop();
     this->automations_[index]->set_enabled(enable);
+  }
+}
+
+void AutomationStorage::print_trigger_info(const TriggerConfig &trigger, int indent) {
+  std::string indent_str(indent, ' ');
+
+  switch (trigger.source) {
+    case SourceTrigger::Input:
+      ESP_LOGCONFIG(TAG, "%sTrigger: Input", indent_str.c_str());
+      ESP_LOGCONFIG(TAG, "%s  Type: %s", indent_str.c_str(),
+                    EnumUtils::input_trigger_type_to_string(trigger.params.input.type));
+      ESP_LOGCONFIG(TAG, "%s  Sensor ID: 0x%08X", indent_str.c_str(), trigger.params.input.input_id);
+      break;
+
+    case SourceTrigger::Temperature:
+      ESP_LOGCONFIG(TAG, "%sTrigger: Temperature", indent_str.c_str());
+      ESP_LOGCONFIG(TAG, "%s  Type: %s", indent_str.c_str(),
+                    EnumUtils::temperature_trigger_type_to_string(trigger.params.temperature.type));
+      ESP_LOGCONFIG(TAG, "%s  Sensor ID: 0x%08X", indent_str.c_str(), trigger.params.temperature.sensor_id);
+
+      if (trigger.params.temperature.type == TypesTemperatureTrigger::Below ||
+          trigger.params.temperature.type == TypesTemperatureTrigger::Above) {
+        ESP_LOGCONFIG(TAG, "%s  Threshold: %.2f", indent_str.c_str(), trigger.params.temperature.threshold);
+      } else if (trigger.params.temperature.type == TypesTemperatureTrigger::Range) {
+        ESP_LOGCONFIG(TAG, "%s  Min Threshold: %.2f", indent_str.c_str(), trigger.params.temperature.min_threshold);
+        ESP_LOGCONFIG(TAG, "%s  Max Threshold: %.2f", indent_str.c_str(), trigger.params.temperature.max_threshold);
+      }
+      break;
+
+    case SourceTrigger::Cron: {
+      ESP_LOGCONFIG(TAG, "%sTrigger: Cron", indent_str.c_str());
+
+      // Helper lambda to format cron field
+      auto format_cron_field = [](const std::vector<uint8_t> &field) -> std::string {
+        if (field.empty())
+          return "*";
+        std::string result;
+        for (size_t i = 0; i < field.size(); i++) {
+          if (i > 0)
+            result += ",";
+          result += std::to_string(field[i]);
+        }
+        return result;
+      };
+
+      ESP_LOGCONFIG(
+          TAG, "%s  Schedule: %s %s %s %s %s %s", indent_str.c_str(), format_cron_field(trigger.cron_seconds).c_str(),
+          format_cron_field(trigger.cron_minutes).c_str(), format_cron_field(trigger.cron_hours).c_str(),
+          format_cron_field(trigger.cron_days_of_month).c_str(), format_cron_field(trigger.cron_months).c_str(),
+          format_cron_field(trigger.cron_days_of_week).c_str());
+      break;
+    }
+
+    case SourceTrigger::None:
+      ESP_LOGCONFIG(TAG, "%sTrigger: None", indent_str.c_str());
+      break;
+
+    default:
+      ESP_LOGCONFIG(TAG, "%sTrigger: Unknown", indent_str.c_str());
+      break;
+  }
+}
+
+void AutomationStorage::print_condition_info(const ConditionConfig &condition, int indent) {
+  std::string indent_str(indent, ' ');
+
+  if (!condition.is_valid()) {
+    return;
+  }
+
+  switch (condition.type) {
+    case ConditionType::Input:
+      ESP_LOGCONFIG(TAG, "%sCondition: Input", indent_str.c_str());
+      ESP_LOGCONFIG(TAG, "%s  Sensor ID: 0x%08X", indent_str.c_str(), condition.sensor_id);
+      ESP_LOGCONFIG(TAG, "%s  Expected State: %s", indent_str.c_str(),
+                    EnumUtils::input_condition_state_to_string(condition.state));
+      break;
+
+    case ConditionType::Temperature:
+      ESP_LOGCONFIG(TAG, "%sCondition: Temperature", indent_str.c_str());
+      ESP_LOGCONFIG(TAG, "%s  Type: %s", indent_str.c_str(),
+                    EnumUtils::temperature_condition_type_to_string(condition.temperature_type));
+      ESP_LOGCONFIG(TAG, "%s  Sensor ID: 0x%08X", indent_str.c_str(), condition.sensor_id);
+
+      if (condition.temperature_type == TypesTemperatureCondition::Below ||
+          condition.temperature_type == TypesTemperatureCondition::Above) {
+        ESP_LOGCONFIG(TAG, "%s  Threshold: %.2f", indent_str.c_str(), condition.threshold);
+      } else if (condition.temperature_type == TypesTemperatureCondition::Range) {
+        ESP_LOGCONFIG(TAG, "%s  Min Threshold: %.2f", indent_str.c_str(), condition.min_threshold);
+        ESP_LOGCONFIG(TAG, "%s  Max Threshold: %.2f", indent_str.c_str(), condition.max_threshold);
+      }
+      break;
+
+    case ConditionType::And:
+    case ConditionType::Or:
+    case ConditionType::Xor:
+      ESP_LOGCONFIG(TAG, "%sCondition: %s", indent_str.c_str(), EnumUtils::condition_type_to_string(condition.type));
+      ESP_LOGCONFIG(TAG, "%s  Sub-conditions: %d", indent_str.c_str(), condition.sub_conditions.size());
+
+      for (size_t i = 0; i < condition.sub_conditions.size(); i++) {
+        ESP_LOGCONFIG(TAG, "%s  [%d]:", indent_str.c_str(), i);
+        print_condition_info(condition.sub_conditions[i], indent + 4);
+      }
+      break;
+
+    default:
+      ESP_LOGCONFIG(TAG, "%sCondition: Unknown", indent_str.c_str());
+      break;
+  }
+}
+
+void AutomationStorage::print_action_info(const ActionConfig &action, int indent) {
+  std::string indent_str(indent, ' ');
+
+  switch (action.source) {
+    case SourceAction::Switch:
+      ESP_LOGCONFIG(TAG, "%sAction: Switch", indent_str.c_str());
+      ESP_LOGCONFIG(TAG, "%s  Type: %s", indent_str.c_str(),
+                    EnumUtils::switch_action_type_to_string(action.params.switch_action.type));
+      ESP_LOGCONFIG(TAG, "%s  Switch ID: 0x%08X", indent_str.c_str(), action.params.switch_action.switch_id);
+      break;
+
+    case SourceAction::Delay:
+      ESP_LOGCONFIG(TAG, "%sAction: Delay", indent_str.c_str());
+      ESP_LOGCONFIG(TAG, "%s  Duration: %d seconds", indent_str.c_str(), action.params.delay.delay_s);
+      break;
+
+    case SourceAction::None:
+      ESP_LOGCONFIG(TAG, "%sAction: None", indent_str.c_str());
+      break;
+
+    default:
+      ESP_LOGCONFIG(TAG, "%sAction: Unknown", indent_str.c_str());
+      break;
   }
 }
 

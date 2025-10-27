@@ -52,7 +52,7 @@ class AutomationStorage : public Component {
 
   float get_setup_priority() const override { return setup_priority::DATA - 1; }
 
-  void dump_config() override{};
+  void dump_config() override;
 
   void save_configs();
 
@@ -72,6 +72,10 @@ class AutomationStorage : public Component {
   size_t current_buffer_size_{DEFAULT_BUFFER_SIZE};
   bool changed_{false};  // If automations aren't consistent with configs
   time::RealTimeClock *rtc_{nullptr};
+
+  void print_trigger_info(const TriggerConfig &trigger, int indent = 0);
+  void print_condition_info(const ConditionConfig &condition, int indent = 0);
+  void print_action_info(const ActionConfig &action, int indent = 0);
 };
 
 // Helper functions for template-based preference operations
