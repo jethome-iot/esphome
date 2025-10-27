@@ -9,6 +9,8 @@
 #include "esphome/components/simple/simple_action.h"
 #include "automation_triggers.h"
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/time/automation.h"
+#include "esphome/components/time/real_time_clock.h"
 #include <string>
 
 namespace esphome {
@@ -23,18 +25,23 @@ void log_action_creation_error();
 
 template<typename... Ts> class TriggerFactory {
  public:
+  static void set_rtc(time::RealTimeClock *rtc) { rtc_ = rtc; }
+
   static Trigger<Ts...> *create_trigger(const TriggerConfig &config) {
     switch (config.source) {
       case SourceTrigger::Input:
         return create_input_trigger(config);
       case SourceTrigger::Temperature:
         return create_temperature_trigger(config);
+      case SourceTrigger::Cron:
+        return create_cron_trigger(config);
       default:
         return nullptr;
     }
   }
 
  private:
+  static time::RealTimeClock *rtc_;
   static Trigger<Ts...> *create_input_trigger(const TriggerConfig &config) {
     auto *sensor = App.get_binary_sensor_by_key(config.params.input.input_id);
     if (sensor == nullptr) {
@@ -73,7 +80,26 @@ template<typename... Ts> class TriggerFactory {
         return nullptr;
     }
   }
+
+  static Trigger<Ts...> *create_cron_trigger(const TriggerConfig &config) {
+    if (rtc_ == nullptr) {
+      ESP_LOGE("automations", "Cannot create cron trigger: RealTimeClock not set");
+      return nullptr;
+    }
+
+    auto *trigger = new time::CronTrigger(rtc_);
+    trigger->add_seconds(config.cron_seconds);
+    trigger->add_minutes(config.cron_minutes);
+    trigger->add_hours(config.cron_hours);
+    trigger->add_days_of_month(config.cron_days_of_month);
+    trigger->add_months(config.cron_months);
+    trigger->add_days_of_week(config.cron_days_of_week);
+    return trigger;
+  }
 };
+
+// Initialize static member
+template<typename... Ts> time::RealTimeClock *TriggerFactory<Ts...>::rtc_ = nullptr;
 
 template<typename... Ts> class ActionFactory {
  public:

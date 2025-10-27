@@ -27,6 +27,14 @@ struct TriggerConfig {
     // Other
   } params;
 
+  // Cron fields (not in union because they use std::vector)
+  std::vector<uint8_t> cron_seconds;
+  std::vector<uint8_t> cron_minutes;
+  std::vector<uint8_t> cron_hours;
+  std::vector<uint8_t> cron_days_of_month;
+  std::vector<uint8_t> cron_months;
+  std::vector<uint8_t> cron_days_of_week;
+
   TriggerConfig();
   ~TriggerConfig() = default;
   TriggerConfig(const TriggerConfig &other) = default;

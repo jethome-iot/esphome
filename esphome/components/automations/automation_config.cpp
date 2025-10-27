@@ -9,6 +9,71 @@ namespace automations {
 
 static const char *const TAG = "automations";
 
+// Helper function to serialize a vector of uint8_t to cron field string
+static std::string serialize_cron_field(const std::vector<uint8_t> &values, uint8_t min_val, uint8_t max_val) {
+  if (values.empty()) {
+    return "*";
+  }
+
+  // Check if this is a full range (all values present)
+  bool is_full_range = true;
+  for (uint8_t i = min_val; i <= max_val; i++) {
+    if (std::find(values.begin(), values.end(), i) == values.end()) {
+      is_full_range = false;
+      break;
+    }
+  }
+
+  if (is_full_range) {
+    return "*";
+  }
+
+  // Build comma-separated list
+  std::string result;
+  for (size_t i = 0; i < values.size(); i++) {
+    if (i > 0) {
+      result += ",";
+    }
+    result += std::to_string(values[i]);
+  }
+  return result;
+}
+
+// Helper function to deserialize a cron field string to vector
+static std::vector<uint8_t> deserialize_cron_field(const std::string &field, uint8_t min_val, uint8_t max_val) {
+  std::vector<uint8_t> result;
+
+  if (field == "*") {
+    // Add all values in range
+    for (uint8_t i = min_val; i <= max_val; i++) {
+      result.push_back(i);
+    }
+    return result;
+  }
+
+  // Parse comma-separated values
+  size_t start = 0;
+  size_t comma_pos;
+  while ((comma_pos = field.find(',', start)) != std::string::npos) {
+    std::string val_str = field.substr(start, comma_pos - start);
+    uint8_t val = static_cast<uint8_t>(std::stoi(val_str));
+    if (val >= min_val && val <= max_val) {
+      result.push_back(val);
+    }
+    start = comma_pos + 1;
+  }
+  // Last value
+  if (start < field.length()) {
+    std::string val_str = field.substr(start);
+    uint8_t val = static_cast<uint8_t>(std::stoi(val_str));
+    if (val >= min_val && val <= max_val) {
+      result.push_back(val);
+    }
+  }
+
+  return result;
+}
+
 TriggerConfig::TriggerConfig() : source(SourceTrigger::None) { memset(&params, 0, sizeof(params)); }
 
 void TriggerConfig::serialize(JsonObject &obj) const {
@@ -30,6 +95,23 @@ void TriggerConfig::serialize(JsonObject &obj) const {
         obj["max_threshold"] = params.temperature.max_threshold;
       }
       break;
+    case SourceTrigger::Cron: {
+      // Serialize as space-separated cron string: "seconds minutes hours days_of_month months days_of_week"
+      std::string cron_str;
+      cron_str += serialize_cron_field(cron_seconds, 0, 60);
+      cron_str += " ";
+      cron_str += serialize_cron_field(cron_minutes, 0, 59);
+      cron_str += " ";
+      cron_str += serialize_cron_field(cron_hours, 0, 23);
+      cron_str += " ";
+      cron_str += serialize_cron_field(cron_days_of_month, 1, 31);
+      cron_str += " ";
+      cron_str += serialize_cron_field(cron_months, 1, 12);
+      cron_str += " ";
+      cron_str += serialize_cron_field(cron_days_of_week, 1, 7);
+      obj["cron"] = cron_str;
+      break;
+    }
     default:
       break;
   }
@@ -60,6 +142,38 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
         params.temperature.min_threshold = obj["min_threshold"].as<float>();
         params.temperature.max_threshold = obj["max_threshold"].as<float>();
       }
+      break;
+    }
+    case SourceTrigger::Cron: {
+      if (!obj.containsKey("cron"))
+        return false;
+
+      std::string cron_str = obj["cron"].as<std::string>();
+
+      // Parse space-separated cron string: "seconds minutes hours days_of_month months days_of_week"
+      std::vector<std::string> fields;
+      size_t start = 0;
+      size_t space_pos;
+      while ((space_pos = cron_str.find(' ', start)) != std::string::npos) {
+        fields.push_back(cron_str.substr(start, space_pos - start));
+        start = space_pos + 1;
+      }
+      // Last field
+      if (start < cron_str.length()) {
+        fields.push_back(cron_str.substr(start));
+      }
+
+      if (fields.size() != 6) {
+        ESP_LOGE(TAG, "Invalid cron format, expected 6 fields but got %d", fields.size());
+        return false;
+      }
+
+      cron_seconds = deserialize_cron_field(fields[0], 0, 60);
+      cron_minutes = deserialize_cron_field(fields[1], 0, 59);
+      cron_hours = deserialize_cron_field(fields[2], 0, 23);
+      cron_days_of_month = deserialize_cron_field(fields[3], 1, 31);
+      cron_months = deserialize_cron_field(fields[4], 1, 12);
+      cron_days_of_week = deserialize_cron_field(fields[5], 1, 7);
       break;
     }
     default:

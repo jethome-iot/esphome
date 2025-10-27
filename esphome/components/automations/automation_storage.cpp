@@ -1,5 +1,6 @@
 #include "automation_storage.h"
 #include "automation_factory.h"
+#include "esphome/components/time/real_time_clock.h"
 
 namespace esphome {
 
@@ -204,6 +205,9 @@ void AutomationStorage::setup() {
     ESP_LOGD(TAG, "Error parsing JSON");
     return;
   }
+
+  // Set RTC for cron triggers before creating automations
+  TriggerFactory<>::set_rtc(this->rtc_);
 
   automations_ = std::move(AutomationFactory<>::create_all_automations(this->config_storage_));
   ESP_LOGD(TAG, "Loaded %d automations (actual size: %d bytes, buffer: %d bytes)", automations_.size(), actual_size,

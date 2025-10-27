@@ -7,6 +7,12 @@
 #include "automation_config.h"
 
 namespace esphome {
+
+// Forward declaration
+namespace time {
+class RealTimeClock;
+}
+
 namespace automations {
 
 // Template-based JsonData with fixed buffer size per instantiation
@@ -56,6 +62,8 @@ class AutomationStorage : public Component {
 
   void set_enable_automation(uint32_t index, bool enable);
 
+  void set_time_source(time::RealTimeClock *rtc) { rtc_ = rtc; }
+
  protected:
   std::vector<std::unique_ptr<Automation<>>> automations_;
   ESPPreferenceObject json_obj_;
@@ -63,6 +71,7 @@ class AutomationStorage : public Component {
   AutomationConfigStorage config_storage_;
   size_t current_buffer_size_{DEFAULT_BUFFER_SIZE};
   bool changed_{false};  // If automations aren't consistent with configs
+  time::RealTimeClock *rtc_{nullptr};
 };
 
 // Helper functions for template-based preference operations
