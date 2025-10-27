@@ -1,7 +1,7 @@
 ---
 alwaysApply: false
 ---
-### **Five-Layer Architecture**
+### **Six-Layer Architecture**
 
 #### **1. Configuration Layer** (`automation_config.h/cpp`)
 
@@ -11,7 +11,7 @@ Defines the data structures that represent automations in a serializable format.
 
 ```cpp
 struct TriggerConfig {
-  SourceTrigger source;  // Input, Temperature, None
+  SourceTrigger source;  // Input, Temperature, Cron, None
   union {
     struct { TypesInputTrigger type; uint32_t input_id; } input;
     struct { 
@@ -20,6 +20,13 @@ struct TriggerConfig {
       float threshold, min_threshold, max_threshold;
     } temperature;
   } params;
+  // Cron-specific fields (stored outside union)
+  std::vector<uint8_t> cron_seconds;
+  std::vector<uint8_t> cron_minutes;
+  std::vector<uint8_t> cron_hours;
+  std::vector<uint8_t> cron_days_of_month;
+  std::vector<uint8_t> cron_months;
+  std::vector<uint8_t> cron_days_of_week;
 };
 
 struct ConditionConfig {
@@ -71,6 +78,9 @@ class AutomationStorage : public Component {
   ESPPreferenceObject json_obj_;
   AutomationConfigStorage config_storage_;
   bool changed_;  // Tracks if automations need rebuilding
+  time::RealTimeClock *rtc_{nullptr};  // Time source for cron triggers
+  
+  void set_time_source(time::RealTimeClock *rtc) { rtc_ = rtc; }
 };
 ```
 
@@ -101,6 +111,8 @@ static Trigger<Ts...> *create_trigger(const TriggerConfig &config) {
       return create_input_trigger(config);  // Press/Release/Click
     case SourceTrigger::Temperature:
       return create_temperature_trigger(config);  // Above/Below/Range
+    case SourceTrigger::Cron:
+      return create_cron_trigger(config);  // Time-based scheduling
   }
 }
 ```
@@ -187,13 +199,57 @@ class TemperatureBelowTrigger : public Trigger<> {
 
 ---
 
-#### **5. Enums System** (`enums.h/cpp`)
+#### **5. Cron Support** (`automation_factory.h`)
+
+Time-based triggers using ESPHome's `time::CronTrigger` component.
+
+**CronTrigger Creation:**
+- Requires RTC (Real Time Clock) set via `AutomationStorage::set_time_source()`
+- Uses 6-field cron format: seconds, minutes, hours, days_of_month, months, days_of_week
+- Wildcards (`*`) expand to full ranges automatically
+- Comma-separated values supported (e.g., `"2,3,4,5,6"` for Mon-Fri)
+
+**Format:**
+- **Seconds**: 0-60
+- **Minutes**: 0-59
+- **Hours**: 0-23
+- **Days of Month**: 1-31
+- **Months**: 1-12
+- **Days of Week**: 1-7 (1=Sunday, 7=Saturday)
+
+**JSON Storage:**
+
+Cron expressions stored as simple space-separated strings:
+```json
+"cron": "0 30 8 * * *"  // Every day at 8:30:00 AM
+```
+
+Parsed and expanded into six `uint8_t` vectors during deserialization.
+
+**Examples:**
+- `"0 30 8 * * *"` - Every day at 8:30:00 AM
+- `"0 * * * * *"` - Every minute at :00 seconds
+- `"0 0 7 * * 2,3,4,5,6"` - Weekdays (Mon-Fri) at 7:00 AM
+- `"30 15 14 1 * *"` - First day of every month at 14:15:30
+
+**Integration:**
+
+Uses existing `time::CronTrigger` from ESPHome's time component, ensuring compatibility with all time platforms (SNTP, DS1307, GPS, etc.).
+
+**Design Notes:**
+- Cron fields stored as vectors outside the union due to variable-length data
+- No parameters passed to triggered actions (empty `Trigger<>`)
+- RTC must be configured in YAML and linked via `time_id` parameter
+
+---
+
+#### **6. Enums System** (`enums.h/cpp`)
 
 Type-safe enumerations with **bidirectional string conversion** for JSON serialization.
 
 **Trigger Types:**
 ```cpp
-enum class SourceTrigger : uint8_t { None, Input, Temperature, MAX_TRIGGER_TYPES };
+enum class SourceTrigger : uint8_t { None, Input, Temperature, Cron, MAX_TRIGGER_TYPES };
 enum class TypesInputTrigger : uint8_t { None, Press, Release, Click };
 enum class TypesTemperatureTrigger : uint8_t { None, Below, Above, Range };
 ```
@@ -237,6 +293,7 @@ constexpr size_t MAX_CONDITION_TYPES = static_cast<size_t>(ConditionType::MAX_CO
 | **Temperature** | Below | Temperature crosses below threshold |
 | | Above | Temperature crosses above threshold |
 | | Range | Temperature enters [min, max] range |
+| **Cron** | - | Time-based trigger using cron expressions |
 
 #### **Conditions**
 | Type | Description |
@@ -358,6 +415,30 @@ Automation {
         "switch_id": "0x11223344"
       }
     ]
+  },
+  {
+    "name": "Weekday Morning Routine",
+    "enabled": true,
+    "trigger": {
+      "source": "Cron",
+      "cron": "0 0 7 * * 2,3,4,5,6"
+    },
+    "actions": [
+      {
+        "source": "Switch",
+        "type": "turn_on",
+        "switch_id": "0x11223344"
+      },
+      {
+        "source": "Delay",
+        "delay_s": 300
+      },
+      {
+        "source": "Switch",
+        "type": "turn_off",
+        "switch_id": "0x11223344"
+      }
+    ]
   }
 ]
 ```
@@ -439,6 +520,7 @@ automations.push_back(std::move(automation));
 ✅ **Entity Lookup** - Hash-based O(1) entity retrieval  
 ✅ **Recursive Conditions** - Complex logical expressions (And/Or/Xor trees)  
 ✅ **Edge Detection** - Temperature triggers fire on state transitions  
+✅ **Cron Scheduling** - Time-based triggers with full cron syntax support  
 ✅ **Graceful Degradation** - Missing entities → empty actions  
 ✅ **Type Safety** - Enum-based type system with validation  
 ✅ **Memory Efficient** - Unions, pre-allocation, move semantics  
@@ -463,6 +545,7 @@ The component leverages core ESPHome infrastructure:
 - `binary_sensor::BinarySensorCondition`
 - `sensor::SensorInRangeCondition`
 - `switch_::TurnOnAction`, `TurnOffAction`, `ToggleAction`
+- `time::CronTrigger` for scheduled automations
 - `simple::EmptyAction` for error handling
 
 ---
@@ -492,11 +575,32 @@ AutomationStorageComponent = automations_ns.class_("AutomationStorage", cg.Compo
 
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(AutomationStorageComponent),
+    cv.Optional(CONF_TIME_ID): cv.use_id(time.RealTimeClock),  # For cron triggers
 })
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+    
+    if CONF_TIME_ID in config:
+        rtc = await cg.get_variable(config[CONF_TIME_ID])
+        cg.add(var.set_time_source(rtc))
+```
+
+**Configuration:**
+- `time_id` (optional): Links a time component for cron trigger support
+- Must be specified if any automations use cron triggers
+- Supports all ESPHome time platforms (SNTP, DS1307, GPS, etc.)
+
+**Example YAML:**
+```yaml
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: Europe/Moscow
+
+automations:
+  time_id: sntp_time  # Required for cron triggers
 ```
 
 Minimal Python wrapper - most logic in C++ for performance.
@@ -508,8 +612,9 @@ Minimal Python wrapper - most logic in C++ for performance.
 **New Trigger Types:**
 - Add enum to `SourceTrigger`
 - Implement in `TriggerFactory::create_trigger()`
-- Add config struct to `TriggerConfig::params` union
+- Add config struct to `TriggerConfig::params` union (or separate fields for variable-length data)
 - Implement serialization in `automation_config.cpp`
+- **Note**: Cron triggers use vectors outside the union due to variable-length field data
 
 **New Condition Types:**
 - Add enum to `ConditionType`
@@ -549,13 +654,14 @@ The architecture is designed for extensibility through the factory pattern.
 
 ## Summary
 
-The **automations component** brings **runtime configurability** to ESPHome's compile-time automation system. Through a five-layer architecture combining persistent storage, factory-based creation, and recursive data structures, it enables dynamic automation management on resource-constrained embedded devices.
+The **automations component** brings **runtime configurability** to ESPHome's compile-time automation system. Through an architecture combining persistent storage, factory-based creation, and recursive data structures, it enables dynamic automation management on resource-constrained embedded devices.
 
 Key innovations:
 - **JSON-based flash storage** for persistence
 - **Factory pattern** for runtime object creation
 - **Recursive condition trees** for complex logic
 - **Edge-triggered temperature monitoring** for efficiency
+- **Time-based cron triggers** for scheduled automations
 - **Memory-optimized** through unions and move semantics
 
 This design allows automations to be modified without recompilation, enabling user-friendly automation editors and dynamic device behavior.
