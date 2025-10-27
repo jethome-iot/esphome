@@ -94,6 +94,7 @@ template<typename... Ts> class TriggerFactory {
     trigger->add_days_of_month(config.cron_days_of_month);
     trigger->add_months(config.cron_months);
     trigger->add_days_of_week(config.cron_days_of_week);
+    App.register_component(trigger);
     return trigger;
   }
 };
