@@ -97,8 +97,8 @@ struct ActionConfig {
 struct AutomationConfig {
   std::string name;
   bool enabled = true;
-  TriggerConfig trigger;
-  ConditionConfig condition;  // Optional condition - check type != None
+  std::vector<TriggerConfig> triggers;  // Multiple triggers (OR logic)
+  ConditionConfig condition;            // Optional condition - check type != None
   std::vector<ActionConfig> actions;
 
   void serialize(JsonObject &obj) const;

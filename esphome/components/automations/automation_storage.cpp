@@ -230,7 +230,11 @@ void AutomationStorage::dump_config() {
     ESP_LOGCONFIG(TAG, "  Enabled: %s", config.enabled ? "YES" : "NO");
 
     // Print trigger information
-    print_trigger_info(config.trigger, 2);
+    ESP_LOGCONFIG(TAG, "  Triggers: %d", config.triggers.size());
+    for (size_t j = 0; j < config.triggers.size(); j++) {
+      ESP_LOGCONFIG(TAG, "  [%d]:", j);
+      print_trigger_info(config.triggers[j], 4);
+    }
 
     // Print condition information if present
     if (config.condition.is_valid()) {

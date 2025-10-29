@@ -49,7 +49,7 @@ struct ActionConfig {
 struct AutomationConfig {
   std::string name;
   bool enabled;
-  TriggerConfig trigger;
+  std::vector<TriggerConfig> triggers;  // Multiple triggers with OR logic
   ConditionConfig condition;  // Optional (check is_valid())
   std::vector<ActionConfig> actions;
 };
@@ -60,6 +60,8 @@ struct AutomationConfig {
 - **Recursive ConditionConfig** supports nested logical operations
 - **JSON serialization/deserialization** via ArduinoJson
 - **Entity IDs** stored as `uint32_t` hashes for fast lookup
+- **Multiple triggers** with OR logic - any trigger firing executes the automation
+- **Backward compatibility** - supports both old single `"trigger"` and new `"triggers"` array formats
 
 **AutomationConfigStorage:**
 - Manages `std::vector<AutomationConfig>`
@@ -377,12 +379,14 @@ Automation {
   {
     "name": "Cool Room When Hot",
     "enabled": true,
-    "trigger": {
-      "source": "temperature",
-      "type": "above",
-      "sensor_id": "0x12345678",
-      "threshold": 25.0
-    },
+    "triggers": [
+      {
+        "source": "temperature",
+        "type": "above",
+        "sensor_id": "0x12345678",
+        "threshold": 25.0
+      }
+    ],
     "condition": {
       "type": "and",
       "conditions": [
@@ -417,12 +421,18 @@ Automation {
     ]
   },
   {
-    "name": "Weekday Morning Routine",
+    "name": "Weekday Morning Routine (Multiple Times)",
     "enabled": true,
-    "trigger": {
-      "source": "Cron",
-      "cron": "0 0 7 * * 2,3,4,5,6"
-    },
+    "triggers": [
+      {
+        "source": "Cron",
+        "cron": "0 0 7 * * 2,3,4,5,6"
+      },
+      {
+        "source": "Cron",
+        "cron": "0 0 19 * * 2,3,4,5,6"
+      }
+    ],
     "actions": [
       {
         "source": "Switch",
@@ -442,6 +452,59 @@ Automation {
   }
 ]
 ```
+
+---
+
+### **Backward Compatibility**
+
+The automation system supports both old and new JSON formats for triggers:
+
+**Old Format (Single Trigger):**
+```json
+{
+  "name": "Test Automation",
+  "enabled": true,
+  "trigger": {
+    "source": "Cron",
+    "cron": "0 30 8 * * *"
+  },
+  "actions": [...]
+}
+```
+
+**New Format (Multiple Triggers):**
+```json
+{
+  "name": "Test Automation",
+  "enabled": true,
+  "triggers": [
+    {
+      "source": "Cron",
+      "cron": "0 30 8 * * *"
+    },
+    {
+      "source": "Cron",
+      "cron": "0 0 18 * * *"
+    }
+  ],
+  "actions": [...]
+}
+```
+
+**Deserialization Behavior:**
+- If `"triggers"` array exists → use new format (load all triggers)
+- If `"trigger"` object exists → convert to array with single element
+- If neither exists → error
+
+**Serialization Behavior:**
+- Always serializes as `"triggers": [...]` array (new format)
+- Old configs are automatically upgraded on save
+
+**Multiple Trigger Logic:**
+- All triggers attached to the same automation share the same action chain
+- **OR logic**: ANY trigger firing will execute the actions
+- First trigger is passed to `Automation` constructor
+- Additional triggers are manually attached via `set_automation_parent()`
 
 ---
 

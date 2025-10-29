@@ -150,13 +150,31 @@ template<typename... Ts> class AutomationFactory {
  public:
   // Create automation from config
   static std::unique_ptr<Automation<Ts...>> create_automation(const AutomationConfig &config) {
-    Trigger<Ts...> *trigger = TriggerFactory<Ts...>::create_trigger(config.trigger);
-    if (!trigger) {
+    // Validate that we have at least one trigger
+    if (config.triggers.empty()) {
+      ESP_LOGE("automations", "Automation '%s' has no triggers", config.name.c_str());
+      return nullptr;
+    }
+
+    // Create the first trigger (required for Automation constructor)
+    Trigger<Ts...> *first_trigger = TriggerFactory<Ts...>::create_trigger(config.triggers[0]);
+    if (!first_trigger) {
       log_trigger_creation_error();
       return nullptr;
     }
 
-    auto automation = std::make_unique<Automation<Ts...>>(trigger);
+    auto automation = std::make_unique<Automation<Ts...>>(first_trigger);
+
+    // Create and attach additional triggers (OR logic - any trigger fires the automation)
+    for (size_t i = 1; i < config.triggers.size(); i++) {
+      Trigger<Ts...> *trigger = TriggerFactory<Ts...>::create_trigger(config.triggers[i]);
+      if (!trigger) {
+        log_trigger_creation_error();
+        return nullptr;
+      }
+      // Manually set the automation parent for additional triggers
+      trigger->set_automation_parent(automation.get());
+    }
 
     // Check if we have a condition - if so, wrap actions in IfAction
     if (config.condition.is_valid()) {

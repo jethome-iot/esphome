@@ -330,8 +330,12 @@ void AutomationConfig::serialize(JsonObject &obj) const {
   // obj["id"] = id;
   obj["enabled"] = enabled;
 
-  JsonObject trigger_obj = obj.createNestedObject("trigger");
-  trigger.serialize(trigger_obj);
+  // Serialize triggers as array (new format)
+  JsonArray triggers_array = obj.createNestedArray("triggers");
+  for (const auto &trigger : triggers) {
+    JsonObject trigger_obj = triggers_array.createNestedObject();
+    trigger.serialize(trigger_obj);
+  }
 
   // Serialize condition if it exists
   if (condition.is_valid()) {
@@ -347,15 +351,37 @@ void AutomationConfig::serialize(JsonObject &obj) const {
 }
 
 bool AutomationConfig::deserialize(const JsonObject &obj) {
-  if (!obj.containsKey("name") || !obj.containsKey("trigger")) {
+  if (!obj.containsKey("name")) {
     return false;
   }
 
   name = obj["name"].as<std::string>();
   enabled = obj["enabled"].as<bool>();
 
-  if (!trigger.deserialize(obj["trigger"].as<JsonObject>())) {
-    ESP_LOGI("Alex", "Failed load trigger");
+  // Support both old format (single "trigger") and new format ("triggers" array)
+  if (obj.containsKey("triggers")) {
+    // New format: array of triggers
+    JsonArray triggers_array = obj["triggers"].as<JsonArray>();
+    for (const auto &trigger_obj : triggers_array) {
+      TriggerConfig trigger;
+      if (trigger.deserialize(trigger_obj.as<JsonObject>())) {
+        triggers.push_back(trigger);
+      } else {
+        ESP_LOGI("Alex", "Failed to load trigger from array");
+        return false;
+      }
+    }
+  } else if (obj.containsKey("trigger")) {
+    // Old format: single trigger - convert to array with one element
+    TriggerConfig trigger;
+    if (!trigger.deserialize(obj["trigger"].as<JsonObject>())) {
+      ESP_LOGI("Alex", "Failed load trigger");
+      return false;
+    }
+    triggers.push_back(trigger);
+  } else {
+    // No trigger or triggers field
+    ESP_LOGE(TAG, "Automation config missing 'trigger' or 'triggers' field");
     return false;
   }
 
