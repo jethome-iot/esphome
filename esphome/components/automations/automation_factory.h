@@ -197,6 +197,22 @@ template<typename... Ts> class AutomationFactory {
         }
         if_action->add_then(then_actions);
 
+        // Add all else_actions to the "else" branch of the IfAction
+        if (!config.else_actions.empty()) {
+          std::vector<Action<Ts...> *> else_actions;
+          for (const auto &action_config : config.else_actions) {
+            Action<Ts...> *action = ActionFactory<Ts...>::create_action(action_config);
+            if (action) {
+              else_actions.push_back(action);
+            } else {
+              log_action_creation_error();
+              delete if_action;
+              return nullptr;
+            }
+          }
+          if_action->add_else(else_actions);
+        }
+
         // Add the IfAction to the automation
         automation->add_action(if_action);
       } else {

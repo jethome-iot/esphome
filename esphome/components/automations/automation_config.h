@@ -100,6 +100,7 @@ struct AutomationConfig {
   std::vector<TriggerConfig> triggers;  // Multiple triggers (OR logic)
   ConditionConfig condition;            // Optional condition - check type != None
   std::vector<ActionConfig> actions;
+  std::vector<ActionConfig> else_actions;  // Actions to execute when condition is false
 
   void serialize(JsonObject &obj) const;
   bool deserialize(const JsonObject &obj);

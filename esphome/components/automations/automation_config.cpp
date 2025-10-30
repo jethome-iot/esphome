@@ -348,6 +348,15 @@ void AutomationConfig::serialize(JsonObject &obj) const {
     JsonObject action_obj = actions_array.createNestedObject();
     action.serialize(action_obj);
   }
+
+  // Serialize else_actions if they exist
+  if (!else_actions.empty()) {
+    JsonArray else_actions_array = obj.createNestedArray("else_actions");
+    for (const auto &action : else_actions) {
+      JsonObject action_obj = else_actions_array.createNestedObject();
+      action.serialize(action_obj);
+    }
+  }
 }
 
 bool AutomationConfig::deserialize(const JsonObject &obj) {
@@ -401,6 +410,20 @@ bool AutomationConfig::deserialize(const JsonObject &obj) {
         actions.push_back(action);
       } else {
         ESP_LOGI("Alex", "Failed load action");
+        return false;
+      }
+    }
+  }
+
+  // Deserialize else_actions if they exist (optional)
+  if (obj.containsKey("else_actions")) {
+    JsonArray else_actions_array = obj["else_actions"].as<JsonArray>();
+    for (const auto &action_obj : else_actions_array) {
+      ActionConfig action;
+      if (action.deserialize(action_obj.as<JsonObject>())) {
+        else_actions.push_back(action);
+      } else {
+        ESP_LOGI("Alex", "Failed load else_action");
         return false;
       }
     }
