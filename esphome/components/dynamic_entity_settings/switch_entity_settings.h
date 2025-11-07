@@ -2,6 +2,7 @@
 #if defined(USE_ESP32) && defined(USE_SWITCH)
 #include "dynamic_entity_settings.h"
 #include "esphome/components/switch/switch.h"
+#include "esphome/core/application.h"
 #include "settings_names.h"
 
 namespace esphome {
@@ -69,6 +70,12 @@ class SwitchSettingsVer1 : public SettingsBaseInterface {
   bool make_conversion_from_last_version(SettingsBaseInterface *last) override { return true; }
 
   void reset() override { this->preference_array_.clear_all(); }
+
+  void create_apply_components(std::vector<Component *> &components) override {
+    if (!this->preference_array_.records().empty()) {
+      components.push_back(new SettingsApplyComponent<SwitchSettingsVer1>(this));
+    }
+  }
 
  protected:
   PreferenceArrayType<SwitchSettingsVer1Data> preference_array_;

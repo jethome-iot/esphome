@@ -18,8 +18,8 @@ BinarySensorSettingsVer1 = dynamic_entity_settings_ns.class_(
     "BinarySensorSettingsVer1", SettingsBaseInterface
 )
 
-SensorSettingsVer1 = dynamic_entity_settings_ns.class_(
-    "SensorSettingsVer1", SettingsBaseInterface
+DallasTempSettingsVer1 = dynamic_entity_settings_ns.class_(
+    "DallasTempSettingsVer1", SettingsBaseInterface
 )
 
 
@@ -44,10 +44,10 @@ async def to_code(config):
         ID(id="binary_sensor_setting_v1_ptr", type=BinarySensorSettingsVer1)
     )
 
-    sensor_setting_ver1 = cg.new_Pvariable(
-        ID(id="sensor_setting_v1_ptr", type=SensorSettingsVer1)
+    dallas_temp_setting_ver1 = cg.new_Pvariable(
+        ID(id="dallas_temp_setting_v1_ptr", type=DallasTempSettingsVer1)
     )
 
     cg.add(var.add_settings_list([switch_setting_ver1]))
     cg.add(var.add_settings_list([binary_sensor_setting_ver1]))
-    cg.add(var.add_settings_list([sensor_setting_ver1]))
+    cg.add(var.add_settings_list([dallas_temp_setting_ver1]))

@@ -17,7 +17,7 @@ class DallasTemperatureSearcher : public Component, public one_wire::OneWireDevi
   void setup() override;
 
   // setup should be called before setup dallas temp sensors
-  float get_setup_priority() const override { return setup_priority::DATA + 1; }
+  float get_setup_priority() const override { return setup_priority::DATA + 20; }
 
   // Update interval for all sensors
   void set_update_interval(uint32_t update_interval_ms) { this->update_interval_ms_ = update_interval_ms; }

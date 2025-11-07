@@ -8,6 +8,10 @@ namespace esphome {
 namespace dynamic_entity_settings {
 template<typename T> using PreferenceArrayType = esphome::esp32::ESP32PreferencesArrayKey<T>;
 
+struct DefaultApplyPriority {
+  static float get() { return setup_priority::HARDWARE + 1.0f; }
+};
+
 // Interface for settings type
 class SettingsBaseInterface {
  public:
@@ -26,10 +30,30 @@ class SettingsBaseInterface {
   // Apply all loaded settings
   virtual void apply() = 0;
 
+  // Create helper components that will apply the settings later during setup
+  virtual void create_apply_components(std::vector<Component *> &components) = 0;
+
   // Records size
   virtual size_t size() = 0;
   // Clear all records
   virtual void reset() = 0;
+};
+
+template<typename SettingsType, typename Priority = DefaultApplyPriority>
+class SettingsApplyComponent : public Component {
+ public:
+  explicit SettingsApplyComponent(SettingsType *settings) : settings_(settings) {}
+
+  float get_setup_priority() const override { return Priority::get(); }
+
+  void setup() override {
+    if (this->settings_ == nullptr)
+      return;
+    this->settings_->apply();
+  }
+
+ protected:
+  SettingsType *settings_{nullptr};
 };
 
 // Class for setting parameters for entities

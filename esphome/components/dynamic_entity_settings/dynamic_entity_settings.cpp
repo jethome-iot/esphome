@@ -1,4 +1,5 @@
 #include "dynamic_entity_settings.h"
+#include "esphome/core/application.h"
 #include "esphome/core/helpers.h"
 #include <nvs_flash.h>
 
@@ -14,7 +15,8 @@ EntitySettingsKeeper::EntitySettingsKeeper() { global_entity_settings_keeper = t
 void EntitySettingsKeeper::setup() {
   // TODO Logic for checking existing settings and conversion between them
 
-  // Just apply first setting now
+  // Init, load settings and register components for applying
+  std::vector<Component *> components_to_register;
   for (auto &list : this->settings_list_) {
     if (list.empty())
       continue;
@@ -25,7 +27,13 @@ void EntitySettingsKeeper::setup() {
       continue;
     res = setting->load();
     if (res)
-      setting->apply();
+      setting->create_apply_components(components_to_register);
+  }
+
+  for (Component *component : components_to_register) {
+    if (component == nullptr)
+      continue;
+    App.register_component(component);
   }
 }
 
