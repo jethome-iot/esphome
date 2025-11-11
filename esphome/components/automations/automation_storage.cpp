@@ -382,6 +382,9 @@ void AutomationStorage::print_trigger_info(const TriggerConfig &trigger, int ind
           format_cron_field(trigger.cron_days_of_week).c_str());
       break;
     }
+    case SourceTrigger::Startup:
+      ESP_LOGCONFIG(TAG, "%sTrigger: Startup", indent_str.c_str());
+      break;
 
     case SourceTrigger::None:
       ESP_LOGCONFIG(TAG, "%sTrigger: None", indent_str.c_str());

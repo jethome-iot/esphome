@@ -13,6 +13,8 @@ const char *source_trigger_to_string(SourceTrigger source) {
       return "Temperature";
     case SourceTrigger::Cron:
       return "Cron";
+    case SourceTrigger::Startup:
+      return "Startup";
     default:
       return "None";
   }
@@ -25,6 +27,8 @@ SourceTrigger string_to_source_trigger(const std::string &str) {
     return SourceTrigger::Temperature;
   if (str == "Cron")
     return SourceTrigger::Cron;
+  if (str == "Startup")
+    return SourceTrigger::Startup;
   return SourceTrigger::None;
 }
 

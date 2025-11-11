@@ -115,6 +115,8 @@ static Trigger<Ts...> *create_trigger(const TriggerConfig &config) {
       return create_temperature_trigger(config);  // Above/Below/Range
     case SourceTrigger::Cron:
       return create_cron_trigger(config);  // Time-based scheduling
+    case SourceTrigger::Startup:
+      return create_startup_trigger();  // Fires once after boot
   }
 }
 ```
@@ -243,6 +245,12 @@ Uses existing `time::CronTrigger` from ESPHome's time component, ensuring compat
 - No parameters passed to triggered actions (empty `Trigger<>`)
 - RTC must be configured in YAML and linked via `time_id` parameter
 
+##### Startup Trigger
+
+- Implemented via ESPHome's core `StartupTrigger` from `base_automation.h`.
+- Factory creates it with `setup_priority::DATA - 1`, so it executes immediately after DATA-priority components finish bootstrapping.
+- Fires exactly once per boot and requires no additional configuration fields.
+
 ---
 
 #### **6. Enums System** (`enums.h/cpp`)
@@ -251,7 +259,7 @@ Type-safe enumerations with **bidirectional string conversion** for JSON seriali
 
 **Trigger Types:**
 ```cpp
-enum class SourceTrigger : uint8_t { None, Input, Temperature, Cron, MAX_TRIGGER_TYPES };
+enum class SourceTrigger : uint8_t { None, Input, Temperature, Cron, Startup, MAX_TRIGGER_TYPES };
 enum class TypesInputTrigger : uint8_t { None, Press, Release, Click };
 enum class TypesTemperatureTrigger : uint8_t { None, Below, Above, Range };
 ```
@@ -296,6 +304,7 @@ constexpr size_t MAX_CONDITION_TYPES = static_cast<size_t>(ConditionType::MAX_CO
 | | Above | Temperature crosses above threshold |
 | | Range | Temperature enters [min, max] range |
 | **Cron** | - | Time-based trigger using cron expressions |
+| **Startup** | - | Fires once after boot (`setup_priority::DATA - 1`) |
 
 #### **Conditions**
 | Type | Description |

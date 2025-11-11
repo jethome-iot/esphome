@@ -113,6 +113,8 @@ void TriggerConfig::serialize(JsonObject &obj) const {
       obj["cron_preset"] = EnumUtils::cron_preset_to_string(cron_preset);
       break;
     }
+    case SourceTrigger::Startup:
+      break;
     default:
       break;
   }
@@ -182,6 +184,9 @@ bool TriggerConfig::deserialize(const JsonObject &obj) {
       } else {
         cron_preset = CronPreset::Daily;  // Default for old configs
       }
+      break;
+    }
+    case SourceTrigger::Startup: {
       break;
     }
     default:

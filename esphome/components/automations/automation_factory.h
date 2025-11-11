@@ -35,6 +35,8 @@ template<typename... Ts> class TriggerFactory {
         return create_temperature_trigger(config);
       case SourceTrigger::Cron:
         return create_cron_trigger(config);
+      case SourceTrigger::Startup:
+        return create_startup_trigger();
       default:
         return nullptr;
     }
@@ -94,6 +96,12 @@ template<typename... Ts> class TriggerFactory {
     trigger->add_days_of_month(config.cron_days_of_month);
     trigger->add_months(config.cron_months);
     trigger->add_days_of_week(config.cron_days_of_week);
+    App.register_component(trigger);
+    return trigger;
+  }
+
+  static Trigger<Ts...> *create_startup_trigger() {
+    auto *trigger = new StartupTrigger(setup_priority::DATA - 1);
     App.register_component(trigger);
     return trigger;
   }

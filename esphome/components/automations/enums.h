@@ -6,7 +6,7 @@
 namespace esphome {
 namespace automations {
 
-enum class SourceTrigger : uint8_t { None = 0, Input, Temperature, Cron, MAX_TRIGGER_TYPES };
+enum class SourceTrigger : uint8_t { None = 0, Input, Temperature, Cron, Startup, MAX_TRIGGER_TYPES };
 
 enum class TypesInputTrigger : uint8_t {
   None,
