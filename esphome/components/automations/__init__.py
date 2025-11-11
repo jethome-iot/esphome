@@ -4,6 +4,7 @@ import esphome.config_validation as cv
 from esphome.const import CONF_ID
 
 CONF_TIME_ID = "time_id"
+AUTO_LOAD = ["simple"]
 
 automations_ns = cg.esphome_ns.namespace("automations")
 AutomationStorageComponent = automations_ns.class_("AutomationStorage", cg.Component)
