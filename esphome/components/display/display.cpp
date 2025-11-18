@@ -610,6 +610,18 @@ std::string Display::shrink_text_to_width(const std::string &str, BaseFont *font
   bool direction_to_right = true;
 
   while (max_width < str_width) {
+    // Bounds checking: ensure we don't go out of range
+    if (left_end <= 0 && right_start >= static_cast<int>(str_size)) {
+      // Can't shrink anymore - return just the ellipsis
+      return DOTS_STR;
+    }
+
+    // Apply bounds limits
+    if (left_end < 0)
+      left_end = 0;
+    if (right_start > static_cast<int>(str_size))
+      right_start = str_size;
+
     memcpy(buffer, str.c_str(), left_end);
     strlcpy(buffer + left_end, DOTS_STR, buffer_size - left_end);
     strlcat(buffer, str.c_str() + right_start, buffer_size);
