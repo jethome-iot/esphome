@@ -35,7 +35,7 @@ namespace binary_sensor {
  */
 class BinarySensor : public StatefulEntityBase<bool>, public EntityBase_DeviceClass {
  public:
-  explicit BinarySensor(){};
+  explicit BinarySensor();
 
   /** Publish a new state to the front-end.
    *
@@ -60,12 +60,21 @@ class BinarySensor : public StatefulEntityBase<bool>, public EntityBase_DeviceCl
   /// Return whether this binary sensor has outputted a state.
   virtual bool is_status_binary_sensor() const;
 
+  /** Set whether the state should be treated as inverted.
+   *
+   * @param inverted Whether to invert this binary sensor.
+   */
+  void set_inverted(bool inverted);
+
+  bool is_inverted() const;
+
   // For backward compatibility, provide an accessible property
 
   bool state{};
 
  protected:
   Filter *filter_list_{nullptr};
+  bool inverted_{false};
 };
 
 class BinarySensorInitiallyOff : public BinarySensor {
