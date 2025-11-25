@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdint>
 #include "string_ref.h"
+#include "entity_types.h"
 #include "helpers.h"
 #include "log.h"
 
@@ -21,6 +22,8 @@ enum EntityCategory : uint8_t {
 // The generic Entity base class that provides an interface common to all Entities.
 class EntityBase {
  public:
+  EntityBase() {}
+  EntityBase(EntityType type) { this->type_ = type; }
   // Get/set the name of this Entity
   const StringRef &get_name() const;
   void set_name(const char *name);
@@ -55,6 +58,9 @@ class EntityBase {
   std::string get_icon() const;
   void set_icon(const char *icon);
 
+  // Get entity type
+  EntityType type() const { return this->type_; }
+
 #ifdef USE_DEVICES
   // Get/set this entity's device id
   uint32_t get_device_id() const {
@@ -84,6 +90,7 @@ class EntityBase {
   const char *icon_c_str_{nullptr};
 #endif
   uint32_t object_id_hash_{};
+  EntityType type_{EntityType::NONE};
 #ifdef USE_DEVICES
   Device *device_{};
 #endif
@@ -121,12 +128,21 @@ class EntityBase_UnitOfMeasurement {  // NOLINT(readability-identifier-naming)
   const char *unit_of_measurement_{nullptr};  ///< Unit of measurement override
 };
 
+// Entity information allocated dynamically
+struct EntityBaseInfo {
+  std::string name;
+  std::string object_id;
+  std::string icon;
+};
+
 /**
  * An entity that has a state.
  * @tparam T The type of the state
  */
 template<typename T> class StatefulEntityBase : public EntityBase {
  public:
+  StatefulEntityBase() {}
+  StatefulEntityBase(EntityType type) : EntityBase(type) {}
   virtual bool has_state() const { return this->state_.has_value(); }
   virtual const T &get_state() const { return this->state_.value(); }
   virtual T get_state_default(T default_value) const { return this->state_.value_or(default_value); }
@@ -175,12 +191,4 @@ template<typename T> class StatefulEntityBase : public EntityBase {
   CallbackManager<void(optional<T> previous, optional<T> current)> *full_state_callbacks_{};
   CallbackManager<void(T)> *state_callbacks_{};
 };
-
-// Entity information allocated dynamically
-struct EntityBaseInfo {
-  std::string name;
-  std::string object_id;
-  std::string icon;
-};
-
 }  // namespace esphome

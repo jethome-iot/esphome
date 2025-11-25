@@ -290,14 +290,22 @@ template<typename... Ts> class Automation {
 
   void stop() { this->actions_.stop(); }
 
-  void trigger(Ts... x) { this->actions_.play(x...); }
+  void trigger(Ts... x) {
+    if (this->enabled_)
+      this->actions_.play(x...);
+  }
 
   bool is_running() { return this->actions_.is_running(); }
 
   /// Return the number of actions in the action part of this automation that are currently running.
   int num_running() { return this->actions_.num_running(); }
 
+  bool is_enabled() { return this->enabled_; }
+
+  void set_enabled(bool val) { this->enabled_ = val; }
+
  protected:
+  bool enabled_{true};
   Trigger<Ts...> *trigger_;
   ActionList<Ts...> actions_;
 };
