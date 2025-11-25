@@ -20,6 +20,47 @@ static const char *const TAG = "http_request.update";
 
 static const size_t MAX_READ_SIZE = 256;
 
+bool DefaultUpdateManifestParser::parse(const std::string &data, update::UpdateInfo &info) {
+  bool result = json::parse_json(data, [&info](JsonObject root) -> bool {
+    if (!root.containsKey("name") || !root.containsKey("version") || !root.containsKey("builds")) {
+      ESP_LOGE(TAG, "Manifest does not contain required fields");
+      return false;
+    }
+    info.title = root["name"].as<std::string>();
+    info.latest_version = root["version"].as<std::string>();
+
+    for (auto build : root["builds"].as<JsonArray>()) {
+      if (!build.containsKey("chipFamily")) {
+        ESP_LOGE(TAG, "Manifest does not contain required fields");
+        return false;
+      }
+      if (build["chipFamily"] == ESPHOME_VARIANT) {
+        if (!build.containsKey("ota")) {
+          ESP_LOGE(TAG, "Manifest does not contain required fields");
+          return false;
+        }
+        auto ota = build["ota"];
+        if (!ota.containsKey("path") || !ota.containsKey("md5")) {
+          ESP_LOGE(TAG, "Manifest does not contain required fields");
+          return false;
+        }
+        info.firmware_url = ota["path"].as<std::string>();
+        info.md5 = ota["md5"].as<std::string>();
+
+        if (ota.containsKey("summary"))
+          info.summary = ota["summary"].as<std::string>();
+        if (ota.containsKey("release_url"))
+          info.release_url = ota["release_url"].as<std::string>();
+
+        return true;
+      }
+    }
+    return false;
+  });
+
+  return result;
+}
+
 void HttpRequestUpdate::setup() {
   this->ota_parent_->add_on_state_callback([this](ota::OTAState state, float progress, uint8_t err) {
     if (state == ota::OTAState::OTA_IN_PROGRESS) {
@@ -82,6 +123,7 @@ void HttpRequestUpdate::update_task(void *params) {
     container->end();
     container.reset();  // Release ownership of the container's shared_ptr
 
+<<<<<<< ours
     valid = json::parse_json(response, [this_update](JsonObject root) -> bool {
       if (!root["name"].is<const char *>() || !root["version"].is<const char *>() || !root["builds"].is<JsonArray>()) {
         ESP_LOGE(TAG, "Manifest does not contain required fields");
@@ -118,6 +160,14 @@ void HttpRequestUpdate::update_task(void *params) {
       }
       return false;
     });
+=======
+    if (this_update->parser_ == nullptr) {
+      ESP_LOGE(TAG, "Parser is null. Cannot process the update manifest");
+      UPDATE_RETURN;
+    }
+
+    valid = this_update->parser_->parse(response, this_update->update_info_);
+>>>>>>> theirs
   }
 
   if (!valid) {
