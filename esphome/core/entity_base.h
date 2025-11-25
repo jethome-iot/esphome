@@ -175,4 +175,12 @@ template<typename T> class StatefulEntityBase : public EntityBase {
   CallbackManager<void(optional<T> previous, optional<T> current)> *full_state_callbacks_{};
   CallbackManager<void(T)> *state_callbacks_{};
 };
+
+// Entity information allocated dynamically
+struct EntityBaseInfo {
+  std::string name;
+  std::string object_id;
+  std::string icon;
+};
+
 }  // namespace esphome
