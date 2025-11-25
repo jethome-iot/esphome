@@ -20,9 +20,11 @@ static const char *const TAG = "http_request.update";
 
 static const size_t MAX_READ_SIZE = 256;
 
-bool DefaultUpdateManifestParser::parse(const std::string &data, update::UpdateInfo &info) {
+// The source_url parameter is currently unused, but is included for future interface compatibility.
+bool DefaultUpdateManifestParser::parse(const std::string &data, update::UpdateInfo &info,
+                                        const std::string &source_url) {
   bool result = json::parse_json(data, [&info](JsonObject root) -> bool {
-    if (!root.containsKey("name") || !root.containsKey("version") || !root.containsKey("builds")) {
+    if (!root["name"].is<const char *>() || !root["version"].is<const char *>() || !root["builds"].is<JsonArray>()) {
       ESP_LOGE(TAG, "Manifest does not contain required fields");
       return false;
     }
@@ -30,26 +32,26 @@ bool DefaultUpdateManifestParser::parse(const std::string &data, update::UpdateI
     info.latest_version = root["version"].as<std::string>();
 
     for (auto build : root["builds"].as<JsonArray>()) {
-      if (!build.containsKey("chipFamily")) {
+      if (!build["chipFamily"].is<const char *>()) {
         ESP_LOGE(TAG, "Manifest does not contain required fields");
         return false;
       }
       if (build["chipFamily"] == ESPHOME_VARIANT) {
-        if (!build.containsKey("ota")) {
+        if (!build["ota"].is<JsonObject>()) {
           ESP_LOGE(TAG, "Manifest does not contain required fields");
           return false;
         }
-        auto ota = build["ota"];
-        if (!ota.containsKey("path") || !ota.containsKey("md5")) {
+        JsonObject ota = build["ota"].as<JsonObject>();
+        if (!ota["path"].is<const char *>() || !ota["md5"].is<const char *>()) {
           ESP_LOGE(TAG, "Manifest does not contain required fields");
           return false;
         }
         info.firmware_url = ota["path"].as<std::string>();
         info.md5 = ota["md5"].as<std::string>();
 
-        if (ota.containsKey("summary"))
+        if (ota["summary"].is<const char *>())
           info.summary = ota["summary"].as<std::string>();
-        if (ota.containsKey("release_url"))
+        if (ota["release_url"].is<const char *>())
           info.release_url = ota["release_url"].as<std::string>();
 
         return true;
@@ -123,51 +125,12 @@ void HttpRequestUpdate::update_task(void *params) {
     container->end();
     container.reset();  // Release ownership of the container's shared_ptr
 
-<<<<<<< ours
-    valid = json::parse_json(response, [this_update](JsonObject root) -> bool {
-      if (!root["name"].is<const char *>() || !root["version"].is<const char *>() || !root["builds"].is<JsonArray>()) {
-        ESP_LOGE(TAG, "Manifest does not contain required fields");
-        return false;
-      }
-      this_update->update_info_.title = root["name"].as<std::string>();
-      this_update->update_info_.latest_version = root["version"].as<std::string>();
-
-      for (auto build : root["builds"].as<JsonArray>()) {
-        if (!build["chipFamily"].is<const char *>()) {
-          ESP_LOGE(TAG, "Manifest does not contain required fields");
-          return false;
-        }
-        if (build["chipFamily"] == ESPHOME_VARIANT) {
-          if (!build["ota"].is<JsonObject>()) {
-            ESP_LOGE(TAG, "Manifest does not contain required fields");
-            return false;
-          }
-          JsonObject ota = build["ota"].as<JsonObject>();
-          if (!ota["path"].is<const char *>() || !ota["md5"].is<const char *>()) {
-            ESP_LOGE(TAG, "Manifest does not contain required fields");
-            return false;
-          }
-          this_update->update_info_.firmware_url = ota["path"].as<std::string>();
-          this_update->update_info_.md5 = ota["md5"].as<std::string>();
-
-          if (ota["summary"].is<const char *>())
-            this_update->update_info_.summary = ota["summary"].as<std::string>();
-          if (ota["release_url"].is<const char *>())
-            this_update->update_info_.release_url = ota["release_url"].as<std::string>();
-
-          return true;
-        }
-      }
-      return false;
-    });
-=======
     if (this_update->parser_ == nullptr) {
       ESP_LOGE(TAG, "Parser is null. Cannot process the update manifest");
       UPDATE_RETURN;
     }
 
-    valid = this_update->parser_->parse(response, this_update->update_info_);
->>>>>>> theirs
+    valid = this_update->parser_->parse(response, this_update->update_info_, this_update->source_url_);
   }
 
   if (!valid) {
