@@ -23,6 +23,7 @@ from esphome.const import (
     CONF_TEXT,
     CONF_TRIGGER_ID,
     CONF_TYPE,
+    CONF_VALUE,
 )
 
 CONF_GENERATE_LAMBDA = "generate_lambda"
@@ -64,6 +65,7 @@ MenuItemNumber = display_menu_base_ns.class_("MenuItemNumber")
 MenuItemSwitch = display_menu_base_ns.class_("MenuItemSwitch")
 MenuItemCommand = display_menu_base_ns.class_("MenuItemCommand")
 MenuItemCustom = display_menu_base_ns.class_("MenuItemCustom")
+MenuItemValue = display_menu_base_ns.class_("MenuItemValue")
 
 UpAction = display_menu_base_ns.class_("UpAction", automation.Action)
 DownAction = display_menu_base_ns.class_("DownAction", automation.Action)
@@ -90,6 +92,7 @@ MENU_ITEM_TYPES = {
     CONF_SWITCH: MenuItemType.MENU_ITEM_SWITCH,
     CONF_COMMAND: MenuItemType.MENU_ITEM_COMMAND,
     CONF_CUSTOM: MenuItemType.MENU_ITEM_CUSTOM,
+    CONF_VALUE: MenuItemType.MENU_ITEM_VALUE,
 }
 
 MENU_ITEMS_WITH_SPECIALIZED_CLASSES = (
@@ -99,6 +102,7 @@ MENU_ITEMS_WITH_SPECIALIZED_CLASSES = (
     CONF_SWITCH,
     CONF_COMMAND,
     CONF_CUSTOM,
+    CONF_VALUE,
 )
 
 MenuMode = display_menu_base_ns.enum("MenuMode")
@@ -283,6 +287,12 @@ MENU_ITEM_SCHEMA = cv.typed_schema(
                         ),
                     }
                 ),
+            }
+        ),
+        CONF_VALUE: MENU_ITEM_ENTER_LEAVE_VALUE_SCHEMA.extend(
+            {
+                cv.GenerateID(CONF_ID): cv.declare_id(MenuItemValue),
+                cv.Optional(CONF_VALUE_LAMBDA): cv.returning_lambda,
             }
         ),
     },
