@@ -49,8 +49,9 @@ using value_getter_t = std::function<std::string(const MenuItem *)>;
 class MenuItem {
  public:
   explicit MenuItem(MenuItemType t) : item_type_(t) {}
-  void set_parent(MenuItemMenu *parent) { this->parent_ = parent; }
-  MenuItemMenu *get_parent() { return this->parent_; }
+  virtual ~MenuItem() {}
+  void set_parent(MenuItem *parent) { this->parent_ = parent; }
+  MenuItem *get_parent() { return this->parent_; }
   MenuItemType get_type() const { return this->item_type_; }
   template<typename V> void set_text(V val) { this->text_ = val; }
   void add_on_enter_callback(std::function<void()> &&cb) { this->on_enter_callbacks_.add(std::move(cb)); }
@@ -59,25 +60,77 @@ class MenuItem {
 
   std::string get_text() const { return const_cast<MenuItem *>(this)->text_.value(this); }
   virtual bool get_immediate_edit() const { return false; }
+
   virtual bool has_value() const { return false; }
   virtual std::string get_value_text() const { return ""; }
+
+  void set_internal_items_flag(bool val) { this->has_internal_items_ = val; }
+  bool has_internal_items() { return this->has_internal_items_; }
+
+  void add_item(MenuItem *item) {
+    item->set_parent(this);
+    this->items_.push_back(item);
+  }
+
+  void add_item(MenuItem *item, size_t pos) {
+    if (pos <= this->items_.size()) {
+      this->items_.insert(this->items_.begin() + pos, item);
+    }
+  }
+
+  void add_before(MenuItem *item, MenuItem *ref_item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), ref_item);
+    if (it != this->items_.end()) {
+      this->items_.emplace(it, item);
+    }
+  }
+
+  void add_after(MenuItem *item, MenuItem *ref_item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), ref_item);
+    if (it != this->items_.end()) {
+      this->items_.emplace(it + 1, item);
+    }
+  }
+
+  void remove_item(MenuItem *item) {
+    auto it = std::find(this->items_.begin(), this->items_.end(), item);
+    if (it != this->items_.end()) {
+      delete *it;
+      this->items_.erase(it);
+    }
+  }
+
+  void remove_index(uint16_t index) {
+    if (index < this->items_.size()) {
+      auto it = this->items_.begin() + index;
+      delete *it;
+      this->items_.erase(it);
+    }
+  }
+
+  size_t items_size() const { return this->items_.size(); }
+  MenuItem *get_item(size_t i) const { return this->items_[i]; }
+
+  std::vector<MenuItem *> &items() { return items_; }
 
   virtual bool select_next() { return false; }
   virtual bool select_prev() { return false; }
 
   void on_enter();
   void on_leave();
-
- protected:
   void on_value_();
 
+ protected:
   MenuItemType item_type_;
-  MenuItemMenu *parent_{nullptr};
+  MenuItem *parent_{nullptr};
   TemplatableValue<std::string, const MenuItem *> text_;
 
   CallbackManager<void()> on_enter_callbacks_{};
   CallbackManager<void()> on_leave_callbacks_{};
   CallbackManager<void()> on_value_callbacks_{};
+
+  std::vector<MenuItem *> items_;
+  bool has_internal_items_{false};
 };
 
 class MenuItemValueBase : public MenuItem {
@@ -93,28 +146,45 @@ class MenuItemValueBase : public MenuItem {
 
 class MenuItemMenu : public MenuItemValueBase {
  public:
+  using generate_lambda_t = std::function<size_t(MenuItemMenu *menu)>;
   explicit MenuItemMenu() : MenuItemValueBase(MENU_ITEM_MENU) {}
-  void add_item(MenuItem *item) {
-    item->set_parent(this);
-    this->items_.push_back(item);
-  }
-
+  ~MenuItemMenu() override { clear_items(); }
   void add_generated_items(MenuItem *item) {
     item->set_parent(this);
     this->items_.push_back(item);
   }
-  size_t items_size() const { return this->items_.size(); }
-  MenuItem *get_item(size_t i) const { return this->items_[i]; }
+  size_t generate() {
+    if (lambda_)
+      return lambda_(this);
+    return 0;
+  }
+  void set_generate_lambda(generate_lambda_t &&lambda) { this->lambda_ = lambda; }
+
+  bool is_generated() { return this->generated_; }
+  void set_was_generated(bool val) { this->generated_ = val; }
+
+  bool is_generate_on_enter() { return this->generate_on_enter_; }
+  void set_generate_on_enter(bool val) { this->generate_on_enter_ = val; }
+
+  void clear_items() {
+    for (auto *item : this->items_) {
+      delete item;
+    }
+    this->items_.clear();
+    this->generated_ = false;
+  }
 
 #ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const std::vector<groups::Group *> &groups() { return groups_; }
 #endif
  protected:
-  std::vector<MenuItem *> items_;
 #ifdef USE_GROUPS
   std::vector<groups::Group *> groups_;
 #endif
+  generate_lambda_t lambda_;
+  bool generated_{false};
+  bool generate_on_enter_{false};
 };
 
 class MenuItemEditable : public MenuItemValueBase {
