@@ -34,7 +34,14 @@ CONF_GENERATE_ON_ENTER = "generate_on_enter"
 
 CODEOWNERS = ["@numo68"]
 
-AUTO_LOAD = ["display_menu_render_base", "groups"]
+AUTO_LOAD = [
+    "display_menu_render_base",
+    "groups",
+    "binary_sensor",
+    "number",
+    "select",
+    "switch",
+]
 
 display_menu_base_ns = cg.esphome_ns.namespace("display_menu_base")
 

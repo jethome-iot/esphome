@@ -36,7 +36,6 @@ void MenuItem::on_leave() { this->on_leave_callbacks_.call(); }
 
 void MenuItem::on_value_() { this->on_value_callbacks_.call(); }
 
-#ifdef USE_BINARY_SENSOR
 std::string MenuItemBinarySensor::get_value_text() const {
   std::string result;
 
@@ -48,9 +47,7 @@ std::string MenuItemBinarySensor::get_value_text() const {
 
   return result;
 }
-#endif
 
-#ifdef USE_SELECT
 std::string MenuItemSelect::get_value_text() const {
   std::string result;
 
@@ -88,9 +85,7 @@ bool MenuItemSelect::select_prev() {
 
   return changed;
 }
-#endif  // USE_SELECT
 
-#ifdef USE_NUMBER
 std::string MenuItemNumber::get_value_text() const {
   std::string result;
 
@@ -152,9 +147,7 @@ float MenuItemNumber::get_number_value_() const {
 
   return result;
 }
-#endif  // USE_NUMBER
 
-#ifdef USE_SWITCH
 std::string MenuItemSwitch::get_value_text() const {
   std::string result;
 
@@ -184,7 +177,6 @@ bool MenuItemSwitch::toggle_switch_() {
 
   return changed;
 }
-#endif  // USE_SWITCH
 
 std::string MenuItemValueBase::get_value_text() const {
   return (this->value_getter_.has_value()) ? this->value_getter_.value()(this) : "";

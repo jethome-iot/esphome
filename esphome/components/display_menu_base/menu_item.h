@@ -3,22 +3,11 @@
 #include "esphome/core/defines.h"
 #include "esphome/core/automation.h"
 
-#ifdef USE_BINARY_SENSOR
 #include "esphome/components/binary_sensor/binary_sensor.h"
-#endif
-#ifdef USE_NUMBER
 #include "esphome/components/number/number.h"
-#endif
-#ifdef USE_SELECT
 #include "esphome/components/select/select.h"
-#endif
-#ifdef USE_SWITCH
 #include "esphome/components/switch/switch.h"
-#endif
-
-#ifdef USE_GROUPS
 #include "esphome/components/groups/groups.h"
-#endif
 
 #include <vector>
 #include "esphome/core/log.h"
@@ -174,14 +163,11 @@ class MenuItemMenu : public MenuItemValueBase {
     this->generated_ = false;
   }
 
-#ifdef USE_GROUPS
   void add_group(groups::Group *group) { this->groups_.push_back(group); }
   const std::vector<groups::Group *> &groups() { return groups_; }
-#endif
+
  protected:
-#ifdef USE_GROUPS
   std::vector<groups::Group *> groups_;
-#endif
   generate_lambda_t lambda_;
   bool generated_{false};
   bool generate_on_enter_{false};
@@ -197,7 +183,6 @@ class MenuItemEditable : public MenuItemValueBase {
   bool immediate_edit_{false};
 };
 
-#ifdef USE_BINARY_SENSOR
 class MenuItemBinarySensor : public MenuItem {
  public:
   explicit MenuItemBinarySensor() : MenuItem(MENU_ITEM_BINARY_SENSOR) {}
@@ -215,9 +200,7 @@ class MenuItemBinarySensor : public MenuItem {
   StringRef off_text_;
   StringRef no_data_text_;
 };
-#endif
 
-#ifdef USE_SELECT
 class MenuItemSelect : public MenuItemEditable {
  public:
   explicit MenuItemSelect() : MenuItemEditable(MENU_ITEM_SELECT) {}
@@ -232,9 +215,7 @@ class MenuItemSelect : public MenuItemEditable {
  protected:
   select::Select *select_var_{nullptr};
 };
-#endif
 
-#ifdef USE_NUMBER
 class MenuItemNumber : public MenuItemEditable {
  public:
   explicit MenuItemNumber() : MenuItemEditable(MENU_ITEM_NUMBER) {}
@@ -253,9 +234,7 @@ class MenuItemNumber : public MenuItemEditable {
   number::Number *number_var_{nullptr};
   std::string format_;
 };
-#endif
 
-#ifdef USE_SWITCH
 class MenuItemSwitch : public MenuItemEditable {
  public:
   explicit MenuItemSwitch() : MenuItemEditable(MENU_ITEM_SWITCH) {}
@@ -277,7 +256,6 @@ class MenuItemSwitch : public MenuItemEditable {
   std::string switch_on_text_;
   std::string switch_off_text_;
 };
-#endif
 
 class MenuItemCommand : public MenuItem {
  public:
