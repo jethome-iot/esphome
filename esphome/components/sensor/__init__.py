@@ -42,6 +42,7 @@ from esphome.const import (
     CONF_VALUE,
     CONF_WEB_SERVER,
     CONF_WINDOW_SIZE,
+    DEVICE_CLASS_ABSOLUTE_HUMIDITY,
     DEVICE_CLASS_APPARENT_POWER,
     DEVICE_CLASS_AQI,
     DEVICE_CLASS_AREA,
@@ -108,6 +109,7 @@ from esphome.util import Registry
 
 CODEOWNERS = ["@esphome/core"]
 DEVICE_CLASSES = [
+    DEVICE_CLASS_ABSOLUTE_HUMIDITY,
     DEVICE_CLASS_APPARENT_POWER,
     DEVICE_CLASS_AQI,
     DEVICE_CLASS_AREA,
@@ -333,6 +335,7 @@ def sensor_schema(
     device_class: str = cv.UNDEFINED,
     state_class: str = cv.UNDEFINED,
     entity_category: str = cv.UNDEFINED,
+    filters: list = cv.UNDEFINED,
 ) -> cv.Schema:
     schema = {}
 
@@ -347,6 +350,7 @@ def sensor_schema(
         (CONF_DEVICE_CLASS, device_class, validate_device_class),
         (CONF_STATE_CLASS, state_class, validate_state_class),
         (CONF_ENTITY_CATEGORY, entity_category, sensor_entity_category),
+        (CONF_FILTERS, filters, validate_filters),
     ]:
         if default is not cv.UNDEFINED:
             schema[cv.Optional(key, default=default)] = validator
@@ -1145,5 +1149,4 @@ def _lstsq(a, b):
 
 @coroutine_with_priority(100.0)
 async def to_code(config):
-    cg.add_define("USE_SENSOR")
     cg.add_global(sensor_ns.using)

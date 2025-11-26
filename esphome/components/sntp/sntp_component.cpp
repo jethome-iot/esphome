@@ -19,7 +19,6 @@ SNTPComponent *SNTPComponent::instance = nullptr;  // NOLINT(cppcoreguidelines-a
 #endif
 
 void SNTPComponent::setup() {
-  ESP_LOGCONFIG(TAG, "Running setup");
 #if defined(USE_ESP32)
   SNTPComponent::instance = this;
   if (esp_sntp_enabled()) {

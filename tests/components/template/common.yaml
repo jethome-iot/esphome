@@ -178,6 +178,7 @@ output:
 
 switch:
   - platform: template
+    id: test_switch
     name: "Template Switch"
     lambda: |-
       if (id(some_binary_sensor).state) {

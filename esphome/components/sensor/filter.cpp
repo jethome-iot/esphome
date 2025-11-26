@@ -51,6 +51,7 @@ optional<float> MedianFilter::new_value(float value) {
     if (!this->queue_.empty()) {
       // Copy queue without NaN values
       std::vector<float> median_queue;
+      median_queue.reserve(this->queue_.size());
       for (auto v : this->queue_) {
         if (!std::isnan(v)) {
           median_queue.push_back(v);
@@ -374,13 +375,11 @@ optional<float> DeltaFilter::new_value(float value) {
     if (std::isnan(this->last_value_)) {
       return {};
     } else {
-      if (this->percentage_mode_) {
-        this->current_delta_ = fabsf(value * this->delta_);
-      }
       return this->last_value_ = value;
     }
   }
-  if (std::isnan(this->last_value_) || fabsf(value - this->last_value_) >= this->current_delta_) {
+  float diff = fabsf(value - this->last_value_);
+  if (std::isnan(this->last_value_) || (diff > 0.0f && diff >= this->current_delta_)) {
     if (this->percentage_mode_) {
       this->current_delta_ = fabsf(value * this->delta_);
     }

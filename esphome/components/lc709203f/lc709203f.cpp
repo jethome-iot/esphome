@@ -49,8 +49,6 @@ void Lc709203f::setup() {
   //  initialization code checks the return code from those functions. If they don't return
   //  NO_ERROR (0x00), that part of the initialization aborts and will be retried on the next
   //  call to update().
-  ESP_LOGCONFIG(TAG, "Running setup");
-
   // Set power mode to on. Note that, unlike some other similar devices, in sleep mode the IC
   //  does not record power usage. If there is significant power consumption during sleep mode,
   //  the pack RSOC will likely no longer be correct. Because of that, I do not implement
@@ -186,7 +184,7 @@ uint8_t Lc709203f::get_register_(uint8_t register_to_read, uint16_t *register_va
     //  function will send a stop between the read and the write portion of the I2C
     //  transaction. This is bad in this case and will result in reading nothing but 0xFFFF
     //  from the registers.
-    return_code = this->read_register(register_to_read, &read_buffer[3], 3, false);
+    return_code = this->read_register(register_to_read, &read_buffer[3], 3);
     if (return_code != i2c::NO_ERROR) {
       // Error on the i2c bus
       this->status_set_warning(
@@ -227,7 +225,7 @@ uint8_t Lc709203f::set_register_(uint8_t register_to_set, uint16_t value_to_set)
   for (uint8_t i = 0; i <= LC709203F_I2C_RETRY_COUNT; i++) {
     // Note: we don't write the first byte of the write buffer to the device.
     //  This is done automatically by the write() function.
-    return_code = this->write(&write_buffer[1], 4, true);
+    return_code = this->write(&write_buffer[1], 4);
     if (return_code == i2c::NO_ERROR) {
       return return_code;
     } else {

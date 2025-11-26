@@ -5,4 +5,3 @@ This is the JetHome fork of [ESPHome](http://esphome.io). It provides custom com
 ---
 
 [ESPHome Documentation](https://esphome.io) -- [Issues](https://github.com/jethome-iot/esphome/issues) -- [Feature requests](https://github.com/jethome-iot/esphome/issues)
-
