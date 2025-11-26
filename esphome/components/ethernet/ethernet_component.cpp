@@ -205,12 +205,6 @@ void EthernetComponent::setup() {
       this->phy_ = esp_eth_phy_new_ksz80xx(&phy_config);
       break;
     }
-#if CONFIG_ETHERNET_PHY_LAN867X
-    case ETHERNET_TYPE_LAN867X: {
-      this->phy_ = esp_eth_phy_new_lan867x(&phy_config);
-      break;
-    }
-#endif
 #endif
 #ifdef USE_ETHERNET_SPI
 #if CONFIG_ETH_SPI_ETHERNET_W5500
@@ -364,10 +358,6 @@ void EthernetComponent::dump_config() {
 
     case ETHERNET_TYPE_DM9051:
       eth_type = "DM9051";
-      break;
-
-    case ETHERNET_TYPE_LAN867X:
-      eth_type = "LAN867X";
       break;
 
     default:
