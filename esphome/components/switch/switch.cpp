@@ -32,7 +32,7 @@ void Switch::toggle() {
 void Switch::update() { this->write_state(this->state != this->inverted_); }
 
 optional<bool> Switch::get_initial_state() {
-  this->rtc_ = global_preferences->make_preference<bool>(this->get_object_id_hash());
+  this->rtc_ = global_preferences->make_preference<bool>(this->get_preference_hash());
 
   if (!(restore_mode & RESTORE_MODE_PERSISTENT_MASK))
     return {};
@@ -95,8 +95,8 @@ void log_switch(const char *tag, const char *prefix, const char *type, Switch *o
                   LOG_STR_ARG(onoff));
 
     // Add optional fields separately
-    if (!obj->get_icon().empty()) {
-      ESP_LOGCONFIG(tag, "%s  Icon: '%s'", prefix, obj->get_icon().c_str());
+    if (!obj->get_icon_ref().empty()) {
+      ESP_LOGCONFIG(tag, "%s  Icon: '%s'", prefix, obj->get_icon_ref().c_str());
     }
     if (obj->assumed_state()) {
       ESP_LOGCONFIG(tag, "%s  Assumed State: YES", prefix);
@@ -104,8 +104,8 @@ void log_switch(const char *tag, const char *prefix, const char *type, Switch *o
     if (obj->is_inverted()) {
       ESP_LOGCONFIG(tag, "%s  Inverted: YES", prefix);
     }
-    if (!obj->get_device_class().empty()) {
-      ESP_LOGCONFIG(tag, "%s  Device Class: '%s'", prefix, obj->get_device_class().c_str());
+    if (!obj->get_device_class_ref().empty()) {
+      ESP_LOGCONFIG(tag, "%s  Device Class: '%s'", prefix, obj->get_device_class_ref().c_str());
     }
   }
 }

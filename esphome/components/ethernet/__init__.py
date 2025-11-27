@@ -43,7 +43,12 @@ from esphome.const import (
     KEY_CORE,
     KEY_FRAMEWORK_VERSION,
 )
-from esphome.core import CORE, TimePeriodMilliseconds, coroutine_with_priority
+from esphome.core import (
+    CORE,
+    CoroPriority,
+    TimePeriodMilliseconds,
+    coroutine_with_priority,
+)
 import esphome.final_validate as fv
 
 DEPENDENCIES = ["esp32"]
@@ -75,6 +80,13 @@ ETHERNET_TYPES = {
     "OPENETH": EthernetType.ETHERNET_TYPE_OPENETH,
     "DM9051": EthernetType.ETHERNET_TYPE_DM9051,
     "LAN867X": EthernetType.ETHERNET_TYPE_LAN867X,
+}
+
+# PHY types that need compile-time defines for conditional compilation
+_PHY_TYPE_TO_DEFINE = {
+    "KSZ8081": "USE_ETHERNET_KSZ8081",
+    "KSZ8081RNA": "USE_ETHERNET_KSZ8081",
+    # Add other PHY types here only if they need conditional compilation
 }
 
 SPI_ETHERNET_TYPES = ["W5500", "DM9051"]
@@ -299,7 +311,7 @@ def phy_register(address: int, value: int, page: int):
     )
 
 
-@coroutine_with_priority(60.0)
+@coroutine_with_priority(CoroPriority.COMMUNICATION)
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -361,6 +373,10 @@ async def to_code(config):
 
     if CONF_MANUAL_IP in config:
         cg.add(var.set_manual_ip(manual_ip(config[CONF_MANUAL_IP])))
+
+    # Add compile-time define for PHY types with specific code
+    if phy_define := _PHY_TYPE_TO_DEFINE.get(config[CONF_TYPE]):
+        cg.add_define(phy_define)
 
     cg.add_define("USE_ETHERNET")
 

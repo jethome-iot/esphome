@@ -10,6 +10,7 @@
 #include <cinttypes>
 #include <vector>
 #include <string>
+#include <memory>
 
 namespace esphome {
 namespace esp32 {

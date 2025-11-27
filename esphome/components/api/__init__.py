@@ -24,7 +24,7 @@ from esphome.const import (
     CONF_TRIGGER_ID,
     CONF_VARIABLES,
 )
-from esphome.core import CORE, coroutine_with_priority
+from esphome.core import CORE, CoroPriority, coroutine_with_priority
 
 DOMAIN = "api"
 DEPENDENCIES = ["network"]
@@ -134,7 +134,7 @@ CONFIG_SCHEMA = cv.All(
 )
 
 
-@coroutine_with_priority(40.0)
+@coroutine_with_priority(CoroPriority.WEB)
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -193,6 +193,7 @@ async def to_code(config):
         if key := encryption_config.get(CONF_KEY):
             decoded = base64.b64decode(key)
             cg.add(var.set_noise_psk(list(decoded)))
+            cg.add_define("USE_API_NOISE_PSK_FROM_YAML")
         else:
             # No key provided, but encryption desired
             # This will allow a plaintext client to provide a noise key,
