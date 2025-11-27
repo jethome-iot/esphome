@@ -32,10 +32,15 @@ void Switch::toggle() {
 void Switch::update() { this->write_state(this->state != this->inverted_); }
 
 optional<bool> Switch::get_initial_state() {
+#ifdef JETHOME_DYNAMIC_ENTITY_SETTINGS
   this->rtc_ = global_preferences->make_preference<bool>(this->get_preference_hash());
+#endif
 
   if (!(restore_mode & RESTORE_MODE_PERSISTENT_MASK))
     return {};
+#ifndef JETHOME_DYNAMIC_ENTITY_SETTINGS
+  this->rtc_ = global_preferences->make_preference<bool>(this->get_preference_hash());
+#endif
 
   bool initial_state;
   if (!this->rtc_.load(&initial_state))
