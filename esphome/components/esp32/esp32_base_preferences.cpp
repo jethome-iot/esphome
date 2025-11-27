@@ -3,6 +3,8 @@
 #include "esp32_base_preferences.h"
 
 #include <nvs_flash.h>
+#include <cstring>
+#include <memory>
 
 namespace esphome {
 namespace esp32 {
@@ -97,20 +99,23 @@ bool ESP32BasePreferences::sync() {
 }
 
 bool ESP32BasePreferences::is_changed(const NVSData &to_save) {
-  NVSData stored_data{};
   size_t actual_len;
   esp_err_t err = nvs_get_blob(this->nvs_handle_, to_save.key.c_str(), nullptr, &actual_len);
   if (err != 0) {
     ESP_LOGV(TAG, "nvs_get_blob('%s'): %s - the key might not be set yet", to_save.key.c_str(), esp_err_to_name(err));
     return true;
   }
-  stored_data.data.resize(actual_len);
-  err = nvs_get_blob(this->nvs_handle_, to_save.key.c_str(), stored_data.data.data(), &actual_len);
+  // Check size first before allocating memory
+  if (actual_len != to_save.data.size()) {
+    return true;
+  }
+  auto stored_data = std::make_unique<uint8_t[]>(actual_len);
+  err = nvs_get_blob(this->nvs_handle_, to_save.key.c_str(), stored_data.get(), &actual_len);
   if (err != 0) {
     ESP_LOGV(TAG, "nvs_get_blob('%s') failed: %s", to_save.key.c_str(), esp_err_to_name(err));
     return true;
   }
-  return to_save.data != stored_data.data;
+  return memcmp(to_save.data.data(), stored_data.get(), to_save.data.size()) != 0;
 }
 
 void ESP32BasePreferences::reset() {
