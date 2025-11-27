@@ -116,6 +116,11 @@ template<typename T, size_t N> class StaticVector {
     }
   }
 
+  void reserve(size_t capacity) {
+    // No-op for StaticVector - size is fixed at compile time
+    (void) capacity;  // Suppress unused parameter warning
+  }
+
   size_t size() const { return count_; }
   bool empty() const { return count_ == 0; }
 
@@ -134,6 +139,14 @@ template<typename T, size_t N> class StaticVector {
   const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
   const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
 };
+
+#ifdef JETHOME_USE_DYNAMIC_VECTORS
+// When dynamic vectors are enabled, use std::vector
+template<typename T, size_t N> using AppObjectVector = std::vector<T>;
+#else
+// Default: use StaticVector for memory efficiency
+template<typename T, size_t N> using AppObjectVector = StaticVector<T, N>;
+#endif
 
 ///@}
 

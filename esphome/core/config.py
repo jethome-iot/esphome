@@ -434,6 +434,12 @@ async def _add_platform_defines() -> None:
         define_name = f"ESPHOME_ENTITY_{platform_name.upper()}_COUNT"
         cg.add_define(define_name, count)
 
+        # Reserve space when using dynamic vectors
+        if any(d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines):
+            cg.add(
+                cg.RawStatement(f"App.reserve_{platform_name}({count});"), prepend=True
+            )
+
         # Datetime subtypes only use USE_DATETIME_* defines
         if platform_name in DATETIME_SUBTYPES:
             cg.add_define(f"USE_DATETIME_{platform_name.upper()}")
@@ -461,6 +467,10 @@ async def to_code(config: ConfigType) -> None:
     )
     # Define component count for static allocation
     cg.add_define("ESPHOME_COMPONENT_COUNT", len(CORE.component_ids))
+
+    # Reserve space for components when using dynamic vectors
+    if any(d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines):
+        cg.add(cg.RawStatement(f"App.reserve_components({len(CORE.component_ids)});"))
 
     CORE.add_job(_add_platform_defines)
 
@@ -532,6 +542,10 @@ async def to_code(config: ConfigType) -> None:
         cg.add_define("USE_AREAS")
         cg.add_define("ESPHOME_AREA_COUNT", len(all_areas))
 
+        # Reserve space when using dynamic vectors
+        if any(d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines):
+            cg.add(cg.RawStatement(f"App.reserve_area({len(all_areas)});"))
+
         for area_conf in all_areas:
             area_id: core.ID = area_conf[CONF_ID]
             area_id_hash: int = fnv1a_32bit_hash(area_id.id)
@@ -550,6 +564,10 @@ async def to_code(config: ConfigType) -> None:
     # Define device count for static allocation
     cg.add_define("USE_DEVICES")
     cg.add_define("ESPHOME_DEVICE_COUNT", len(devices))
+
+    # Reserve space when using dynamic vectors
+    if any(d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines):
+        cg.add(cg.RawStatement(f"App.reserve_device({len(devices)});"))
 
     # Process each device
     for dev_conf in devices:

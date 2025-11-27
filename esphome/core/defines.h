@@ -246,6 +246,11 @@
 
 #define USE_DASHBOARD_IMPORT
 
+// Enable dynamic vectors for runtime entity creation (uses std::vector instead of StaticVector)
+// Uncomment if you need to create entities dynamically (e.g., dallas_temp_searcher)
+// When enabled, reserve_*() methods become available for performance optimization
+// #define JETHOME_USE_DYNAMIC_VECTORS
+
 // Default counts for static analysis
 #define ESPHOME_COMPONENT_COUNT 50
 #define ESPHOME_DEVICE_COUNT 10

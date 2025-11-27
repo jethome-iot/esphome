@@ -212,7 +212,80 @@ class Application {
   void register_update(update::UpdateEntity *update) { this->updates_.push_back(update); }
 #endif
 
-  /// Reserve space for components to avoid memory fragmentation
+#ifdef JETHOME_USE_DYNAMIC_VECTORS
+  /// Reserve space for components to avoid memory fragmentation (only effective with dynamic vectors)
+  void reserve_components(size_t count) { this->components_.reserve(count); }
+
+#ifdef USE_BINARY_SENSOR
+  void reserve_binary_sensor(size_t count) { this->binary_sensors_.reserve(count); }
+#endif
+#ifdef USE_SWITCH
+  void reserve_switch(size_t count) { this->switches_.reserve(count); }
+#endif
+#ifdef USE_BUTTON
+  void reserve_button(size_t count) { this->buttons_.reserve(count); }
+#endif
+#ifdef USE_SENSOR
+  void reserve_sensor(size_t count) { this->sensors_.reserve(count); }
+#endif
+#ifdef USE_TEXT_SENSOR
+  void reserve_text_sensor(size_t count) { this->text_sensors_.reserve(count); }
+#endif
+#ifdef USE_FAN
+  void reserve_fan(size_t count) { this->fans_.reserve(count); }
+#endif
+#ifdef USE_COVER
+  void reserve_cover(size_t count) { this->covers_.reserve(count); }
+#endif
+#ifdef USE_CLIMATE
+  void reserve_climate(size_t count) { this->climates_.reserve(count); }
+#endif
+#ifdef USE_LIGHT
+  void reserve_light(size_t count) { this->lights_.reserve(count); }
+#endif
+#ifdef USE_NUMBER
+  void reserve_number(size_t count) { this->numbers_.reserve(count); }
+#endif
+#ifdef USE_DATETIME_DATE
+  void reserve_date(size_t count) { this->dates_.reserve(count); }
+#endif
+#ifdef USE_DATETIME_TIME
+  void reserve_time(size_t count) { this->times_.reserve(count); }
+#endif
+#ifdef USE_DATETIME_DATETIME
+  void reserve_datetime(size_t count) { this->datetimes_.reserve(count); }
+#endif
+#ifdef USE_SELECT
+  void reserve_select(size_t count) { this->selects_.reserve(count); }
+#endif
+#ifdef USE_TEXT
+  void reserve_text(size_t count) { this->texts_.reserve(count); }
+#endif
+#ifdef USE_LOCK
+  void reserve_lock(size_t count) { this->locks_.reserve(count); }
+#endif
+#ifdef USE_VALVE
+  void reserve_valve(size_t count) { this->valves_.reserve(count); }
+#endif
+#ifdef USE_MEDIA_PLAYER
+  void reserve_media_player(size_t count) { this->media_players_.reserve(count); }
+#endif
+#ifdef USE_ALARM_CONTROL_PANEL
+  void reserve_alarm_control_panel(size_t count) { this->alarm_control_panels_.reserve(count); }
+#endif
+#ifdef USE_EVENT
+  void reserve_event(size_t count) { this->events_.reserve(count); }
+#endif
+#ifdef USE_UPDATE
+  void reserve_update(size_t count) { this->updates_.reserve(count); }
+#endif
+#ifdef USE_AREAS
+  void reserve_area(size_t count) { this->areas_.reserve(count); }
+#endif
+#ifdef USE_DEVICES
+  void reserve_device(size_t count) { this->devices_.reserve(count); }
+#endif
+#endif  // JETHOME_USE_DYNAMIC_VECTORS
 
   /// Register the component in this Application instance.
   template<class C> C *register_component(C *c) {
@@ -604,78 +677,78 @@ class Application {
   fd_set read_fds_{};       // Working fd_set for select(), copied from base_read_fds_
 #endif
 
-  // StaticVectors (largest members - contain actual array data inline)
-  StaticVector<Component *, ESPHOME_COMPONENT_COUNT> components_{};
+  // Entity containers (StaticVector by default, std::vector if JETHOME_USE_DYNAMIC_VECTORS is defined)
+  AppObjectVector<Component *, ESPHOME_COMPONENT_COUNT> components_{};
 
 #ifdef USE_DEVICES
-  StaticVector<Device *, ESPHOME_DEVICE_COUNT> devices_{};
+  AppObjectVector<Device *, ESPHOME_DEVICE_COUNT> devices_{};
 #endif
 #ifdef USE_AREAS
-  StaticVector<Area *, ESPHOME_AREA_COUNT> areas_{};
+  AppObjectVector<Area *, ESPHOME_AREA_COUNT> areas_{};
 #endif
 #ifdef USE_BINARY_SENSOR
-  StaticVector<binary_sensor::BinarySensor *, ESPHOME_ENTITY_BINARY_SENSOR_COUNT> binary_sensors_{};
+  AppObjectVector<binary_sensor::BinarySensor *, ESPHOME_ENTITY_BINARY_SENSOR_COUNT> binary_sensors_{};
 #endif
 #ifdef USE_SWITCH
-  StaticVector<switch_::Switch *, ESPHOME_ENTITY_SWITCH_COUNT> switches_{};
+  AppObjectVector<switch_::Switch *, ESPHOME_ENTITY_SWITCH_COUNT> switches_{};
 #endif
 #ifdef USE_BUTTON
-  StaticVector<button::Button *, ESPHOME_ENTITY_BUTTON_COUNT> buttons_{};
+  AppObjectVector<button::Button *, ESPHOME_ENTITY_BUTTON_COUNT> buttons_{};
 #endif
 #ifdef USE_EVENT
-  StaticVector<event::Event *, ESPHOME_ENTITY_EVENT_COUNT> events_{};
+  AppObjectVector<event::Event *, ESPHOME_ENTITY_EVENT_COUNT> events_{};
 #endif
 #ifdef USE_SENSOR
-  StaticVector<sensor::Sensor *, ESPHOME_ENTITY_SENSOR_COUNT> sensors_{};
+  AppObjectVector<sensor::Sensor *, ESPHOME_ENTITY_SENSOR_COUNT> sensors_{};
 #endif
 #ifdef USE_TEXT_SENSOR
-  StaticVector<text_sensor::TextSensor *, ESPHOME_ENTITY_TEXT_SENSOR_COUNT> text_sensors_{};
+  AppObjectVector<text_sensor::TextSensor *, ESPHOME_ENTITY_TEXT_SENSOR_COUNT> text_sensors_{};
 #endif
 #ifdef USE_FAN
-  StaticVector<fan::Fan *, ESPHOME_ENTITY_FAN_COUNT> fans_{};
+  AppObjectVector<fan::Fan *, ESPHOME_ENTITY_FAN_COUNT> fans_{};
 #endif
 #ifdef USE_COVER
-  StaticVector<cover::Cover *, ESPHOME_ENTITY_COVER_COUNT> covers_{};
+  AppObjectVector<cover::Cover *, ESPHOME_ENTITY_COVER_COUNT> covers_{};
 #endif
 #ifdef USE_CLIMATE
-  StaticVector<climate::Climate *, ESPHOME_ENTITY_CLIMATE_COUNT> climates_{};
+  AppObjectVector<climate::Climate *, ESPHOME_ENTITY_CLIMATE_COUNT> climates_{};
 #endif
 #ifdef USE_LIGHT
-  StaticVector<light::LightState *, ESPHOME_ENTITY_LIGHT_COUNT> lights_{};
+  AppObjectVector<light::LightState *, ESPHOME_ENTITY_LIGHT_COUNT> lights_{};
 #endif
 #ifdef USE_NUMBER
-  StaticVector<number::Number *, ESPHOME_ENTITY_NUMBER_COUNT> numbers_{};
+  AppObjectVector<number::Number *, ESPHOME_ENTITY_NUMBER_COUNT> numbers_{};
 #endif
 #ifdef USE_DATETIME_DATE
-  StaticVector<datetime::DateEntity *, ESPHOME_ENTITY_DATE_COUNT> dates_{};
+  AppObjectVector<datetime::DateEntity *, ESPHOME_ENTITY_DATE_COUNT> dates_{};
 #endif
 #ifdef USE_DATETIME_TIME
-  StaticVector<datetime::TimeEntity *, ESPHOME_ENTITY_TIME_COUNT> times_{};
+  AppObjectVector<datetime::TimeEntity *, ESPHOME_ENTITY_TIME_COUNT> times_{};
 #endif
 #ifdef USE_DATETIME_DATETIME
-  StaticVector<datetime::DateTimeEntity *, ESPHOME_ENTITY_DATETIME_COUNT> datetimes_{};
+  AppObjectVector<datetime::DateTimeEntity *, ESPHOME_ENTITY_DATETIME_COUNT> datetimes_{};
 #endif
 #ifdef USE_SELECT
-  StaticVector<select::Select *, ESPHOME_ENTITY_SELECT_COUNT> selects_{};
+  AppObjectVector<select::Select *, ESPHOME_ENTITY_SELECT_COUNT> selects_{};
 #endif
 #ifdef USE_TEXT
-  StaticVector<text::Text *, ESPHOME_ENTITY_TEXT_COUNT> texts_{};
+  AppObjectVector<text::Text *, ESPHOME_ENTITY_TEXT_COUNT> texts_{};
 #endif
 #ifdef USE_LOCK
-  StaticVector<lock::Lock *, ESPHOME_ENTITY_LOCK_COUNT> locks_{};
+  AppObjectVector<lock::Lock *, ESPHOME_ENTITY_LOCK_COUNT> locks_{};
 #endif
 #ifdef USE_VALVE
-  StaticVector<valve::Valve *, ESPHOME_ENTITY_VALVE_COUNT> valves_{};
+  AppObjectVector<valve::Valve *, ESPHOME_ENTITY_VALVE_COUNT> valves_{};
 #endif
 #ifdef USE_MEDIA_PLAYER
-  StaticVector<media_player::MediaPlayer *, ESPHOME_ENTITY_MEDIA_PLAYER_COUNT> media_players_{};
+  AppObjectVector<media_player::MediaPlayer *, ESPHOME_ENTITY_MEDIA_PLAYER_COUNT> media_players_{};
 #endif
 #ifdef USE_ALARM_CONTROL_PANEL
-  StaticVector<alarm_control_panel::AlarmControlPanel *, ESPHOME_ENTITY_ALARM_CONTROL_PANEL_COUNT>
+  AppObjectVector<alarm_control_panel::AlarmControlPanel *, ESPHOME_ENTITY_ALARM_CONTROL_PANEL_COUNT>
       alarm_control_panels_{};
 #endif
 #ifdef USE_UPDATE
-  StaticVector<update::UpdateEntity *, ESPHOME_ENTITY_UPDATE_COUNT> updates_{};
+  AppObjectVector<update::UpdateEntity *, ESPHOME_ENTITY_UPDATE_COUNT> updates_{};
 #endif
 };
 
