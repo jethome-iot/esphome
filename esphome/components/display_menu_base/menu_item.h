@@ -107,7 +107,7 @@ class MenuItem {
 
   void on_enter();
   void on_leave();
-  void on_value_();
+  void on_value();
 
  protected:
   MenuItemType item_type_;

@@ -34,7 +34,7 @@ void MenuItem::on_enter() { this->on_enter_callbacks_.call(); }
 
 void MenuItem::on_leave() { this->on_leave_callbacks_.call(); }
 
-void MenuItem::on_value_() { this->on_value_callbacks_.call(); }
+void MenuItem::on_value() { this->on_value_callbacks_.call(); }
 
 std::string MenuItemBinarySensor::get_value_text() const {
   std::string result;
@@ -68,7 +68,7 @@ bool MenuItemSelect::select_next() {
   if (this->select_var_ != nullptr) {
     this->select_var_->make_call().select_next(true).perform();
     changed = true;
-    this->on_value_();
+    this->on_value();
   }
 
   return changed;
@@ -80,7 +80,7 @@ bool MenuItemSelect::select_prev() {
   if (this->select_var_ != nullptr) {
     this->select_var_->make_call().select_previous(true).perform();
     changed = true;
-    this->on_value_();
+    this->on_value();
   }
 
   return changed;
@@ -108,7 +108,7 @@ bool MenuItemNumber::select_next() {
     this->number_var_->make_call().number_increment(false).perform();
 
     if (this->number_var_->state != last) {
-      this->on_value_();
+      this->on_value();
       changed = true;
     }
   }
@@ -124,7 +124,7 @@ bool MenuItemNumber::select_prev() {
     this->number_var_->make_call().number_decrement(false).perform();
 
     if (this->number_var_->state != last) {
-      this->on_value_();
+      this->on_value();
       changed = true;
     }
   }
@@ -171,7 +171,7 @@ bool MenuItemSwitch::toggle_switch_() {
 
   if (this->switch_var_ != nullptr) {
     this->switch_var_->toggle();
-    this->on_value_();
+    this->on_value();
     changed = true;
   }
 
@@ -183,24 +183,24 @@ std::string MenuItemValueBase::get_value_text() const {
 }
 
 bool MenuItemCommand::select_next() {
-  this->on_value_();
+  this->on_value();
   return true;
 }
 
 bool MenuItemCommand::select_prev() {
-  this->on_value_();
+  this->on_value();
   return true;
 }
 
 bool MenuItemCustom::select_next() {
   this->on_next_();
-  this->on_value_();
+  this->on_value();
   return true;
 }
 
 bool MenuItemCustom::select_prev() {
   this->on_prev_();
-  this->on_value_();
+  this->on_value();
   return true;
 }
 
