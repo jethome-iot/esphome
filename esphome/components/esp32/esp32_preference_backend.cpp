@@ -11,26 +11,26 @@ bool ESP32PreferenceBackend::save(const uint8_t *data, size_t len) {
   // try find in pending saves and update that
   for (auto &obj : pending_save) {
     if (obj.key == key) {
-      obj.data.assign(data, data + len);
+      obj.set_data(data, len);
       return true;
     }
   }
   NVSData save{};
   save.key = key;
-  save.data.assign(data, data + len);
-  pending_save.emplace_back(save);
-  ESP_LOGVV(TAG, "pending_save: key: %s, len: %d", key.c_str(), len);
+  save.set_data(data, len);
+  pending_save.emplace_back(std::move(save));
+  ESP_LOGVV(TAG, "pending_save: key: %s, len: %zu", key.c_str(), len);
   return true;
 }
 bool ESP32PreferenceBackend::load(uint8_t *data, size_t len) {
   // try find in pending saves and load from that
   for (auto &obj : pending_save) {
     if (obj.key == key) {
-      if (obj.data.size() != len) {
+      if (obj.len != len) {
         // size mismatch
         return false;
       }
-      memcpy(data, obj.data.data(), len);
+      memcpy(data, obj.data.get(), len);
       return true;
     }
   }
@@ -41,7 +41,7 @@ bool ESP32PreferenceBackend::load(uint8_t *data, size_t len) {
     return false;
   }
   if (actual_len != len) {
-    ESP_LOGVV(TAG, "NVS length does not match (%u!=%u)", actual_len, len);
+    ESP_LOGVV(TAG, "NVS length does not match (%zu!=%zu)", actual_len, len);
     return false;
   }
   err = nvs_get_blob(nvs_handle, key.c_str(), data, &len);
@@ -49,7 +49,7 @@ bool ESP32PreferenceBackend::load(uint8_t *data, size_t len) {
     ESP_LOGV(TAG, "nvs_get_blob('%s') failed: %s", key.c_str(), esp_err_to_name(err));
     return false;
   } else {
-    ESP_LOGVV(TAG, "nvs_get_blob: key: %s, len: %d", key.c_str(), len);
+    ESP_LOGVV(TAG, "nvs_get_blob: key: %s, len: %zu", key.c_str(), len);
   }
   return true;
 }
@@ -63,7 +63,9 @@ bool ESP32PreferenceBackend::remove() {
   }
   NVSData save{};
   save.key = key;
-  pending_save.emplace_back(save);
+  save.data = nullptr;
+  save.len = 0;
+  pending_save.emplace_back(std::move(save));
   return true;
 }
 

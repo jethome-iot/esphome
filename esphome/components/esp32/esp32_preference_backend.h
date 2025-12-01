@@ -2,6 +2,8 @@
 #ifdef USE_ESP32
 
 #include <string>
+#include <memory>
+#include <cstring>
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
 #include "esphome/core/preferences.h"
@@ -11,7 +13,14 @@ namespace esp32 {
 
 struct NVSData {
   std::string key;
-  std::vector<uint8_t> data;
+  std::unique_ptr<uint8_t[]> data;
+  size_t len;
+
+  void set_data(const uint8_t *src, size_t size) {
+    data = std::make_unique<uint8_t[]>(size);
+    memcpy(data.get(), src, size);
+    len = size;
+  }
 };
 
 class ESP32PreferenceBackend : public ESPPreferenceBackend {
