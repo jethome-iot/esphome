@@ -45,6 +45,8 @@ AUTO_LOAD = ["modbus"]
 CONF_READ_LAMBDA = "read_lambda"
 CONF_WRITE_LAMBDA = "write_lambda"
 CONF_SERVER_REGISTERS = "server_registers"
+CONF_SERVER_COILS = "server_coils"
+CONF_SERVER_DISCRETE_INPUTS = "server_discrete_inputs"
 MULTI_CONF = True
 
 modbus_controller_ns = cg.esphome_ns.namespace("modbus_controller")
@@ -55,6 +57,8 @@ ModbusController = modbus_controller_ns.class_(
 SensorItem = modbus_controller_ns.struct("SensorItem")
 ServerCourtesyResponse = modbus_controller_ns.struct("ServerCourtesyResponse")
 ServerRegister = modbus_controller_ns.struct("ServerRegister")
+ServerCoil = modbus_controller_ns.struct("ServerCoil")
+ServerDiscreteInput = modbus_controller_ns.struct("ServerDiscreteInput")
 
 ModbusFunctionCode_ns = modbus_controller_ns.namespace("ModbusFunctionCode")
 ModbusFunctionCode = ModbusFunctionCode_ns.enum("ModbusFunctionCode")
@@ -166,6 +170,23 @@ ModbusServerRegisterSchema = cv.Schema(
     }
 )
 
+ModbusServerCoilSchema = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(ServerCoil),
+        cv.Required(CONF_ADDRESS): cv.positive_int,
+        cv.Required(CONF_READ_LAMBDA): cv.returning_lambda,
+        cv.Optional(CONF_WRITE_LAMBDA): cv.returning_lambda,
+    }
+)
+
+ModbusServerDiscreteInputSchema = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(ServerDiscreteInput),
+        cv.Required(CONF_ADDRESS): cv.positive_int,
+        cv.Required(CONF_READ_LAMBDA): cv.returning_lambda,
+    }
+)
+
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
@@ -181,6 +202,12 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(
                 CONF_SERVER_REGISTERS,
             ): cv.ensure_list(ModbusServerRegisterSchema),
+            cv.Optional(
+                CONF_SERVER_COILS,
+            ): cv.ensure_list(ModbusServerCoilSchema),
+            cv.Optional(
+                CONF_SERVER_DISCRETE_INPUTS,
+            ): cv.ensure_list(ModbusServerDiscreteInputSchema),
             cv.Optional(CONF_ON_COMMAND_SENT): automation.validate_automation(
                 {
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(
@@ -246,7 +273,12 @@ def validate_modbus_register(config):
 
 
 def _final_validate(config):
-    if CONF_SERVER_COURTESY_RESPONSE in config or CONF_SERVER_REGISTERS in config:
+    if (
+        CONF_SERVER_COURTESY_RESPONSE in config
+        or CONF_SERVER_REGISTERS in config
+        or CONF_SERVER_COILS in config
+        or CONF_SERVER_DISCRETE_INPUTS in config
+    ):
         return modbus.final_validate_modbus_device("modbus_controller", role="server")(
             config
         )
@@ -360,6 +392,48 @@ async def to_code(config):
                     )
                 )
             cg.add(var.add_server_register(server_register_var))
+    if CONF_SERVER_COILS in config:
+        for server_coil in config[CONF_SERVER_COILS]:
+            server_coil_var = cg.new_Pvariable(
+                server_coil[CONF_ID],
+                server_coil[CONF_ADDRESS],
+            )
+            cg.add(
+                server_coil_var.set_read_lambda(
+                    await cg.process_lambda(
+                        server_coil[CONF_READ_LAMBDA],
+                        [(cg.uint16, "address")],
+                        return_type=cg.bool_,
+                    ),
+                )
+            )
+            if CONF_WRITE_LAMBDA in server_coil:
+                cg.add(
+                    server_coil_var.set_write_lambda(
+                        await cg.process_lambda(
+                            server_coil[CONF_WRITE_LAMBDA],
+                            parameters=[(cg.uint16, "address"), (cg.bool_, "x")],
+                            return_type=cg.bool_,
+                        ),
+                    )
+                )
+            cg.add(var.add_server_coil(server_coil_var))
+    if CONF_SERVER_DISCRETE_INPUTS in config:
+        for server_discrete_input in config[CONF_SERVER_DISCRETE_INPUTS]:
+            server_discrete_input_var = cg.new_Pvariable(
+                server_discrete_input[CONF_ID],
+                server_discrete_input[CONF_ADDRESS],
+            )
+            cg.add(
+                server_discrete_input_var.set_read_lambda(
+                    await cg.process_lambda(
+                        server_discrete_input[CONF_READ_LAMBDA],
+                        [(cg.uint16, "address")],
+                        return_type=cg.bool_,
+                    ),
+                )
+            )
+            cg.add(var.add_server_discrete_input(server_discrete_input_var))
     await register_modbus_device(var, config)
     for conf in config.get(CONF_ON_COMMAND_SENT, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)

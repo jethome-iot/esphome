@@ -299,6 +299,39 @@ class ServerRegister {
   WriteLambda write_lambda;
 };
 
+class ServerBooleanItem {
+ public:
+  using ReadLambda = std::function<bool()>;
+
+  ServerBooleanItem(uint16_t address) { this->address = address; }
+  virtual ~ServerBooleanItem() = default;
+
+  void set_read_lambda(const std::function<bool(uint16_t address)> &&user_read_lambda) {
+    this->read_lambda = [this, user_read_lambda]() -> bool { return user_read_lambda(this->address); };
+  }
+
+  uint16_t address{0};
+  ReadLambda read_lambda;
+};
+
+class ServerCoil : public ServerBooleanItem {
+  using WriteLambda = std::function<bool(bool value)>;
+
+ public:
+  ServerCoil(uint16_t address) : ServerBooleanItem(address) {}
+
+  void set_write_lambda(const std::function<bool(uint16_t address, bool value)> &&user_write_lambda) {
+    this->write_lambda = [this, user_write_lambda](bool value) { return user_write_lambda(this->address, value); };
+  }
+
+  WriteLambda write_lambda;
+};
+
+class ServerDiscreteInput : public ServerBooleanItem {
+ public:
+  ServerDiscreteInput(uint16_t address) : ServerBooleanItem(address) {}
+};
+
 // ModbusController::create_register_ranges_ tries to optimize register range
 // for this the sensors must be ordered by register_type, start_address and bitmask
 class SensorItemsComparator {
@@ -461,6 +494,9 @@ class ModbusCommandItem {
 
 class ModbusController : public PollingComponent, public modbus::ModbusDevice {
  public:
+  /// Modbus specification limit for boolean items (coils and discrete inputs)
+  static constexpr uint16_t MAX_BOOLEAN_ITEMS = 2000;
+
   void dump_config() override;
   void loop() override;
   void setup() override;
@@ -472,6 +508,12 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   void add_sensor_item(SensorItem *item) { sensorset_.insert(item); }
   /// Registers a server register with the controller. Called by esphomes code generator
   void add_server_register(ServerRegister *server_register) { server_registers_.push_back(server_register); }
+  /// Registers a server coil with the controller. Called by esphomes code generator
+  void add_server_coil(ServerCoil *server_coil) { server_coils_.push_back(server_coil); }
+  /// Registers a server discrete input with the controller. Called by esphomes code generator
+  void add_server_discrete_input(ServerDiscreteInput *server_discrete_input) {
+    server_discrete_inputs_.push_back(server_discrete_input);
+  }
   /// called when a modbus response was parsed without errors
   void on_modbus_data(const std::vector<uint8_t> &data) override;
   /// called when a modbus error response was received
@@ -480,6 +522,12 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   void on_modbus_read_registers(uint8_t function_code, uint16_t start_address, uint16_t number_of_registers) final;
   /// called when a modbus request (function code 0x06 or 0x10) was parsed without errors
   void on_modbus_write_registers(uint8_t function_code, const std::vector<uint8_t> &data) final;
+  /// called when a modbus request (function code 0x01) was parsed without errors
+  void on_modbus_read_coils(uint16_t start_address, uint16_t number_of_coils) final;
+  /// called when a modbus request (function code 0x02) was parsed without errors
+  void on_modbus_read_discrete_inputs(uint16_t start_address, uint16_t number_of_inputs) final;
+  /// called when a modbus request (function code 0x05 or 0x0F) was parsed without errors
+  void on_modbus_write_coils(uint8_t function_code, const std::vector<uint8_t> &data) final;
   /// default delegate called by process_modbus_data when a response has retrieved from the incoming queue
   void on_register_data(ModbusRegisterType register_type, uint16_t start_address, const std::vector<uint8_t> &data);
   /// default delegate called by process_modbus_data when a response for a write response has retrieved from the
@@ -530,10 +578,17 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   bool send_next_command_();
   /// dump the parsed sensormap for diagnostics
   void dump_sensors_();
+  /// generic function to read boolean items (coils or discrete inputs)
+  bool read_boolean_items_(const std::vector<ServerBooleanItem *> &items, uint16_t start_address, uint16_t item_count,
+                           uint8_t function_code, const char *item_type_name);
   /// Collection of all sensors for this component
   SensorSet sensorset_;
   /// Collection of all server registers for this component
   std::vector<ServerRegister *> server_registers_{};
+  /// Collection of all server coils for this component
+  std::vector<ServerCoil *> server_coils_{};
+  /// Collection of all server discrete inputs for this component
+  std::vector<ServerDiscreteInput *> server_discrete_inputs_{};
   /// Continuous range of modbus registers
   std::vector<RegisterRange> register_ranges_{};
   /// Hold the pending requests to be sent
