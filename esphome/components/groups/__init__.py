@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.const import CONF_GROUPS, CONF_ID, CONF_NAME
+from esphome.const import CONF_ENTITIES, CONF_GROUPS, CONF_ID, CONF_NAME
 
 GROUPS_STORAGE_ID = "groups_storage_id"
 
@@ -11,6 +11,7 @@ GroupStorage = groups_ns.class_("GroupsStorage")
 GROUP_BASE_SCHEMA = {
     cv.Required(CONF_ID): cv.declare_id(GroupClass),
     cv.Optional(CONF_NAME): cv.string,
+    cv.Optional(CONF_ENTITIES): cv.ensure_list(cv.use_id(cg.EntityBase)),
 }
 
 GROUP_ID_SCHEMA = cv.Schema(
@@ -19,7 +20,8 @@ GROUP_ID_SCHEMA = cv.Schema(
     }
 )
 
-
+# Schema for components that dynamically create entities and need to assign them to groups
+# (e.g., dallas_temp_searcher which discovers sensors at runtime)
 LIST_OF_GROUPS_SCHEMA = cv.Schema(
     {
         cv.Optional(CONF_GROUPS): cv.All(
@@ -29,12 +31,6 @@ LIST_OF_GROUPS_SCHEMA = cv.Schema(
 )
 
 CONFIG_SCHEMA = cv.All(cv.ensure_list(GROUP_BASE_SCHEMA))
-
-
-async def add_entity_config(entity, config):
-    for group in config:
-        group_var = await cg.get_variable(group)
-        cg.add(group_var.add_entity(entity))
 
 
 async def add_groups_to_storage(storage_var, config):
@@ -49,5 +45,9 @@ async def to_code(config):
     for group_config in config:
         group_var = cg.new_Pvariable(group_config[CONF_ID])
         cg.add(group_var.set_group_name(group_config[CONF_NAME]))
+        # Add entities to group
+        for entity_id in group_config.get(CONF_ENTITIES, []):
+            entity_var = await cg.get_variable(entity_id)
+            cg.add(group_var.add_entity(entity_var))
         cg.add(var.add_group(group_var))
     cg.add_define("USE_GROUPS")
