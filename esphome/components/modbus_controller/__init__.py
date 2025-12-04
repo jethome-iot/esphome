@@ -44,7 +44,11 @@ AUTO_LOAD = ["modbus"]
 
 CONF_READ_LAMBDA = "read_lambda"
 CONF_WRITE_LAMBDA = "write_lambda"
-CONF_SERVER_REGISTERS = "server_registers"
+CONF_SERVER_REGISTERS = (
+    "server_registers"  # DEPRECATED - kept for backward compatibility
+)
+CONF_SERVER_INPUT_REGISTERS = "server_input_registers"
+CONF_SERVER_HOLDING_REGISTERS = "server_holding_registers"
 CONF_SERVER_COILS = "server_coils"
 CONF_SERVER_DISCRETE_INPUTS = "server_discrete_inputs"
 MULTI_CONF = True
@@ -56,7 +60,8 @@ ModbusController = modbus_controller_ns.class_(
 
 SensorItem = modbus_controller_ns.struct("SensorItem")
 ServerCourtesyResponse = modbus_controller_ns.struct("ServerCourtesyResponse")
-ServerRegister = modbus_controller_ns.struct("ServerRegister")
+ServerInputRegister = modbus_controller_ns.struct("ServerInputRegister")
+ServerHoldingRegister = modbus_controller_ns.struct("ServerHoldingRegister")
 ServerCoil = modbus_controller_ns.struct("ServerCoil")
 ServerDiscreteInput = modbus_controller_ns.struct("ServerDiscreteInput")
 
@@ -160,9 +165,32 @@ SERVER_COURTESY_RESPONSE_SCHEMA = cv.Schema(
     }
 )
 
+# DEPRECATED: Old unified register schema - kept for backward compatibility
 ModbusServerRegisterSchema = cv.Schema(
     {
-        cv.GenerateID(): cv.declare_id(ServerRegister),
+        cv.GenerateID(): cv.use_id(
+            ServerHoldingRegister
+        ),  # Default to holding for backward compat
+        cv.Required(CONF_ADDRESS): cv.positive_int,
+        cv.Optional(CONF_VALUE_TYPE, default="U_WORD"): cv.enum(SENSOR_VALUE_TYPE),
+        cv.Required(CONF_READ_LAMBDA): cv.returning_lambda,
+        cv.Optional(CONF_WRITE_LAMBDA): cv.returning_lambda,
+    }
+)
+
+ModbusServerInputRegisterSchema = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(ServerInputRegister),
+        cv.Required(CONF_ADDRESS): cv.positive_int,
+        cv.Optional(CONF_VALUE_TYPE, default="U_WORD"): cv.enum(SENSOR_VALUE_TYPE),
+        cv.Required(CONF_READ_LAMBDA): cv.returning_lambda,
+        # No write_lambda - read-only
+    }
+)
+
+ModbusServerHoldingRegisterSchema = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(ServerHoldingRegister),
         cv.Required(CONF_ADDRESS): cv.positive_int,
         cv.Optional(CONF_VALUE_TYPE, default="U_WORD"): cv.enum(SENSOR_VALUE_TYPE),
         cv.Required(CONF_READ_LAMBDA): cv.returning_lambda,
@@ -200,8 +228,14 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_MAX_CMD_RETRIES, default=4): cv.positive_int,
             cv.Optional(CONF_OFFLINE_SKIP_UPDATES, default=0): cv.positive_int,
             cv.Optional(
-                CONF_SERVER_REGISTERS,
+                CONF_SERVER_REGISTERS,  # DEPRECATED - kept for backward compatibility
             ): cv.ensure_list(ModbusServerRegisterSchema),
+            cv.Optional(
+                CONF_SERVER_INPUT_REGISTERS,
+            ): cv.ensure_list(ModbusServerInputRegisterSchema),
+            cv.Optional(
+                CONF_SERVER_HOLDING_REGISTERS,
+            ): cv.ensure_list(ModbusServerHoldingRegisterSchema),
             cv.Optional(
                 CONF_SERVER_COILS,
             ): cv.ensure_list(ModbusServerCoilSchema),
@@ -276,6 +310,8 @@ def _final_validate(config):
     if (
         CONF_SERVER_COURTESY_RESPONSE in config
         or CONF_SERVER_REGISTERS in config
+        or CONF_SERVER_INPUT_REGISTERS in config
+        or CONF_SERVER_HOLDING_REGISTERS in config
         or CONF_SERVER_COILS in config
         or CONF_SERVER_DISCRETE_INPUTS in config
     ):
@@ -361,26 +397,35 @@ async def to_code(config):
         )
     cg.add(var.set_max_cmd_retries(config[CONF_MAX_CMD_RETRIES]))
     cg.add(var.set_offline_skip_updates(config[CONF_OFFLINE_SKIP_UPDATES]))
+
+    # Handle deprecated server_registers (backward compatibility)
     if CONF_SERVER_REGISTERS in config:
+        _LOGGER.warning(
+            "'server_registers' is deprecated. Please use 'server_input_registers' "
+            "for read-only registers and 'server_holding_registers' for read-write registers."
+        )
         for server_register in config[CONF_SERVER_REGISTERS]:
-            server_register_var = cg.new_Pvariable(
-                server_register[CONF_ID],
-                server_register[CONF_ADDRESS],
-                server_register[CONF_VALUE_TYPE],
-                TYPE_REGISTER_MAP[server_register[CONF_VALUE_TYPE]],
-            )
-            cpp_type = CPP_TYPE_REGISTER_MAP[server_register[CONF_VALUE_TYPE]]
-            cg.add(
-                server_register_var.set_read_lambda(
-                    cg.TemplateArguments(cpp_type),
-                    await cg.process_lambda(
-                        server_register[CONF_READ_LAMBDA],
-                        [(cg.uint16, "address")],
-                        return_type=cpp_type,
-                    ),
+            has_write = CONF_WRITE_LAMBDA in server_register
+            # Auto-split based on write_lambda presence
+            if has_write:
+                # Has write_lambda -> ServerHoldingRegister
+                server_register_var = cg.new_Pvariable(
+                    server_register[CONF_ID],
+                    server_register[CONF_ADDRESS],
+                    server_register[CONF_VALUE_TYPE],
+                    TYPE_REGISTER_MAP[server_register[CONF_VALUE_TYPE]],
                 )
-            )
-            if CONF_WRITE_LAMBDA in server_register:
+                cpp_type = CPP_TYPE_REGISTER_MAP[server_register[CONF_VALUE_TYPE]]
+                cg.add(
+                    server_register_var.set_read_lambda(
+                        cg.TemplateArguments(cpp_type),
+                        await cg.process_lambda(
+                            server_register[CONF_READ_LAMBDA],
+                            [(cg.uint16, "address")],
+                            return_type=cpp_type,
+                        ),
+                    )
+                )
                 cg.add(
                     server_register_var.set_write_lambda(
                         cg.TemplateArguments(cpp_type),
@@ -391,7 +436,82 @@ async def to_code(config):
                         ),
                     )
                 )
-            cg.add(var.add_server_register(server_register_var))
+                cg.add(var.add_server_holding_register(server_register_var))
+            else:
+                # No write_lambda -> ServerInputRegister
+                server_register_var = cg.new_Pvariable(
+                    server_register[CONF_ID],
+                    server_register[CONF_ADDRESS],
+                    server_register[CONF_VALUE_TYPE],
+                    TYPE_REGISTER_MAP[server_register[CONF_VALUE_TYPE]],
+                )
+                cpp_type = CPP_TYPE_REGISTER_MAP[server_register[CONF_VALUE_TYPE]]
+                cg.add(
+                    server_register_var.set_read_lambda(
+                        cg.TemplateArguments(cpp_type),
+                        await cg.process_lambda(
+                            server_register[CONF_READ_LAMBDA],
+                            [(cg.uint16, "address")],
+                            return_type=cpp_type,
+                        ),
+                    )
+                )
+                cg.add(var.add_server_input_register(server_register_var))
+
+    # Handle new server_input_registers
+    if CONF_SERVER_INPUT_REGISTERS in config:
+        for server_input_register in config[CONF_SERVER_INPUT_REGISTERS]:
+            server_input_register_var = cg.new_Pvariable(
+                server_input_register[CONF_ID],
+                server_input_register[CONF_ADDRESS],
+                server_input_register[CONF_VALUE_TYPE],
+                TYPE_REGISTER_MAP[server_input_register[CONF_VALUE_TYPE]],
+            )
+            cpp_type = CPP_TYPE_REGISTER_MAP[server_input_register[CONF_VALUE_TYPE]]
+            cg.add(
+                server_input_register_var.set_read_lambda(
+                    cg.TemplateArguments(cpp_type),
+                    await cg.process_lambda(
+                        server_input_register[CONF_READ_LAMBDA],
+                        [(cg.uint16, "address")],
+                        return_type=cpp_type,
+                    ),
+                )
+            )
+            cg.add(var.add_server_input_register(server_input_register_var))
+
+    # Handle new server_holding_registers
+    if CONF_SERVER_HOLDING_REGISTERS in config:
+        for server_holding_register in config[CONF_SERVER_HOLDING_REGISTERS]:
+            server_holding_register_var = cg.new_Pvariable(
+                server_holding_register[CONF_ID],
+                server_holding_register[CONF_ADDRESS],
+                server_holding_register[CONF_VALUE_TYPE],
+                TYPE_REGISTER_MAP[server_holding_register[CONF_VALUE_TYPE]],
+            )
+            cpp_type = CPP_TYPE_REGISTER_MAP[server_holding_register[CONF_VALUE_TYPE]]
+            cg.add(
+                server_holding_register_var.set_read_lambda(
+                    cg.TemplateArguments(cpp_type),
+                    await cg.process_lambda(
+                        server_holding_register[CONF_READ_LAMBDA],
+                        [(cg.uint16, "address")],
+                        return_type=cpp_type,
+                    ),
+                )
+            )
+            if CONF_WRITE_LAMBDA in server_holding_register:
+                cg.add(
+                    server_holding_register_var.set_write_lambda(
+                        cg.TemplateArguments(cpp_type),
+                        await cg.process_lambda(
+                            server_holding_register[CONF_WRITE_LAMBDA],
+                            parameters=[(cg.uint16, "address"), (cpp_type, "x")],
+                            return_type=cg.bool_,
+                        ),
+                    )
+                )
+            cg.add(var.add_server_holding_register(server_holding_register_var))
     if CONF_SERVER_COILS in config:
         for server_coil in config[CONF_SERVER_COILS]:
             server_coil_var = cg.new_Pvariable(
