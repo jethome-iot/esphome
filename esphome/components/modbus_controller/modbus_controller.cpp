@@ -519,10 +519,18 @@ void ModbusController::dump_config() {
                 "  Server Courtesy Response:\n"
                 "    Enabled: %s\n"
                 "    Register Last Address: 0x%02X\n"
-                "    Register Value: %d",
+                "    Register Value: %d\n"
+                "    Coil Last Address: 0x%02X\n"
+                "    Coil Value: %s\n"
+                "    Discrete Input Last Address: 0x%02X\n"
+                "    Discrete Input Value: %s",
                 this->address_, this->max_cmd_retries_, this->offline_skip_updates_,
                 this->server_courtesy_response_.enabled ? "true" : "false",
-                this->server_courtesy_response_.register_last_address, this->server_courtesy_response_.register_value);
+                this->server_courtesy_response_.register_last_address, this->server_courtesy_response_.register_value,
+                this->server_courtesy_response_.coil_last_address,
+                this->server_courtesy_response_.coil_value ? "true" : "false",
+                this->server_courtesy_response_.discrete_input_last_address,
+                this->server_courtesy_response_.discrete_input_value ? "true" : "false");
 
 #if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_VERBOSE
   ESP_LOGCONFIG(TAG, "sensormap");
@@ -908,6 +916,13 @@ bool ModbusController::read_boolean_items_(const Container &items, uint16_t star
     return false;
   }
 
+  // Determine courtesy response parameters based on function code
+  bool is_coil = (function_code == static_cast<uint8_t>(ModbusFunctionCode::READ_COILS));
+  uint16_t courtesy_last_address = is_coil ? this->server_courtesy_response_.coil_last_address
+                                           : this->server_courtesy_response_.discrete_input_last_address;
+  bool courtesy_value =
+      is_coil ? this->server_courtesy_response_.coil_value : this->server_courtesy_response_.discrete_input_value;
+
   std::bitset<MAX_BOOLEAN_ITEMS> states;
 
   for (uint16_t i = 0; i < item_count; i++) {
@@ -931,10 +946,16 @@ bool ModbusController::read_boolean_items_(const Container &items, uint16_t star
     }
 
     if (!found) {
-      ESP_LOGW(TAG, "Could not match any %s to address 0x%02X. Sending exception response.", item_type_name,
-               current_address);
-      this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
-      return false;
+      if (this->server_courtesy_response_.enabled && (current_address <= courtesy_last_address)) {
+        ESP_LOGV(TAG, "Could not match any %s to address 0x%02X, but default allowed. Returning default value: %s.",
+                 item_type_name, current_address, ONOFF(courtesy_value));
+        states[i] = courtesy_value;
+      } else {
+        ESP_LOGW(TAG, "Could not match any %s to address 0x%02X and default not allowed. Sending exception response.",
+                 item_type_name, current_address);
+        this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+        return false;
+      }
     }
   }
 

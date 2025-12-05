@@ -235,6 +235,10 @@ struct ServerCourtesyResponse {
   bool enabled{false};
   uint16_t register_last_address{0xFFFF};
   uint16_t register_value{0};
+  uint16_t coil_last_address{0xFFFF};
+  bool coil_value{false};
+  uint16_t discrete_input_last_address{0xFFFF};
+  bool discrete_input_value{false};
 };
 
 class ServerRegisterItem {
@@ -643,8 +647,13 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
   /// Server offline callback
   CallbackManager<void(int, int)> offline_callback_{};
   /// Server courtesy response
-  ServerCourtesyResponse server_courtesy_response_{
-      .enabled = false, .register_last_address = 0xFFFF, .register_value = 0};
+  ServerCourtesyResponse server_courtesy_response_{.enabled = false,
+                                                   .register_last_address = 0xFFFF,
+                                                   .register_value = 0,
+                                                   .coil_last_address = 0xFFFF,
+                                                   .coil_value = false,
+                                                   .discrete_input_last_address = 0xFFFF,
+                                                   .discrete_input_value = false};
 };
 
 /** Convert vector<uint8_t> response payload to float.

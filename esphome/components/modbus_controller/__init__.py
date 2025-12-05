@@ -18,8 +18,12 @@ from .const import (
     CONF_ALLOW_DUPLICATE_COMMANDS,
     CONF_BITMASK,
     CONF_BYTE_OFFSET,
+    CONF_COIL_LAST_ADDRESS,
+    CONF_COIL_VALUE,
     CONF_COMMAND_THROTTLE,
     CONF_CUSTOM_COMMAND,
+    CONF_DISCRETE_INPUT_LAST_ADDRESS,
+    CONF_DISCRETE_INPUT_VALUE,
     CONF_ENABLED,
     CONF_FORCE_NEW_RANGE,
     CONF_MAX_CMD_RETRIES,
@@ -162,6 +166,10 @@ SERVER_COURTESY_RESPONSE_SCHEMA = cv.Schema(
         cv.Optional(CONF_ENABLED, default=False): cv.boolean,
         cv.Optional(CONF_REGISTER_LAST_ADDRESS, default=0xFFFF): cv.hex_uint16_t,
         cv.Optional(CONF_REGISTER_VALUE, default=0): cv.hex_uint16_t,
+        cv.Optional(CONF_COIL_LAST_ADDRESS, default=0xFFFF): cv.hex_uint16_t,
+        cv.Optional(CONF_COIL_VALUE, default=False): cv.boolean,
+        cv.Optional(CONF_DISCRETE_INPUT_LAST_ADDRESS, default=0xFFFF): cv.hex_uint16_t,
+        cv.Optional(CONF_DISCRETE_INPUT_VALUE, default=False): cv.boolean,
     }
 )
 
@@ -392,6 +400,19 @@ async def to_code(config):
                         server_courtesy_response[CONF_REGISTER_LAST_ADDRESS],
                     ),
                     ("register_value", server_courtesy_response[CONF_REGISTER_VALUE]),
+                    (
+                        "coil_last_address",
+                        server_courtesy_response[CONF_COIL_LAST_ADDRESS],
+                    ),
+                    ("coil_value", server_courtesy_response[CONF_COIL_VALUE]),
+                    (
+                        "discrete_input_last_address",
+                        server_courtesy_response[CONF_DISCRETE_INPUT_LAST_ADDRESS],
+                    ),
+                    (
+                        "discrete_input_value",
+                        server_courtesy_response[CONF_DISCRETE_INPUT_VALUE],
+                    ),
                 )
             )
         )
