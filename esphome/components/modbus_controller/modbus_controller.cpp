@@ -897,5 +897,141 @@ void ModbusController::add_on_offline_callback(std::function<void(int, int)> &&c
   this->offline_callback_.add(std::move(callback));
 }
 
+// Template implementations for generic read functions
+
+template<typename Container>
+bool ModbusController::read_boolean_items_(const Container &items, uint16_t start_address, uint16_t item_count,
+                                           uint8_t function_code, const char *item_type_name) {
+  if (item_count == 0 || item_count > MAX_BOOLEAN_ITEMS) {
+    ESP_LOGW(TAG, "Invalid number of %s %d. Sending exception response.", item_type_name, item_count);
+    this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+    return false;
+  }
+
+  std::bitset<MAX_BOOLEAN_ITEMS> states;
+
+  for (uint16_t i = 0; i < item_count; i++) {
+    uint16_t current_address = start_address + i;
+    bool found = false;
+
+    for (auto *item : items) {
+      if (item->address == current_address) {
+        if (!item->read_lambda) {
+          ESP_LOGW(TAG, "%s at address 0x%02X has no read lambda. Sending exception response.", item_type_name,
+                   current_address);
+          this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+          return false;
+        }
+        bool value = item->read_lambda();
+        ESP_LOGD(TAG, "Matched %s. Address: 0x%02X. Value: %s.", item_type_name, item->address, ONOFF(value));
+        states[i] = value;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      ESP_LOGW(TAG, "Could not match any %s to address 0x%02X. Sending exception response.", item_type_name,
+               current_address);
+      this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+      return false;
+    }
+  }
+
+  std::vector<uint8_t> response_bytes;
+  uint8_t byte_count = (item_count + 7) / 8;
+  response_bytes.reserve(byte_count);
+
+  for (size_t i = 0; i < byte_count; i++) {
+    uint8_t byte_value = 0;
+    for (size_t bit = 0; bit < 8 && (i * 8 + bit) < item_count; bit++) {
+      if (states[i * 8 + bit]) {
+        byte_value |= (1 << bit);
+      }
+    }
+    response_bytes.push_back(byte_value);
+  }
+
+  this->send(function_code, start_address, item_count, response_bytes.size(), response_bytes.data());
+  return true;
+}
+
+template<typename Container>
+bool ModbusController::read_registers_(const Container &items, uint16_t start_address, uint16_t register_count,
+                                       uint8_t function_code, const char *register_type_name) {
+  if (register_count == 0 || register_count > modbus::MAX_NUM_OF_REGISTERS_TO_READ) {
+    ESP_LOGW(TAG, "Invalid number of %s %d. Sending exception response.", register_type_name, register_count);
+    this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+    return false;
+  }
+
+  std::vector<uint16_t> sixteen_bit_response;
+  for (uint16_t current_address = start_address; current_address < start_address + register_count;) {
+    bool found = false;
+    for (auto *item : items) {
+      if (item->address == current_address) {
+        if (!item->read_lambda) {
+          break;
+        }
+        int64_t value = item->read_lambda();
+        ESP_LOGD(TAG, "Matched %s. Address: 0x%02X. Value type: %zu. Register count: %u. Value: %s.",
+                 register_type_name, item->address, static_cast<size_t>(item->value_type), item->register_count,
+                 item->format_value(value).c_str());
+
+        std::vector<uint16_t> payload;
+        payload.reserve(item->register_count * 2);
+        number_to_payload(payload, value, item->value_type);
+        sixteen_bit_response.insert(sixteen_bit_response.end(), payload.cbegin(), payload.cend());
+        current_address += item->register_count;
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      if (this->server_courtesy_response_.enabled &&
+          (current_address <= this->server_courtesy_response_.register_last_address)) {
+        ESP_LOGD(TAG,
+                 "Could not match any %s to address 0x%02X, but default allowed. "
+                 "Returning default value: %d.",
+                 register_type_name, current_address, this->server_courtesy_response_.register_value);
+        sixteen_bit_response.push_back(this->server_courtesy_response_.register_value);
+        current_address += 1;  // Just increment by 1, as the default response is a single register
+      } else {
+        ESP_LOGW(TAG, "Could not match any %s to address 0x%02X and default not allowed. Sending exception response.",
+                 register_type_name, current_address);
+        this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+        return false;
+      }
+    }
+  }
+
+  std::vector<uint8_t> response;
+  for (auto v : sixteen_bit_response) {
+    auto decoded_value = decode_value(v);
+    response.push_back(decoded_value[0]);
+    response.push_back(decoded_value[1]);
+  }
+
+  this->send(function_code, start_address, register_count, response.size(), response.data());
+  return true;
+}
+
+// Explicit template instantiations
+template bool ModbusController::read_boolean_items_<std::vector<ServerCoil *>>(const std::vector<ServerCoil *> &items,
+                                                                               uint16_t start_address,
+                                                                               uint16_t item_count,
+                                                                               uint8_t function_code,
+                                                                               const char *item_type_name);
+template bool ModbusController::read_boolean_items_<std::vector<ServerDiscreteInput *>>(
+    const std::vector<ServerDiscreteInput *> &items, uint16_t start_address, uint16_t item_count, uint8_t function_code,
+    const char *item_type_name);
+template bool ModbusController::read_registers_<std::vector<ServerInputRegister *>>(
+    const std::vector<ServerInputRegister *> &items, uint16_t start_address, uint16_t register_count,
+    uint8_t function_code, const char *register_type_name);
+template bool ModbusController::read_registers_<std::vector<ServerHoldingRegister *>>(
+    const std::vector<ServerHoldingRegister *> &items, uint16_t start_address, uint16_t register_count,
+    uint8_t function_code, const char *register_type_name);
+
 }  // namespace modbus_controller
 }  // namespace esphome
