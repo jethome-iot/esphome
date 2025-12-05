@@ -302,7 +302,7 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
           this->send_error(function_code, ModbusExceptionCode::SERVICE_DEVICE_FAILURE);
           return;
         }
-        ESP_LOGD(TAG, "Wrote coil at address 0x%02X. Value: %s.", current_address, ONOFF(value));
+        ESP_LOGV(TAG, "Wrote coil at address 0x%02X. Value: %s.", current_address, ONOFF(value));
         break;
       }
     }
@@ -923,7 +923,7 @@ bool ModbusController::read_boolean_items_(const Container &items, uint16_t star
           return false;
         }
         bool value = item->read_lambda();
-        ESP_LOGD(TAG, "Matched %s. Address: 0x%02X. Value: %s.", item_type_name, item->address, ONOFF(value));
+        ESP_LOGV(TAG, "Matched %s. Address: 0x%02X. Value: %s.", item_type_name, item->address, ONOFF(value));
         states[i] = value;
         found = true;
         break;
@@ -974,7 +974,7 @@ bool ModbusController::read_registers_(const Container &items, uint16_t start_ad
           break;
         }
         int64_t value = item->read_lambda();
-        ESP_LOGD(TAG, "Matched %s. Address: 0x%02X. Value type: %zu. Register count: %u. Value: %s.",
+        ESP_LOGV(TAG, "Matched %s. Address: 0x%02X. Value type: %zu. Register count: %u. Value: %s.",
                  register_type_name, item->address, static_cast<size_t>(item->value_type), item->register_count,
                  item->format_value(value).c_str());
 
@@ -991,7 +991,7 @@ bool ModbusController::read_registers_(const Container &items, uint16_t start_ad
     if (!found) {
       if (this->server_courtesy_response_.enabled &&
           (current_address <= this->server_courtesy_response_.register_last_address)) {
-        ESP_LOGD(TAG,
+        ESP_LOGV(TAG,
                  "Could not match any %s to address 0x%02X, but default allowed. "
                  "Returning default value: %d.",
                  register_type_name, current_address, this->server_courtesy_response_.register_value);
