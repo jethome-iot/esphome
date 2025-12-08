@@ -1,0 +1,79 @@
+---
+# NOTE: This file may need to be re-added after syncing with upstream ESPHome
+# as upstream does not have this workflow.
+name: Notify Parent Repository
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches: [dev-jethub]
+
+jobs:
+  notify-parent:
+    name: Trigger parent workflow
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine event details
+        id: event
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "action=pushed" >> $GITHUB_OUTPUT
+            echo "ref=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "pr_number=" >> $GITHUB_OUTPUT
+            echo "pr_head_ref=" >> $GITHUB_OUTPUT
+            echo "merged=false" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "pr_head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+
+            if [ "${{ github.event.action }}" = "closed" ]; then
+              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+                echo "action=merged" >> $GITHUB_OUTPUT
+                echo "ref=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
+                echo "merged=true" >> $GITHUB_OUTPUT
+              else
+                echo "action=closed" >> $GITHUB_OUTPUT
+                echo "ref=" >> $GITHUB_OUTPUT
+                echo "merged=false" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+              echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+              echo "merged=false" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Trigger parent repository workflow
+        if: steps.event.outputs.action != 'closed' || steps.event.outputs.merged == 'true'
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PARENT_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/jethome-iot/esphome-workspace/dispatches \
+            -d '{
+              "event_type": "submodule-updated",
+              "client_payload": {
+                "submodule": "esphome",
+                "action": "${{ steps.event.outputs.action }}",
+                "ref": "${{ steps.event.outputs.ref }}",
+                "pr_number": "${{ steps.event.outputs.pr_number }}",
+                "pr_head_ref": "${{ steps.event.outputs.pr_head_ref }}",
+                "merged": ${{ steps.event.outputs.merged }}
+              }
+            }'
+
+      - name: Notify parent to close PR (PR closed without merge)
+        if: github.event.action == 'closed' && github.event.pull_request.merged == false
+        run: |
+          curl -X POST \
+            -H "Authorization: token ${{ secrets.PARENT_REPO_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/jethome-iot/esphome-workspace/dispatches \
+            -d '{
+              "event_type": "submodule-pr-closed",
+              "client_payload": {
+                "submodule": "esphome",
+                "pr_number": "${{ github.event.pull_request.number }}"
+              }
+            }'
