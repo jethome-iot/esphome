@@ -44,6 +44,23 @@ jobs:
             fi
           fi
 
+      - name: Extract dependencies from PR body
+        id: deps
+        if: github.event_name == 'pull_request'
+        run: |
+          # Extract Depends-on lines from PR body and convert to JSON
+          DEPS_JSON="{}"
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^Depends-on:[[:space:]]*([^@]+)@(.+)$ ]]; then
+              SUBMODULE="${BASH_REMATCH[1]}"
+              BRANCH="${BASH_REMATCH[2]}"
+              DEPS_JSON=$(echo "$DEPS_JSON" | jq --arg k "$SUBMODULE" --arg v "$BRANCH" '. + {($k): $v}')
+            fi
+          done <<< "${{ github.event.pull_request.body }}"
+
+          echo "dependencies=$DEPS_JSON" >> $GITHUB_OUTPUT
+          echo "Dependencies: $DEPS_JSON"
+
       - name: Trigger parent repository workflow
         if: steps.event.outputs.action != 'closed' || steps.event.outputs.merged == 'true'
         run: |
@@ -60,7 +77,8 @@ jobs:
                 "pr_number": "${{ steps.event.outputs.pr_number }}",
                 "pr_head_ref": "${{ steps.event.outputs.pr_head_ref }}",
                 "merged": ${{ steps.event.outputs.merged }},
-                "source_repo": "${{ github.repository }}"
+                "source_repo": "${{ github.repository }}",
+                "dependencies": ${{ steps.deps.outputs.dependencies || '{}' }}
               }
             }'
 
