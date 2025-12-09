@@ -59,7 +59,8 @@ jobs:
                 "ref": "${{ steps.event.outputs.ref }}",
                 "pr_number": "${{ steps.event.outputs.pr_number }}",
                 "pr_head_ref": "${{ steps.event.outputs.pr_head_ref }}",
-                "merged": ${{ steps.event.outputs.merged }}
+                "merged": ${{ steps.event.outputs.merged }},
+                "source_repo": "${{ github.repository }}"
               }
             }'
 
