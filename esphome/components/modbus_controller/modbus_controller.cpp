@@ -161,10 +161,21 @@ void ModbusController::on_modbus_write_registers(uint8_t function_code, const st
            "0x%X.",
            this->address_, function_code, start_address, number_of_registers);
 
+  // Check for address range overflow (start_address + number_of_registers must not exceed address space)
+  if (static_cast<uint32_t>(start_address) + number_of_registers > MODBUS_ADDRESS_SPACE_SIZE) {
+    ESP_LOGW(TAG,
+             "Address range overflow: start_address 0x%04X + number_of_registers %d exceeds maximum address space. "
+             "Sending exception response.",
+             start_address, number_of_registers);
+    this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+    return;
+  }
+
   auto for_each_register = [this, start_address, number_of_registers, payload_offset](
                                const std::function<bool(ServerHoldingRegister *, uint16_t offset)> &callback) -> bool {
     uint16_t offset = payload_offset;
-    for (uint16_t current_address = start_address; current_address < start_address + number_of_registers;) {
+    uint16_t end_address = start_address + number_of_registers;  // Safe after overflow check above
+    for (uint16_t current_address = start_address; current_address < end_address;) {
       bool ok = false;
       for (auto *server_holding_register : this->server_holding_registers_) {
         if (server_holding_register->address == current_address) {
@@ -258,8 +269,19 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
   ESP_LOGD(TAG, "Received write coils for device 0x%X. FC: 0x%X. Start address: 0x%X. Number of coils: 0x%X.",
            this->address_, function_code, start_address, number_of_coils);
 
+  // Check for address range overflow (start_address + number_of_coils must not exceed address space)
+  if (static_cast<uint32_t>(start_address) + number_of_coils > MODBUS_ADDRESS_SPACE_SIZE) {
+    ESP_LOGW(TAG,
+             "Address range overflow: start_address 0x%04X + number_of_coils %d exceeds maximum address space. "
+             "Sending exception response.",
+             start_address, number_of_coils);
+    this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+    return;
+  }
+
   // Check all coils are writable before writing to any of them
-  for (uint16_t current_address = start_address; current_address < start_address + number_of_coils; current_address++) {
+  uint16_t end_address = start_address + number_of_coils;  // Safe after overflow check above
+  for (uint16_t current_address = start_address; current_address < end_address; current_address++) {
     bool found = false;
     for (auto *server_coil : this->server_coils_) {
       if (server_coil->address == current_address) {
@@ -280,8 +302,8 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
   }
 
   // Actually write to the coils
-  for (uint16_t coil_index = 0; coil_index < number_of_coils; coil_index++) {
-    uint16_t current_address = start_address + coil_index;
+  for (uint16_t current_address = start_address; current_address < end_address; current_address++) {
+    uint16_t coil_index = current_address - start_address;
     bool value;
 
     if (function_code == ModbusFunctionCode::WRITE_SINGLE_COIL) {
@@ -916,6 +938,16 @@ bool ModbusController::read_boolean_items_(const Container &items, uint16_t star
     return false;
   }
 
+  // Check for address range overflow (start_address + item_count must not exceed address space)
+  if (static_cast<uint32_t>(start_address) + item_count > MODBUS_ADDRESS_SPACE_SIZE) {
+    ESP_LOGW(TAG,
+             "Address range overflow: start_address 0x%04X + item_count %d exceeds maximum address space. "
+             "Sending exception response.",
+             start_address, item_count);
+    this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+    return false;
+  }
+
   // Determine courtesy response parameters based on function code
   bool is_coil = (function_code == static_cast<uint8_t>(ModbusFunctionCode::READ_COILS));
   uint16_t courtesy_last_address = is_coil ? this->server_courtesy_response_.coil_last_address
@@ -986,8 +1018,19 @@ bool ModbusController::read_registers_(const Container &items, uint16_t start_ad
     return false;
   }
 
+  // Check for address range overflow (start_address + register_count must not exceed address space)
+  if (static_cast<uint32_t>(start_address) + register_count > MODBUS_ADDRESS_SPACE_SIZE) {
+    ESP_LOGW(TAG,
+             "Address range overflow: start_address 0x%04X + register_count %d exceeds maximum address space. "
+             "Sending exception response.",
+             start_address, register_count);
+    this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_ADDRESS);
+    return false;
+  }
+
   std::vector<uint16_t> sixteen_bit_response;
-  for (uint16_t current_address = start_address; current_address < start_address + register_count;) {
+  uint16_t end_address = start_address + register_count;  // Safe after overflow check above
+  for (uint16_t current_address = start_address; current_address < end_address;) {
     bool found = false;
     for (auto *item : items) {
       if (item->address == current_address) {

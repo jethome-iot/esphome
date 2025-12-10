@@ -516,6 +516,8 @@ class ModbusController : public PollingComponent, public modbus::ModbusDevice {
  public:
   /// Modbus specification limit for boolean items (coils and discrete inputs)
   static constexpr uint16_t MAX_BOOLEAN_ITEMS = 2000;
+  /// Modbus address space size (16-bit address space: 0x0000 to 0xFFFF)
+  static constexpr uint32_t MODBUS_ADDRESS_SPACE_SIZE = 0x10000;
 
   void dump_config() override;
   void loop() override;
