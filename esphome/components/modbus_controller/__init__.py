@@ -176,7 +176,7 @@ SERVER_COURTESY_RESPONSE_SCHEMA = cv.Schema(
 # DEPRECATED: Old unified register schema - kept for backward compatibility
 ModbusServerRegisterSchema = cv.Schema(
     {
-        cv.GenerateID(): cv.use_id(
+        cv.GenerateID(): cv.declare_id(
             ServerHoldingRegister
         ),  # Default to holding for backward compat
         cv.Required(CONF_ADDRESS): cv.positive_int,
@@ -460,7 +460,7 @@ async def to_code(config):
                 )
                 cg.add(var.add_server_holding_register(server_register_var))
             else:
-                # No write_lambda -> ServerInputRegister
+                # No write_lambda -> still use ServerHoldingRegister (schema type) but without write support
                 server_register_var = cg.new_Pvariable(
                     server_register[CONF_ID],
                     server_register[CONF_ADDRESS],
@@ -478,7 +478,7 @@ async def to_code(config):
                         ),
                     )
                 )
-                cg.add(var.add_server_input_register(server_register_var))
+                cg.add(var.add_server_holding_register(server_register_var))
 
     # Handle new server_input_registers
     if CONF_SERVER_INPUT_REGISTERS in config:
