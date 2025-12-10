@@ -424,7 +424,8 @@ async def to_code(config):
     if CONF_SERVER_REGISTERS in config:
         _LOGGER.warning(
             "'server_registers' is deprecated. Please use 'server_input_registers' "
-            "for read-only registers and 'server_holding_registers' for read-write registers."
+            "for read-only registers and 'server_holding_registers' for read-write registers. "
+            "server_registers works as a holding register now."
         )
         for server_register in config[CONF_SERVER_REGISTERS]:
             has_write = CONF_WRITE_LAMBDA in server_register
