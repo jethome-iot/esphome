@@ -315,14 +315,15 @@ def validate_modbus_register(config):
 
 
 def _final_validate(config):
-    if (
-        CONF_SERVER_COURTESY_RESPONSE in config
-        or CONF_SERVER_REGISTERS in config
-        or CONF_SERVER_INPUT_REGISTERS in config
-        or CONF_SERVER_HOLDING_REGISTERS in config
-        or CONF_SERVER_COILS in config
-        or CONF_SERVER_DISCRETE_INPUTS in config
-    ):
+    server_keys = (
+        CONF_SERVER_COURTESY_RESPONSE,
+        CONF_SERVER_REGISTERS,
+        CONF_SERVER_INPUT_REGISTERS,
+        CONF_SERVER_HOLDING_REGISTERS,
+        CONF_SERVER_COILS,
+        CONF_SERVER_DISCRETE_INPUTS,
+    )
+    if any(key in config for key in server_keys):
         return modbus.final_validate_modbus_device("modbus_controller", role="server")(
             config
         )
