@@ -309,6 +309,15 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
     if (function_code == ModbusFunctionCode::WRITE_SINGLE_COIL) {
       // For WRITE_SINGLE_COIL, value is 0xFF00 for ON, 0x0000 for OFF
       uint16_t coil_value = uint16_t(data[3]) | (uint16_t(data[2]) << 8);
+      // Validate that the value is exactly 0xFF00 or 0x0000 per Modbus spec
+      if (coil_value != 0xFF00 && coil_value != 0x0000) {
+        ESP_LOGW(TAG,
+                 "Invalid coil value 0x%04X for WRITE_SINGLE_COIL. Only 0xFF00 (ON) or 0x0000 (OFF) allowed. "
+                 "Sending exception response.",
+                 coil_value);
+        this->send_error(function_code, ModbusExceptionCode::ILLEGAL_DATA_VALUE);
+        return;
+      }
       value = (coil_value == 0xFF00);
     } else {
       // For WRITE_MULTIPLE_COILS, unpack bits from bytes
