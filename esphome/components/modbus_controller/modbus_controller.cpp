@@ -162,7 +162,7 @@ void ModbusController::on_modbus_write_registers(uint8_t function_code, const st
            this->address_, function_code, start_address, number_of_registers);
 
   // Check for address range overflow (start_address + number_of_registers must not exceed address space)
-  if (static_cast<uint32_t>(start_address) + number_of_registers > MODBUS_ADDRESS_SPACE_SIZE) {
+  if (static_cast<uint32_t>(start_address) + number_of_registers >= MODBUS_ADDRESS_SPACE_SIZE) {
     ESP_LOGW(TAG,
              "Address range overflow: start_address 0x%04X + number_of_registers %d exceeds maximum address space. "
              "Sending exception response.",
@@ -270,7 +270,7 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
            this->address_, function_code, start_address, number_of_coils);
 
   // Check for address range overflow (start_address + number_of_coils must not exceed address space)
-  if (static_cast<uint32_t>(start_address) + number_of_coils > MODBUS_ADDRESS_SPACE_SIZE) {
+  if (static_cast<uint32_t>(start_address) + number_of_coils >= MODBUS_ADDRESS_SPACE_SIZE) {
     ESP_LOGW(TAG,
              "Address range overflow: start_address 0x%04X + number_of_coils %d exceeds maximum address space. "
              "Sending exception response.",
@@ -939,7 +939,7 @@ bool ModbusController::read_boolean_items_(const Container &items, uint16_t star
   }
 
   // Check for address range overflow (start_address + item_count must not exceed address space)
-  if (static_cast<uint32_t>(start_address) + item_count > MODBUS_ADDRESS_SPACE_SIZE) {
+  if (static_cast<uint32_t>(start_address) + item_count >= MODBUS_ADDRESS_SPACE_SIZE) {
     ESP_LOGW(TAG,
              "Address range overflow: start_address 0x%04X + item_count %d exceeds maximum address space. "
              "Sending exception response.",
@@ -1019,7 +1019,7 @@ bool ModbusController::read_registers_(const Container &items, uint16_t start_ad
   }
 
   // Check for address range overflow (start_address + register_count must not exceed address space)
-  if (static_cast<uint32_t>(start_address) + register_count > MODBUS_ADDRESS_SPACE_SIZE) {
+  if (static_cast<uint32_t>(start_address) + register_count >= MODBUS_ADDRESS_SPACE_SIZE) {
     ESP_LOGW(TAG,
              "Address range overflow: start_address 0x%04X + register_count %d exceeds maximum address space. "
              "Sending exception response.",
