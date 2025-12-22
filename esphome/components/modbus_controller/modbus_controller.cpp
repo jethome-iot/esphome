@@ -174,8 +174,8 @@ void ModbusController::on_modbus_write_registers(uint8_t function_code, const st
   auto for_each_register = [this, start_address, number_of_registers, payload_offset](
                                const std::function<bool(ServerHoldingRegister *, uint16_t offset)> &callback) -> bool {
     uint16_t offset = payload_offset;
-    uint16_t end_address = start_address + number_of_registers;  // Safe after overflow check above
-    for (uint16_t current_address = start_address; current_address < end_address;) {
+    uint32_t end_address = start_address + number_of_registers;  // Safe after overflow check above
+    for (uint32_t current_address = start_address; current_address < end_address;) {
       bool ok = false;
       for (auto *server_holding_register : this->server_holding_registers_) {
         if (server_holding_register->address == current_address) {
@@ -280,8 +280,8 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
   }
 
   // Check all coils are writable before writing to any of them
-  uint16_t end_address = start_address + number_of_coils;  // Safe after overflow check above
-  for (uint16_t current_address = start_address; current_address < end_address; current_address++) {
+  uint32_t end_address = start_address + number_of_coils;  // Safe after overflow check above
+  for (uint32_t current_address = start_address; current_address < end_address; current_address++) {
     bool found = false;
     for (auto *server_coil : this->server_coils_) {
       if (server_coil->address == current_address) {
@@ -302,7 +302,7 @@ void ModbusController::on_modbus_write_coils(uint8_t function_code, const std::v
   }
 
   // Actually write to the coils
-  for (uint16_t current_address = start_address; current_address < end_address; current_address++) {
+  for (uint32_t current_address = start_address; current_address < end_address; current_address++) {
     uint16_t coil_index = current_address - start_address;
     bool value;
 
@@ -967,7 +967,7 @@ bool ModbusController::read_boolean_items_(const Container &items, uint16_t star
   std::bitset<MAX_BOOLEAN_ITEMS> states;
 
   for (uint16_t i = 0; i < item_count; i++) {
-    uint16_t current_address = start_address + i;
+    uint32_t current_address = start_address + i;
     bool found = false;
 
     for (auto *item : items) {
@@ -1038,8 +1038,8 @@ bool ModbusController::read_registers_(const Container &items, uint16_t start_ad
   }
 
   std::vector<uint16_t> sixteen_bit_response;
-  uint16_t end_address = start_address + register_count;  // Safe after overflow check above
-  for (uint16_t current_address = start_address; current_address < end_address;) {
+  uint32_t end_address = start_address + register_count;  // Safe after overflow check above
+  for (uint32_t current_address = start_address; current_address < end_address;) {
     bool found = false;
     for (auto *item : items) {
       if (item->address == current_address) {
