@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "esphome/core/optional.h"
+#include "esphome/core/entity_types.h"
 
 #ifdef USE_ESP8266
 #include <Esp.h>
@@ -623,6 +624,11 @@ enum ParseOnOffState : uint8_t {
 };
 /// Parse a string that contains either on, off or toggle.
 ParseOnOffState parse_on_off(const char *str, const char *on = nullptr, const char *off = nullptr);
+
+/// Convert EntityType enum to string representation.
+const char *entity_type_to_string(EntityType type);
+/// Convert string representation to EntityType enum.
+EntityType string_to_entity_type(const char *str);
 
 /// Create a string from a value and an accuracy in decimals.
 std::string value_accuracy_to_string(float value, int8_t accuracy_decimals);
