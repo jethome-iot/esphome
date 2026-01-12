@@ -349,6 +349,105 @@ ParseOnOffState parse_on_off(const char *str, const char *on, const char *off) {
   return PARSE_NONE;
 }
 
+const char *entity_type_to_string(EntityType type) {
+  switch (type) {
+    case EntityType::NONE:
+      return "none";
+    case EntityType::BINARY_SENSOR:
+      return "binary_sensor";
+    case EntityType::SWITCH:
+      return "switch";
+    case EntityType::BUTTON:
+      return "button";
+    case EntityType::SENSOR:
+      return "sensor";
+    case EntityType::TEXT_SENSOR:
+      return "text_sensor";
+    case EntityType::FAN:
+      return "fan";
+    case EntityType::COVER:
+      return "cover";
+    case EntityType::LIGHT:
+      return "light";
+    case EntityType::CLIMATE:
+      return "climate";
+    case EntityType::NUMBER:
+      return "number";
+    case EntityType::DATETIME_DATE:
+      return "datetime_date";
+    case EntityType::DATETIME_TIME:
+      return "datetime_time";
+    case EntityType::DATETIME_DATETIME:
+      return "datetime_datetime";
+    case EntityType::TEXT:
+      return "text";
+    case EntityType::SELECT:
+      return "select";
+    case EntityType::LOCK:
+      return "lock";
+    case EntityType::VALVE:
+      return "valve";
+    case EntityType::MEDIA_PLAYER:
+      return "media_player";
+    case EntityType::ALARM_CONTROL_PANEL:
+      return "alarm_control_panel";
+    case EntityType::EVENT:
+      return "event";
+    case EntityType::UPDATE:
+      return "update";
+    default:
+      return "unknown";
+  }
+}
+
+EntityType string_to_entity_type(const char *str) {
+  if (strcmp(str, "none") == 0)
+    return EntityType::NONE;
+  if (strcmp(str, "binary_sensor") == 0)
+    return EntityType::BINARY_SENSOR;
+  if (strcmp(str, "switch") == 0)
+    return EntityType::SWITCH;
+  if (strcmp(str, "button") == 0)
+    return EntityType::BUTTON;
+  if (strcmp(str, "sensor") == 0)
+    return EntityType::SENSOR;
+  if (strcmp(str, "text_sensor") == 0)
+    return EntityType::TEXT_SENSOR;
+  if (strcmp(str, "fan") == 0)
+    return EntityType::FAN;
+  if (strcmp(str, "cover") == 0)
+    return EntityType::COVER;
+  if (strcmp(str, "light") == 0)
+    return EntityType::LIGHT;
+  if (strcmp(str, "climate") == 0)
+    return EntityType::CLIMATE;
+  if (strcmp(str, "number") == 0)
+    return EntityType::NUMBER;
+  if (strcmp(str, "datetime_date") == 0)
+    return EntityType::DATETIME_DATE;
+  if (strcmp(str, "datetime_time") == 0)
+    return EntityType::DATETIME_TIME;
+  if (strcmp(str, "datetime_datetime") == 0)
+    return EntityType::DATETIME_DATETIME;
+  if (strcmp(str, "text") == 0)
+    return EntityType::TEXT;
+  if (strcmp(str, "select") == 0)
+    return EntityType::SELECT;
+  if (strcmp(str, "lock") == 0)
+    return EntityType::LOCK;
+  if (strcmp(str, "valve") == 0)
+    return EntityType::VALVE;
+  if (strcmp(str, "media_player") == 0)
+    return EntityType::MEDIA_PLAYER;
+  if (strcmp(str, "alarm_control_panel") == 0)
+    return EntityType::ALARM_CONTROL_PANEL;
+  if (strcmp(str, "event") == 0)
+    return EntityType::EVENT;
+  if (strcmp(str, "update") == 0)
+    return EntityType::UPDATE;
+  return EntityType::NONE;
+}
+
 static inline void normalize_accuracy_decimals(float &value, int8_t &accuracy_decimals) {
   if (accuracy_decimals < 0) {
     auto multiplier = powf(10.0f, accuracy_decimals);
