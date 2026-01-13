@@ -738,7 +738,10 @@ void Display::set_pages(std::vector<DisplayPage *> pages) {
   }
   pages[0]->set_prev(pages[pages.size() - 1]);
   pages[pages.size() - 1]->set_next(pages[0]);
-  this->show_page(pages[0]);
+
+  if (this->main_page_ == nullptr) {
+    this->show_page(pages[0]);
+  }
 }
 void Display::show_page(DisplayPage *page) {
   this->previous_page_ = this->page_;
@@ -747,6 +750,10 @@ void Display::show_page(DisplayPage *page) {
     for (auto *t : on_page_change_triggers_)
       t->process(this->previous_page_, this->page_);
   }
+}
+void Display::set_main_page(DisplayPage *page) {
+  this->main_page_ = page;
+  this->show_page(page);
 }
 void Display::show_next_page() { this->page_->show_next(); }
 void Display::show_prev_page() { this->page_->show_prev(); }

@@ -42,6 +42,7 @@ DisplayOnPageChangeTrigger = display_ns.class_(
 CONF_ON_PAGE_CHANGE = "on_page_change"
 CONF_SHOW_TEST_CARD = "show_test_card"
 CONF_UNSPECIFIED = "unspecified"
+CONF_MAIN_PAGE = "main_page"
 
 DISPLAY_ROTATIONS = {
     0: display_ns.DISPLAY_ROTATION_0_DEGREES,
@@ -93,6 +94,7 @@ FULL_DISPLAY_SCHEMA = BASIC_DISPLAY_SCHEMA.extend(
             ),
             cv.Length(min=1),
         ),
+        cv.Optional(CONF_MAIN_PAGE): cv.use_id(DisplayPage),
         cv.Optional(CONF_ON_PAGE_CHANGE): automation.validate_automation(
             {
                 cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(
@@ -131,6 +133,9 @@ async def setup_display_core_(var, config):
             page = cg.new_Pvariable(conf[CONF_ID], lambda_)
             pages.append(page)
         cg.add(var.set_pages(pages))
+    if CONF_MAIN_PAGE in config:
+        page = await cg.get_variable(config[CONF_MAIN_PAGE])
+        cg.add(var.set_main_page(page))
     for conf in config.get(CONF_ON_PAGE_CHANGE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         if CONF_FROM in conf:
