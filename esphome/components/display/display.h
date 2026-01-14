@@ -611,6 +611,9 @@ class Display : public PollingComponent {
 
   const DisplayPage *get_active_page() const { return this->page_; }
 
+  void set_main_page(DisplayPage *page);
+  DisplayPage *get_main_page() const { return this->main_page_; }
+
   void add_on_page_change_trigger(DisplayOnPageChangeTrigger *t) { this->on_page_change_triggers_.push_back(t); }
 
   /// Internal method to set the display rotation with.
@@ -701,6 +704,7 @@ class Display : public PollingComponent {
   optional<display_writer_t> writer_{};
   DisplayPage *page_{nullptr};
   DisplayPage *previous_page_{nullptr};
+  DisplayPage *main_page_{nullptr};
   std::vector<DisplayOnPageChangeTrigger *> on_page_change_triggers_;
   bool auto_clear_enabled_{true};
   std::vector<Rect> clipping_rectangle_;
