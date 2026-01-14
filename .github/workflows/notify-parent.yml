@@ -5,7 +5,7 @@ name: Notify Parent Repository
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened]
   push:
     branches: [dev-jethub]
 
@@ -22,26 +22,11 @@ jobs:
             echo "ref=${{ github.sha }}" >> $GITHUB_OUTPUT
             echo "pr_number=" >> $GITHUB_OUTPUT
             echo "pr_head_ref=" >> $GITHUB_OUTPUT
-            echo "merged=false" >> $GITHUB_OUTPUT
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
             echo "pr_head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-
-            if [ "${{ github.event.action }}" = "closed" ]; then
-              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
-                echo "action=merged" >> $GITHUB_OUTPUT
-                echo "ref=${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
-                echo "merged=true" >> $GITHUB_OUTPUT
-              else
-                echo "action=closed" >> $GITHUB_OUTPUT
-                echo "ref=" >> $GITHUB_OUTPUT
-                echo "merged=false" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
-              echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-              echo "merged=false" >> $GITHUB_OUTPUT
-            fi
+            echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+            echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
           fi
 
       - name: Extract dependencies from PR body
@@ -49,20 +34,21 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           # Extract Depends-on lines from PR body and convert to JSON
+          # Handles text before/after and whitespace variations
           DEPS_JSON="{}"
+          PR_BODY='${{ github.event.pull_request.body }}'
           while IFS= read -r line; do
-            if [[ "$line" =~ ^Depends-on:[[:space:]]*([^@]+)@(.+)$ ]]; then
-              SUBMODULE="${BASH_REMATCH[1]}"
-              BRANCH="${BASH_REMATCH[2]}"
+            if [[ "$line" =~ ^[[:space:]]*Depends-on:[[:space:]]*([^@]+)@(.+)[[:space:]]*$ ]]; then
+              SUBMODULE=$(echo "${BASH_REMATCH[1]}" | xargs)
+              BRANCH=$(echo "${BASH_REMATCH[2]}" | xargs)
               DEPS_JSON=$(echo "$DEPS_JSON" | jq --arg k "$SUBMODULE" --arg v "$BRANCH" '. + {($k): $v}')
             fi
-          done <<< "${{ github.event.pull_request.body }}"
+          done <<< "$PR_BODY"
 
           echo "dependencies=$DEPS_JSON" >> $GITHUB_OUTPUT
           echo "Dependencies: $DEPS_JSON"
 
       - name: Trigger parent repository workflow
-        if: steps.event.outputs.action != 'closed' || steps.event.outputs.merged == 'true'
         run: |
           curl -X POST \
             -H "Authorization: token ${{ secrets.PARENT_REPO_TOKEN }}" \
@@ -76,23 +62,7 @@ jobs:
                 "ref": "${{ steps.event.outputs.ref }}",
                 "pr_number": "${{ steps.event.outputs.pr_number }}",
                 "pr_head_ref": "${{ steps.event.outputs.pr_head_ref }}",
-                "merged": ${{ steps.event.outputs.merged }},
                 "source_repo": "${{ github.repository }}",
                 "dependencies": ${{ steps.deps.outputs.dependencies || '{}' }}
-              }
-            }'
-
-      - name: Notify parent to close PR (PR closed without merge)
-        if: github.event.action == 'closed' && github.event.pull_request.merged == false
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.PARENT_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/jethome-iot/esphome-workspace/dispatches \
-            -d '{
-              "event_type": "submodule-pr-closed",
-              "client_payload": {
-                "submodule": "esphome",
-                "pr_number": "${{ github.event.pull_request.number }}"
               }
             }'
