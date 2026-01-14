@@ -738,10 +738,6 @@ void Display::set_pages(std::vector<DisplayPage *> pages) {
   }
   pages[0]->set_prev(pages[pages.size() - 1]);
   pages[pages.size() - 1]->set_next(pages[0]);
-
-  if (this->main_page_ == nullptr) {
-    this->show_page(pages[0]);
-  }
 }
 void Display::show_page(DisplayPage *page) {
   this->previous_page_ = this->page_;

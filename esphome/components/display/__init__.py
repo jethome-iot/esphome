@@ -133,9 +133,11 @@ async def setup_display_core_(var, config):
             page = cg.new_Pvariable(conf[CONF_ID], lambda_)
             pages.append(page)
         cg.add(var.set_pages(pages))
-    if CONF_MAIN_PAGE in config:
-        page = await cg.get_variable(config[CONF_MAIN_PAGE])
-        cg.add(var.set_main_page(page))
+        if CONF_MAIN_PAGE in config:
+            page = await cg.get_variable(config[CONF_MAIN_PAGE])
+            cg.add(var.set_main_page(page))
+        else:
+            cg.add(var.set_main_page(pages[0]))
     for conf in config.get(CONF_ON_PAGE_CHANGE, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
         if CONF_FROM in conf:
