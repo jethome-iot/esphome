@@ -5,7 +5,7 @@ name: Notify Parent Repository
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, closed]
   push:
     branches: [dev-jethub]
 
@@ -25,8 +25,20 @@ jobs:
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
             echo "pr_head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-            echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
-            echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+
+            if [ "${{ github.event.action }}" = "closed" ]; then
+              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
+                echo "action=merged" >> $GITHUB_OUTPUT
+                echo "ref=${{ github.event.pull_request.merge_commit_sha }}" >> $GITHUB_OUTPUT
+              else
+                # PR closed without merge - skip notification
+                echo "action=closed" >> $GITHUB_OUTPUT
+                echo "ref=" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
+              echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+            fi
           fi
 
       - name: Extract dependencies from PR body
@@ -49,6 +61,7 @@ jobs:
           echo "Dependencies: $DEPS_JSON"
 
       - name: Trigger parent repository workflow
+        if: steps.event.outputs.action != 'closed'
         run: |
           curl -X POST \
             -H "Authorization: token ${{ secrets.PARENT_REPO_TOKEN }}" \
