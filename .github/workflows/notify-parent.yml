@@ -10,72 +10,9 @@ on:
     branches: [dev-jethub]
 
 jobs:
-  notify-parent:
-    name: Trigger parent workflow
-    runs-on: ubuntu-latest
-    steps:
-      - name: Determine event details
-        id: event
-        run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "action=pushed" >> $GITHUB_OUTPUT
-            echo "ref=${{ github.sha }}" >> $GITHUB_OUTPUT
-            echo "pr_number=" >> $GITHUB_OUTPUT
-            echo "pr_head_ref=" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-            echo "pr_head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-
-            if [ "${{ github.event.action }}" = "closed" ]; then
-              if [ "${{ github.event.pull_request.merged }}" = "true" ]; then
-                echo "action=merged" >> $GITHUB_OUTPUT
-                echo "ref=${{ github.event.pull_request.merge_commit_sha }}" >> $GITHUB_OUTPUT
-              else
-                # PR closed without merge - skip notification
-                echo "action=closed" >> $GITHUB_OUTPUT
-                echo "ref=" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "action=${{ github.event.action }}" >> $GITHUB_OUTPUT
-              echo "ref=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-      - name: Extract dependencies from PR body
-        id: deps
-        if: github.event_name == 'pull_request'
-        run: |
-          # Extract Depends-on lines from PR body and convert to JSON
-          # Handles text before/after and whitespace variations
-          DEPS_JSON="{}"
-          PR_BODY='${{ github.event.pull_request.body }}'
-          while IFS= read -r line; do
-            if [[ "$line" =~ ^[[:space:]]*Depends-on:[[:space:]]*([^@]+)@(.+)[[:space:]]*$ ]]; then
-              SUBMODULE=$(echo "${BASH_REMATCH[1]}" | xargs)
-              BRANCH=$(echo "${BASH_REMATCH[2]}" | xargs)
-              DEPS_JSON=$(echo "$DEPS_JSON" | jq --arg k "$SUBMODULE" --arg v "$BRANCH" '. + {($k): $v}')
-            fi
-          done <<< "$PR_BODY"
-
-          echo "dependencies=$DEPS_JSON" >> $GITHUB_OUTPUT
-          echo "Dependencies: $DEPS_JSON"
-
-      - name: Trigger parent repository workflow
-        if: steps.event.outputs.action != 'closed'
-        run: |
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.PARENT_REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/jethome-iot/esphome-workspace/dispatches \
-            -d '{
-              "event_type": "submodule-updated",
-              "client_payload": {
-                "submodule": "esphome",
-                "action": "${{ steps.event.outputs.action }}",
-                "ref": "${{ steps.event.outputs.ref }}",
-                "pr_number": "${{ steps.event.outputs.pr_number }}",
-                "pr_head_ref": "${{ steps.event.outputs.pr_head_ref }}",
-                "source_repo": "${{ github.repository }}",
-                "dependencies": ${{ steps.deps.outputs.dependencies || '{}' }}
-              }
-            }'
+  notify:
+    uses: jethome-iot/esphome-workspace/.github/workflows/notify-parent.yml@dev
+    with:
+      submodule: esphome
+    secrets:
+      parent_repo_token: ${{ secrets.PARENT_REPO_TOKEN }}
