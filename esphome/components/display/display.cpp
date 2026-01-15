@@ -654,6 +654,13 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
   if (buff_size == 0)
     return;
 
+  // Get default line height for empty lines using a sample character
+  int default_line_height;
+  {
+    int tmp_x1, tmp_y1, tmp_width;
+    this->get_text_bounds(0, 0, "A", font, TextAlign::TOP_LEFT, &tmp_x1, &tmp_y1, &tmp_width, &default_line_height);
+  }
+
   char buff_char[2] = {0};
   int line_y = y;
 
@@ -661,6 +668,43 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
 
   for (size_t symb_index = 0; symb_index < buff_size; symb_index++) {
     size_t zero_index = symb_index + 1;
+
+    // Check for explicit newline character
+    if (text_buff[symb_index] == '\n') {
+      int line_x1, line_y1, line_width, line_height;
+
+      // Temporarily terminate string at newline position
+      text_buff[symb_index] = 0;
+
+      // Get line dimensions
+      this->get_text_bounds(0, 0, last_buff_ptr, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
+                            &line_height);
+
+      // Use default height for empty lines
+      if (line_height == 0)
+        line_height = default_line_height;
+
+      // Check that doesn't exceed height
+      if (line_y + line_height > height) {
+        break;
+      }
+
+      // Print the line segment before the newline (if not empty)
+      if (last_buff_ptr[0] != 0) {
+        this->print(x, line_y, font, last_buff_ptr);
+      }
+
+      // Move to next line
+      line_y += line_height_multiplier * line_height;
+
+      // Restore the newline character
+      text_buff[symb_index] = '\n';
+
+      // Update pointer to character after the newline
+      last_buff_ptr = text_buff.c_str() + symb_index + 1;
+
+      continue;
+    }
 
     buff_char[0] = text_buff[zero_index];
     int line_x1, line_y1, line_width, line_height;
