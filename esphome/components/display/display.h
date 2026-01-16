@@ -390,6 +390,29 @@ class Display : public PollingComponent {
   void print_multiline(int x, int y, int width, int height, BaseFont *font, const char *text,
                        float line_height_multiplier = 1.0f);
 
+  /** Wrap and render text with word-wrapping and newline support.
+   * Long words that don't fit are broken character by character.
+   *
+   * @param x Starting X position
+   * @param y Starting Y position (can be negative for scrolling)
+   * @param max_width Maximum width for text wrapping
+   * @param text Text to render (supports \\n for explicit line breaks)
+   * @param font Font to use
+   * @param line_height_multiplier Line spacing multiplier (1.0 = normal)
+   * @return Total content height in pixels
+   */
+  int wrap_text(int x, int y, int max_width, const char *text, BaseFont *font, float line_height_multiplier = 1.0f);
+
+  /** Calculate the total height of wrapped text without rendering.
+   *
+   * @param max_width Maximum width for text wrapping
+   * @param text Text to measure
+   * @param font Font to use
+   * @param line_height_multiplier Line spacing multiplier
+   * @return Total content height in pixels
+   */
+  int measure_wrap_text_height(int max_width, const char *text, BaseFont *font, float line_height_multiplier = 1.0f);
+
   /** Evaluate the printf-format `format` and print the result with the anchor point at [x,y] with `font`.
    *
    * @param x The x coordinate of the text alignment anchor point.

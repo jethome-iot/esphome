@@ -740,6 +740,251 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
   }
 }
 
+// Helper to split string by delimiter
+static std::vector<std::string> wrap_text_split_string(const std::string &str, char delimiter) {
+  std::vector<std::string> result;
+  size_t start = 0;
+  size_t end = str.find(delimiter);
+  while (end != std::string::npos) {
+    result.push_back(str.substr(start, end - start));
+    start = end + 1;
+    end = str.find(delimiter, start);
+  }
+  result.push_back(str.substr(start));
+  return result;
+}
+
+// Helper to split string into words (by whitespace)
+static std::vector<std::string> wrap_text_split_words(const std::string &str) {
+  std::vector<std::string> words;
+  size_t start = 0;
+  size_t len = str.size();
+
+  while (start < len) {
+    // Skip leading whitespace
+    while (start < len && (str[start] == ' ' || str[start] == '\t')) {
+      start++;
+    }
+    if (start >= len)
+      break;
+
+    // Find end of word
+    size_t end = start;
+    while (end < len && str[end] != ' ' && str[end] != '\t') {
+      end++;
+    }
+
+    words.push_back(str.substr(start, end - start));
+    start = end;
+  }
+  return words;
+}
+
+// Helper to break a long word into parts that fit max_width
+static std::vector<std::string> wrap_text_break_long_word(Display *it, const std::string &word, BaseFont *font,
+                                                          int max_width) {
+  std::vector<std::string> parts;
+  std::string current_part;
+  int current_width = 0;
+
+  for (size_t i = 0; i < word.size(); i++) {
+    std::string test_char = word.substr(i, 1);
+    int cx1, cy1, cw, ch;
+    it->get_text_bounds(0, 0, test_char.c_str(), font, TextAlign::TOP_LEFT, &cx1, &cy1, &cw, &ch);
+
+    if (current_width + cw > max_width && !current_part.empty()) {
+      parts.push_back(current_part);
+      current_part = test_char;
+      current_width = cw;
+    } else {
+      current_part += test_char;
+      current_width += cw;
+    }
+  }
+
+  if (!current_part.empty()) {
+    parts.push_back(current_part);
+  }
+
+  return parts;
+}
+
+int Display::wrap_text(int x, int y, int max_width, const char *text, BaseFont *font, float line_height_multiplier) {
+  std::string text_str(text);
+
+  // Get space width and line height
+  int space_x1, space_y1, space_width, space_height;
+  this->get_text_bounds(0, 0, " ", font, TextAlign::TOP_LEFT, &space_x1, &space_y1, &space_width, &space_height);
+
+  int char_x1, char_y1, char_width, line_height;
+  this->get_text_bounds(0, 0, "A", font, TextAlign::TOP_LEFT, &char_x1, &char_y1, &char_width, &line_height);
+
+  int current_y = y;
+  int display_height = this->get_height();
+
+  // Split by newlines first
+  std::vector<std::string> lines = wrap_text_split_string(text_str, '\n');
+
+  for (const auto &line : lines) {
+    if (line.empty()) {
+      current_y += static_cast<int>(line_height * line_height_multiplier);
+      continue;
+    }
+
+    std::vector<std::string> words = wrap_text_split_words(line);
+
+    if (words.empty()) {
+      current_y += static_cast<int>(line_height * line_height_multiplier);
+      continue;
+    }
+
+    std::string current_line;
+    int current_line_width = 0;
+
+    for (size_t i = 0; i < words.size(); i++) {
+      const std::string &word = words[i];
+
+      int word_x1, word_y1, word_width, word_height;
+      this->get_text_bounds(0, 0, word.c_str(), font, TextAlign::TOP_LEFT, &word_x1, &word_y1, &word_width,
+                            &word_height);
+
+      // Check if word itself is too long for the screen
+      if (word_width > max_width) {
+        // Print current line first if not empty
+        if (!current_line.empty()) {
+          if (current_y >= 0 && current_y < display_height) {
+            this->print(x, current_y, font, current_line.c_str());
+          }
+          current_y += static_cast<int>(line_height * line_height_multiplier);
+          current_line.clear();
+          current_line_width = 0;
+        }
+
+        // Break the long word into parts
+        std::vector<std::string> parts = wrap_text_break_long_word(this, word, font, max_width);
+        for (size_t p = 0; p < parts.size(); p++) {
+          if (current_y >= 0 && current_y < display_height) {
+            this->print(x, current_y, font, parts[p].c_str());
+          }
+          if (p < parts.size() - 1) {
+            current_y += static_cast<int>(line_height * line_height_multiplier);
+          } else {
+            // Last part becomes the current line
+            current_line = parts[p];
+            int px1, py1, pw, ph;
+            this->get_text_bounds(0, 0, parts[p].c_str(), font, TextAlign::TOP_LEFT, &px1, &py1, &pw, &ph);
+            current_line_width = pw;
+          }
+        }
+        continue;
+      }
+
+      int test_width = current_line_width + (current_line.empty() ? 0 : space_width) + word_width;
+
+      if (test_width > max_width && !current_line.empty()) {
+        if (current_y >= 0 && current_y < display_height) {
+          this->print(x, current_y, font, current_line.c_str());
+        }
+        current_y += static_cast<int>(line_height * line_height_multiplier);
+        current_line = word;
+        current_line_width = word_width;
+      } else {
+        if (!current_line.empty()) {
+          current_line += " ";
+          current_line_width += space_width;
+        }
+        current_line += word;
+        current_line_width += word_width;
+      }
+    }
+
+    if (!current_line.empty()) {
+      if (current_y >= 0 && current_y < display_height) {
+        this->print(x, current_y, font, current_line.c_str());
+      }
+      current_y += static_cast<int>(line_height * line_height_multiplier);
+    }
+  }
+
+  return current_y - y;
+}
+
+int Display::measure_wrap_text_height(int max_width, const char *text, BaseFont *font, float line_height_multiplier) {
+  std::string text_str(text);
+
+  int space_x1, space_y1, space_width, space_height;
+  this->get_text_bounds(0, 0, " ", font, TextAlign::TOP_LEFT, &space_x1, &space_y1, &space_width, &space_height);
+
+  int char_x1, char_y1, char_width, line_height;
+  this->get_text_bounds(0, 0, "A", font, TextAlign::TOP_LEFT, &char_x1, &char_y1, &char_width, &line_height);
+
+  int total_height = 0;
+
+  std::vector<std::string> lines = wrap_text_split_string(text_str, '\n');
+
+  for (const auto &line : lines) {
+    if (line.empty()) {
+      total_height += static_cast<int>(line_height * line_height_multiplier);
+      continue;
+    }
+
+    std::vector<std::string> words = wrap_text_split_words(line);
+
+    if (words.empty()) {
+      total_height += static_cast<int>(line_height * line_height_multiplier);
+      continue;
+    }
+
+    int current_line_width = 0;
+    int line_count = 0;
+
+    for (size_t i = 0; i < words.size(); i++) {
+      const std::string &word = words[i];
+
+      int word_x1, word_y1, word_width, word_height;
+      this->get_text_bounds(0, 0, word.c_str(), font, TextAlign::TOP_LEFT, &word_x1, &word_y1, &word_width,
+                            &word_height);
+
+      // Check if word itself is too long
+      if (word_width > max_width) {
+        // Finish current line if not empty
+        if (current_line_width > 0) {
+          line_count++;
+          current_line_width = 0;
+        }
+
+        // Count lines needed for the long word
+        std::vector<std::string> parts = wrap_text_break_long_word(this, word, font, max_width);
+        line_count += parts.size() - 1;  // All parts except last go to separate lines
+
+        // Last part starts new current line
+        int px1, py1, pw, ph;
+        this->get_text_bounds(0, 0, parts.back().c_str(), font, TextAlign::TOP_LEFT, &px1, &py1, &pw, &ph);
+        current_line_width = pw;
+        continue;
+      }
+
+      int test_width = current_line_width + (current_line_width > 0 ? space_width : 0) + word_width;
+
+      if (test_width > max_width && current_line_width > 0) {
+        line_count++;
+        current_line_width = word_width;
+      } else {
+        current_line_width = test_width;
+      }
+    }
+
+    // Don't forget the last line
+    if (current_line_width > 0) {
+      line_count++;
+    }
+
+    total_height += static_cast<int>(line_count * line_height * line_height_multiplier);
+  }
+
+  return total_height;
+}
+
 void Display::printf(int x, int y, BaseFont *font, Color color, Color background, TextAlign align, const char *format,
                      ...) {
   va_list arg;
