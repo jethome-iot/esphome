@@ -268,6 +268,18 @@ class WiFiComponent : public Component {
   bool has_sta() const;
   bool has_ap() const;
 
+  /// Set WiFi mode (STA and/or AP)
+  bool set_mode(bool sta, bool ap) { return this->wifi_mode_(sta, ap); }
+
+#ifdef USE_WIFI_AP
+  /// Set manual AP control mode (when true, AP won't start automatically)
+  void set_ap_manual(bool manual) { this->ap_manual_ = manual; }
+  /// Manually start AP mode
+  void start_ap();
+  /// Manually stop AP mode (keeps STA if running)
+  void stop_ap();
+#endif
+
 #ifdef USE_WIFI_11KV_SUPPORT
   void set_btm(bool btm);
   void set_rrm(bool rrm);
@@ -424,6 +436,9 @@ class WiFiComponent : public Component {
 #endif
   bool enable_on_boot_;
   bool got_ipv4_address_{false};
+#ifdef USE_WIFI_AP
+  bool ap_manual_{false};
+#endif
 
   // Pointers at the end (naturally aligned)
   Trigger<> *connect_trigger_{new Trigger<>()};

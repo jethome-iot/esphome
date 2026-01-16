@@ -121,15 +121,17 @@ void WiFiComponent::start() {
     }
 #ifdef USE_WIFI_AP
   } else if (this->has_ap()) {
-    this->setup_ap_config_();
-    if (this->output_power_.has_value() && !this->wifi_apply_output_power_(*this->output_power_)) {
-      ESP_LOGV(TAG, "Setting Output Power Option failed");
+    if (!this->ap_manual_) {  // Only auto-start if not manual mode
+      this->setup_ap_config_();
+      if (this->output_power_.has_value() && !this->wifi_apply_output_power_(*this->output_power_)) {
+        ESP_LOGV(TAG, "Setting Output Power Option failed");
+      }
     }
 #ifdef USE_CAPTIVE_PORTAL
     if (captive_portal::global_captive_portal != nullptr) {
       this->wifi_sta_pre_setup_();
       this->start_scanning();
-      captive_portal::global_captive_portal->start();
+      // captive_portal::global_captive_portal->start();  // Manual start only
     }
 #endif
 #endif  // USE_WIFI_AP
@@ -210,13 +212,13 @@ void WiFiComponent::loop() {
     }
 
 #ifdef USE_WIFI_AP
-    if (this->has_ap() && !this->ap_setup_) {
+    if (this->has_ap() && !this->ap_setup_ && !this->ap_manual_) {
       if (this->ap_timeout_ != 0 && (now - this->last_connected_ > this->ap_timeout_)) {
         ESP_LOGI(TAG, "Starting fallback AP");
         this->setup_ap_config_();
 #ifdef USE_CAPTIVE_PORTAL
         if (captive_portal::global_captive_portal != nullptr)
-          captive_portal::global_captive_portal->start();
+          captive_portal::global_captive_portal->start();  // Manual start only
 #endif
       }
     }
@@ -321,6 +323,19 @@ void WiFiComponent::setup_ap_config_() {
 void WiFiComponent::set_ap(const WiFiAP &ap) {
   this->ap_ = ap;
   this->has_ap_ = true;
+}
+
+void WiFiComponent::start_ap() {
+  if (!this->has_ap())
+    return;
+  this->setup_ap_config_();
+}
+
+void WiFiComponent::stop_ap() {
+  if (!this->ap_setup_)
+    return;
+  this->wifi_mode_({}, false);  // Keep STA, disable AP
+  this->ap_setup_ = false;
 }
 #endif  // USE_WIFI_AP
 

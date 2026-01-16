@@ -151,11 +151,13 @@ WIFI_NETWORK_BASE = cv.Schema(
 )
 
 CONF_AP_TIMEOUT = "ap_timeout"
+CONF_AP_MANUAL = "manual"
 WIFI_NETWORK_AP = WIFI_NETWORK_BASE.extend(
     {
         cv.Optional(
             CONF_AP_TIMEOUT, default="1min"
         ): cv.positive_time_period_milliseconds,
+        cv.Optional(CONF_AP_MANUAL, default=False): cv.boolean,
     }
 )
 
@@ -396,6 +398,8 @@ async def to_code(config):
             lambda ap: cg.add(var.set_ap(wifi_network(conf, ap, ip_config))),
         )
         cg.add(var.set_ap_timeout(conf[CONF_AP_TIMEOUT]))
+        if conf[CONF_AP_MANUAL]:
+            cg.add(var.set_ap_manual(conf[CONF_AP_MANUAL]))
         cg.add_define("USE_WIFI_AP")
     elif CORE.is_esp32 and CORE.using_esp_idf:
         add_idf_sdkconfig_option("CONFIG_ESP_WIFI_SOFTAP_SUPPORT", False)
