@@ -31,6 +31,7 @@ from esphome.const import (
 
 CONF_GENERATE_LAMBDA = "generate_lambda"
 CONF_GENERATE_ON_ENTER = "generate_on_enter"
+CONF_VISIBLE = "visible"
 
 CODEOWNERS = ["@numo68"]
 
@@ -88,6 +89,9 @@ ShowAction = display_menu_base_ns.class_("ShowAction", automation.Action)
 HideAction = display_menu_base_ns.class_("HideAction", automation.Action)
 BackAction = display_menu_base_ns.class_("BackAction", automation.Action)
 ShowMainAction = display_menu_base_ns.class_("ShowMainAction", automation.Action)
+SetItemVisibleAction = display_menu_base_ns.class_(
+    "SetItemVisibleAction", automation.Action
+)
 
 IsActiveCondition = display_menu_base_ns.class_(
     "IsActiveCondition", automation.Condition
@@ -176,6 +180,7 @@ def menu_item_schema(value):
 MENU_ITEM_COMMON_SCHEMA = cv.Schema(
     {
         cv.Optional(CONF_TEXT): cv.templatable(cv.string),
+        cv.Optional(CONF_VISIBLE, default=True): cv.boolean,
     }
 )
 
@@ -426,6 +431,27 @@ async def display_menu_is_active_to_code(config, condition_id, template_arg, arg
     return cg.new_Pvariable(condition_id, template_arg, paren)
 
 
+MENU_ITEM_SET_VISIBLE_ACTION_SCHEMA = cv.Schema(
+    {
+        cv.Required(CONF_ID): cv.use_id(MenuItem),
+        cv.Required(CONF_VISIBLE): cv.templatable(cv.boolean),
+    }
+)
+
+
+@automation.register_action(
+    "display_menu_item.set_visible",
+    SetItemVisibleAction,
+    MENU_ITEM_SET_VISIBLE_ACTION_SCHEMA,
+)
+async def menu_item_set_visible_to_code(config, action_id, template_arg, args):
+    item = await cg.get_variable(config[CONF_ID])
+    var = cg.new_Pvariable(action_id, template_arg, item)
+    template_ = await cg.templatable(config[CONF_VISIBLE], args, cg.bool_)
+    cg.add(var.set_visible(template_))
+    return var
+
+
 async def menu_item_to_code(menu, config, parent):
     if config[CONF_TYPE] in MENU_ITEMS_WITH_SPECIALIZED_CLASSES:
         item = cg.new_Pvariable(config[CONF_ID])
@@ -440,6 +466,8 @@ async def menu_item_to_code(menu, config, parent):
             cg.add(item.set_text(template_))
         else:
             cg.add(item.set_text(config[CONF_TEXT]))
+    if not config.get(CONF_VISIBLE, True):
+        cg.add(item.set_visible(False))
     if CONF_VALUE_LAMBDA in config:
         template_ = await cg.process_lambda(
             config[CONF_VALUE_LAMBDA],
