@@ -113,7 +113,9 @@ class WebServerBase : public Component {
     }
     this->server_ = std::make_shared<AsyncWebServer>(this->port_);
     // All content is controlled and created by user - so allowing all origins is fine here.
+#ifndef JETHOME_CORS_ORIGIN_SPECIFIC
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
+#endif
     this->server_->begin();
 
     for (auto *handler : this->handlers_)
