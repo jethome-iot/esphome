@@ -73,16 +73,27 @@ void Application::register_component_(Component *comp) {
   // If looping_components_ is already initialized (setup has started/completed),
   // we need to add this component to the looping list if it has a loop() override.
   // Components registered during normal setup flow are handled by calculate_looping_components_().
-  if (!this->looping_components_.empty() && comp->has_overridden_loop()) {
-    // Add to active section by inserting at active_end_ position and incrementing
+  if (this->looping_components_initialized_ && comp->has_overridden_loop()) {
     this->looping_components_.push_back(comp);
-    // Swap with inactive section if needed to maintain partitioning
-    if (this->looping_components_active_end_ < this->looping_components_.size() - 1) {
-      std::swap(this->looping_components_[this->looping_components_active_end_], this->looping_components_.back());
+
+    // Check if the component is in LOOP_DONE state (e.g., called disable_loop() during initialization)
+    // Components in LOOP_DONE state go to the inactive section (end of vector)
+    // Components NOT in LOOP_DONE state go to the active section
+    // This matches the partitioning logic in add_looping_components_by_state_()
+    if ((comp->get_component_state() & COMPONENT_STATE_MASK) == COMPONENT_STATE_LOOP_DONE) {
+      // Component is in LOOP_DONE state - leave it at the end (inactive section)
+      // enable_component_loop_() will find it there when enable_loop() is called
+      ESP_LOGD(TAG, "Late-registered component %s added to inactive looping components (LOOP_DONE state)",
+               LOG_STR_ARG(comp->get_component_log_str()));
+    } else {
+      // Component is active - swap with inactive section if needed to maintain partitioning
+      if (this->looping_components_active_end_ < this->looping_components_.size() - 1) {
+        std::swap(this->looping_components_[this->looping_components_active_end_], this->looping_components_.back());
+      }
+      this->looping_components_active_end_++;
+      ESP_LOGD(TAG, "Late-registered component %s added to active looping components (active_end=%u)",
+               LOG_STR_ARG(comp->get_component_log_str()), this->looping_components_active_end_);
     }
-    this->looping_components_active_end_++;
-    ESP_LOGD(TAG, "Late-registered component %s added to looping components (active_end=%u)",
-             LOG_STR_ARG(comp->get_component_log_str()), this->looping_components_active_end_);
   }
 #endif
 }
@@ -383,6 +394,9 @@ void Application::calculate_looping_components_() {
   // Then add any components that are already LOOP_DONE to the inactive section
   // This handles components that called disable_loop() during initialization
   this->add_looping_components_by_state_(true);
+
+  // Mark looping_components_ as initialized so late-registered components can be added
+  this->looping_components_initialized_ = true;
 }
 
 void Application::add_looping_components_by_state_(bool match_loop_done) {

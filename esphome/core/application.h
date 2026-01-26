@@ -666,6 +666,7 @@ class Application {
   uint8_t app_state_{0};
   bool name_add_mac_suffix_;
   bool in_loop_{false};
+  bool looping_components_initialized_{false};  // True after calculate_looping_components_() has been called
   volatile bool has_pending_enable_loop_requests_{false};
 
 #ifdef USE_SOCKET_SELECT_SUPPORT
