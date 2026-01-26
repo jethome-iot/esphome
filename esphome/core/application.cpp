@@ -252,10 +252,12 @@ void Application::run_powerdown_hooks() {
 void Application::teardown_components(uint32_t timeout_ms) {
   uint32_t start_time = millis();
 
-  // Use a StaticVector instead of std::vector to avoid heap allocation
-  // since we know the actual size at compile time
-  StaticVector<Component *, ESPHOME_COMPONENT_COUNT> pending_components;
-
+  // Use AppObjectVector which is StaticVector by default (avoids heap allocation),
+  // or std::vector when JETHOME_USE_DYNAMIC_VECTORS is defined
+  AppObjectVector<Component *, ESPHOME_COMPONENT_COUNT> pending_components;
+#ifdef JETHOME_USE_DYNAMIC_VECTORS
+  pending_components.resize(this->components_.size());
+#endif
   // Copy all components in reverse order
   // Reverse order matches the behavior of run_safe_shutdown_hooks() above and ensures
   // components are torn down in the opposite order of their setup_priority (which is
