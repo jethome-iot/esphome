@@ -646,16 +646,106 @@ void Display::print(int x, int y, BaseFont *font, const char *text) {
   this->print(x, y, font, COLOR_ON, TextAlign::TOP_LEFT, text);
 }
 
-// Maximum line buffer size for print_multiline (stack allocated)
-static constexpr size_t PRINT_MULTILINE_BUFFER_SIZE = 256;
+// Default stack buffer size for text wrapping functions
+static constexpr size_t TEXT_WRAP_STACK_BUFFER_SIZE = 256;
+
+// Hybrid buffer that uses stack allocation for small lines, heap for large ones
+class HybridLineBuffer {
+ public:
+  HybridLineBuffer() : buffer_(stack_buffer_), capacity_(TEXT_WRAP_STACK_BUFFER_SIZE), size_(0) {
+    stack_buffer_[0] = '\0';
+  }
+
+  ~HybridLineBuffer() {
+    if (buffer_ != stack_buffer_) {
+      delete[] buffer_;
+    }
+  }
+
+  // Non-copyable
+  HybridLineBuffer(const HybridLineBuffer &) = delete;
+  HybridLineBuffer &operator=(const HybridLineBuffer &) = delete;
+
+  // Add a single character
+  void push_back(char c) {
+    ensure_capacity(size_ + 2);  // +1 for char, +1 for null terminator
+    buffer_[size_++] = c;
+    buffer_[size_] = '\0';
+  }
+
+  // Add multiple characters from source
+  void append(const char *src, size_t len) {
+    ensure_capacity(size_ + len + 1);
+    memcpy(buffer_ + size_, src, len);
+    size_ += len;
+    buffer_[size_] = '\0';
+  }
+
+  // Get current content as C string
+  const char *c_str() const { return buffer_; }
+
+  // Get mutable buffer (for direct manipulation)
+  char *data() { return buffer_; }
+
+  // Current size (excluding null terminator)
+  size_t size() const { return size_; }
+
+  // Check if empty
+  bool empty() const { return size_ == 0; }
+
+  // Clear the buffer
+  void clear() {
+    size_ = 0;
+    buffer_[0] = '\0';
+  }
+
+  // Set size directly (for truncation)
+  void set_size(size_t new_size) {
+    if (new_size < size_) {
+      size_ = new_size;
+      buffer_[size_] = '\0';
+    }
+  }
+
+  // Access by index
+  char &operator[](size_t idx) { return buffer_[idx]; }
+  char operator[](size_t idx) const { return buffer_[idx]; }
+
+ private:
+  void ensure_capacity(size_t needed) {
+    if (needed <= capacity_)
+      return;
+
+    // Double capacity until it fits
+    size_t new_capacity = capacity_;
+    while (new_capacity < needed) {
+      new_capacity *= 2;
+    }
+
+    char *new_buffer = new char[new_capacity];
+    memcpy(new_buffer, buffer_, size_ + 1);  // Include null terminator
+
+    if (buffer_ != stack_buffer_) {
+      delete[] buffer_;
+    }
+
+    buffer_ = new_buffer;
+    capacity_ = new_capacity;
+  }
+
+  char stack_buffer_[TEXT_WRAP_STACK_BUFFER_SIZE];
+  char *buffer_;
+  size_t capacity_;
+  size_t size_;
+};
 
 void Display::print_multiline(int x, int y, int width, int height, BaseFont *font, const char *text,
                               float line_height_multiplier) {
   if (!text || !*text)
     return;
 
-  // Stack-allocated line buffer - no heap allocation
-  char line_buffer[PRINT_MULTILINE_BUFFER_SIZE];
+  // Hybrid buffer - uses stack for small lines, heap for large ones
+  HybridLineBuffer line_buffer;
 
   // Get default line height for empty lines using a sample character
   int default_line_height;
@@ -665,16 +755,13 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
   }
 
   int line_y = y;
-  size_t buf_pos = 0;
   const char *ptr = text;
 
   while (*ptr) {
     // Handle explicit newline
     if (*ptr == '\n') {
-      line_buffer[buf_pos] = '\0';
-
       int line_x1, line_y1, line_width, line_height;
-      this->get_text_bounds(0, 0, line_buffer, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
+      this->get_text_bounds(0, 0, line_buffer.c_str(), font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
                             &line_height);
 
       // Use default height for empty lines
@@ -686,57 +773,51 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
         break;
 
       // Print the line (if not empty)
-      if (buf_pos > 0) {
-        this->print(x, line_y, font, line_buffer);
+      if (!line_buffer.empty()) {
+        this->print(x, line_y, font, line_buffer.c_str());
       }
 
       // Move to next line
       line_y += static_cast<int>(line_height * line_height_multiplier);
-      buf_pos = 0;
+      line_buffer.clear();
       ptr++;
       continue;
     }
 
     // Add character to buffer
-    if (buf_pos < PRINT_MULTILINE_BUFFER_SIZE - 1) {
-      line_buffer[buf_pos++] = *ptr;
-      line_buffer[buf_pos] = '\0';
+    line_buffer.push_back(*ptr);
 
-      int line_x1, line_y1, line_width, line_height;
-      this->get_text_bounds(0, 0, line_buffer, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
-                            &line_height);
+    int line_x1, line_y1, line_width, line_height;
+    this->get_text_bounds(0, 0, line_buffer.c_str(), font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
+                          &line_height);
 
-      // Check that doesn't exceed height
-      if (line_y + line_height > height)
-        break;
+    // Check that doesn't exceed height
+    if (line_y + line_height > height)
+      break;
 
-      // Width exceeded - print without last char and start new line
-      if (line_width > width && buf_pos > 1) {
-        // Remove the character that caused overflow
-        buf_pos--;
-        line_buffer[buf_pos] = '\0';
+    // Width exceeded - print without last char and start new line
+    if (line_width > width && line_buffer.size() > 1) {
+      // Remove the character that caused overflow
+      char overflow_char = *ptr;
+      line_buffer.set_size(line_buffer.size() - 1);
 
-        this->print(x, line_y, font, line_buffer);
-        line_y += static_cast<int>(line_height * line_height_multiplier);
+      this->print(x, line_y, font, line_buffer.c_str());
+      line_y += static_cast<int>(line_height * line_height_multiplier);
 
-        // Start new line with the character that didn't fit
-        line_buffer[0] = *ptr;
-        buf_pos = 1;
-      }
+      // Start new line with the character that didn't fit
+      line_buffer.clear();
+      line_buffer.push_back(overflow_char);
     }
     ptr++;
   }
 
   // Print remaining buffer content
-  if (buf_pos > 0) {
-    line_buffer[buf_pos] = '\0';
-    this->print(x, line_y, font, line_buffer);
+  if (!line_buffer.empty()) {
+    this->print(x, line_y, font, line_buffer.c_str());
   }
 }
 
-// Maximum line buffer size for wrap_text (stack allocated)
-static constexpr size_t WRAP_TEXT_LINE_BUFFER_SIZE = 256;
-// Maximum word buffer size for measuring single words
+// Maximum word buffer size for measuring single words (kept small since words are usually short)
 static constexpr size_t WRAP_TEXT_WORD_BUFFER_SIZE = 64;
 
 // Helper: skip whitespace characters, returns pointer to first non-whitespace or end
@@ -806,8 +887,7 @@ static int wrap_text_count_long_word_lines(Display *display, const char *word_st
 // Returns the number of lines printed and sets last_part_width to the width of the last part
 static int wrap_text_print_long_word(Display *display, int x, int *current_y, int display_height, int line_step,
                                      const char *word_start, size_t word_len, BaseFont *font, int max_width,
-                                     char *line_buffer, size_t buffer_size, int *last_part_width) {
-  size_t buf_pos = 0;
+                                     HybridLineBuffer &line_buffer, int *last_part_width) {
   int current_width = 0;
   int lines_printed = 0;
   char char_buf[2] = {0, 0};
@@ -817,26 +897,22 @@ static int wrap_text_print_long_word(Display *display, int x, int *current_y, in
     int cx1, cy1, cw, ch;
     display->get_text_bounds(0, 0, char_buf, font, TextAlign::TOP_LEFT, &cx1, &cy1, &cw, &ch);
 
-    if (current_width + cw > max_width && buf_pos > 0) {
+    if (current_width + cw > max_width && !line_buffer.empty()) {
       // Flush current part
-      line_buffer[buf_pos] = '\0';
       if (*current_y >= 0 && *current_y < display_height) {
-        display->print(x, *current_y, font, line_buffer);
+        display->print(x, *current_y, font, line_buffer.c_str());
       }
       *current_y += line_step;
       lines_printed++;
-      buf_pos = 0;
+      line_buffer.clear();
       current_width = 0;
     }
 
-    if (buf_pos < buffer_size - 1) {
-      line_buffer[buf_pos++] = word_start[i];
-      current_width += cw;
-    }
+    line_buffer.push_back(word_start[i]);
+    current_width += cw;
   }
 
   // Keep the last part in the buffer (don't print yet - caller will handle)
-  line_buffer[buf_pos] = '\0';
   if (last_part_width) {
     *last_part_width = current_width;
   }
@@ -860,8 +936,8 @@ int Display::wrap_text(int x, int y, int max_width, BaseFont *font, const char *
   int display_height = this->get_height();
   int line_step = static_cast<int>(line_height * line_height_multiplier);
 
-  // Stack-allocated line buffer - no heap allocation
-  char line_buffer[WRAP_TEXT_LINE_BUFFER_SIZE];
+  // Hybrid buffer - uses stack for small lines, heap for large ones
+  HybridLineBuffer line_buffer;
 
   const char *ptr = text;
 
@@ -877,7 +953,6 @@ int Display::wrap_text(int x, int y, int max_width, BaseFont *font, const char *
     }
 
     // Process words within this paragraph using pointer arithmetic
-    size_t buf_pos = 0;
     int current_line_width = 0;
     const char *word_ptr = ptr;
 
@@ -899,65 +974,59 @@ int Display::wrap_text(int x, int y, int max_width, BaseFont *font, const char *
       // Check if word itself is too long for the line
       if (word_width > max_width) {
         // Flush current line first if not empty
-        if (buf_pos > 0) {
-          line_buffer[buf_pos] = '\0';
+        if (!line_buffer.empty()) {
           if (current_y >= 0 && current_y < display_height) {
-            this->print(x, current_y, font, line_buffer);
+            this->print(x, current_y, font, line_buffer.c_str());
           }
           current_y += line_step;
-          buf_pos = 0;
+          line_buffer.clear();
           current_line_width = 0;
         }
 
         // Break and print the long word character by character
         int last_part_width = 0;
         wrap_text_print_long_word(this, x, &current_y, display_height, line_step, word_start, word_len, font, max_width,
-                                  line_buffer, WRAP_TEXT_LINE_BUFFER_SIZE, &last_part_width);
+                                  line_buffer, &last_part_width);
 
-        // The last part remains in line_buffer - update position and width
-        buf_pos = strlen(line_buffer);
+        // The last part remains in line_buffer - update width
         current_line_width = last_part_width;
         word_ptr = word_end;
         continue;
       }
 
       // Check if word fits on current line
-      int test_width = current_line_width + (buf_pos > 0 ? space_width : 0) + word_width;
+      int test_width = current_line_width + (!line_buffer.empty() ? space_width : 0) + word_width;
 
-      if (test_width > max_width && buf_pos > 0) {
+      if (test_width > max_width && !line_buffer.empty()) {
         // Flush current line
-        line_buffer[buf_pos] = '\0';
         if (current_y >= 0 && current_y < display_height) {
-          this->print(x, current_y, font, line_buffer);
+          this->print(x, current_y, font, line_buffer.c_str());
         }
         current_y += line_step;
-        buf_pos = 0;
+        line_buffer.clear();
         current_line_width = 0;
       }
 
       // Add space before word if not first word on line
-      if (buf_pos > 0 && buf_pos < WRAP_TEXT_LINE_BUFFER_SIZE - 1) {
-        line_buffer[buf_pos++] = ' ';
+      if (!line_buffer.empty()) {
+        line_buffer.push_back(' ');
         current_line_width += space_width;
       }
 
       // Copy word to buffer
-      size_t space_left = WRAP_TEXT_LINE_BUFFER_SIZE - buf_pos - 1;
-      size_t to_copy = std::min(word_len, space_left);
-      memcpy(line_buffer + buf_pos, word_start, to_copy);
-      buf_pos += to_copy;
+      line_buffer.append(word_start, word_len);
       current_line_width += word_width;
 
       word_ptr = word_end;
     }
 
     // Flush any remaining content in the line buffer
-    if (buf_pos > 0) {
-      line_buffer[buf_pos] = '\0';
+    if (!line_buffer.empty()) {
       if (current_y >= 0 && current_y < display_height) {
-        this->print(x, current_y, font, line_buffer);
+        this->print(x, current_y, font, line_buffer.c_str());
       }
       current_y += line_step;
+      line_buffer.clear();
     }
 
     // Move to next paragraph (skip newline)
