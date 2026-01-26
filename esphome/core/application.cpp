@@ -68,6 +68,23 @@ void Application::register_component_(Component *comp) {
     }
   }
   this->components_.push_back(comp);
+
+#ifdef JETHOME_USE_DYNAMIC_VECTORS
+  // If looping_components_ is already initialized (setup has started/completed),
+  // we need to add this component to the looping list if it has a loop() override.
+  // Components registered during normal setup flow are handled by calculate_looping_components_().
+  if (!this->looping_components_.empty() && comp->has_overridden_loop()) {
+    // Add to active section by inserting at active_end_ position and incrementing
+    this->looping_components_.push_back(comp);
+    // Swap with inactive section if needed to maintain partitioning
+    if (this->looping_components_active_end_ < this->looping_components_.size() - 1) {
+      std::swap(this->looping_components_[this->looping_components_active_end_], this->looping_components_.back());
+    }
+    this->looping_components_active_end_++;
+    ESP_LOGD(TAG, "Late-registered component %s added to looping components (active_end=%u)",
+             LOG_STR_ARG(comp->get_component_log_str()), this->looping_components_active_end_);
+  }
+#endif
 }
 void Application::setup() {
   ESP_LOGI(TAG, "Running through setup()");
