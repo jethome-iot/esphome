@@ -787,33 +787,6 @@ static int wrap_text_measure_word(Display *display, const char *word_start, size
   return width;
 }
 
-// Helper: count how many lines a long word would take when broken at max_width
-// Also returns the width of the last partial line via last_part_width pointer
-static int wrap_text_count_long_word_lines(Display *display, const char *word_start, size_t word_len, BaseFont *font,
-                                           int max_width, int *last_part_width) {
-  int line_count = 1;
-  int current_width = 0;
-  char char_buf[2] = {0, 0};
-
-  for (size_t i = 0; i < word_len; i++) {
-    char_buf[0] = word_start[i];
-    int cx1, cy1, cw, ch;
-    display->get_text_bounds(0, 0, char_buf, font, TextAlign::TOP_LEFT, &cx1, &cy1, &cw, &ch);
-
-    if (current_width + cw > max_width && current_width > 0) {
-      line_count++;
-      current_width = cw;
-    } else {
-      current_width += cw;
-    }
-  }
-
-  if (last_part_width) {
-    *last_part_width = current_width;
-  }
-  return line_count;
-}
-
 // Helper: print a long word broken into parts that fit max_width
 // Returns the number of lines printed and sets last_part_width to the width of the last part
 static int wrap_text_print_long_word(Display *display, int x, int *current_y, int display_height, int line_step,
