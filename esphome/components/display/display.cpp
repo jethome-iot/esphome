@@ -715,20 +715,33 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
 
     // Exceed width, printing, current symbol should be analyzed again
     if (line_width > width) {
-      buff_char[1] = text_buff[symb_index];
+      // Check if it's a single character that's too wide for the width
+      size_t line_start_pos = last_buff_ptr - text_buff.c_str();
+      if (symb_index == line_start_pos) {
+        // Single character exceeds width - print it anyway to avoid infinite loop
+        if (line_y >= y && line_y + line_height <= y + height) {
+          this->print(x, line_y, font, last_buff_ptr);
+        }
+        last_buff_ptr = text_buff.c_str() + symb_index + 1;
+        line_y += line_height_multiplier * line_height;
+        // Don't decrement symb_index - let the loop continue normally
+      } else {
+        // Multiple characters - back up and re-analyze
+        buff_char[1] = text_buff[symb_index];
 
-      text_buff[symb_index] = 0;
+        text_buff[symb_index] = 0;
 
-      // Only print if within vertical bounds
-      if (line_y >= y && line_y + line_height <= y + height) {
-        this->print(x, line_y, font, last_buff_ptr);
+        // Only print if within vertical bounds
+        if (line_y >= y && line_y + line_height <= y + height) {
+          this->print(x, line_y, font, last_buff_ptr);
+        }
+
+        last_buff_ptr = text_buff.c_str() + symb_index;
+        text_buff[symb_index] = buff_char[1];
+
+        symb_index--;
+        line_y += line_height_multiplier * line_height;
       }
-
-      last_buff_ptr = text_buff.c_str() + symb_index;
-      text_buff[symb_index] = buff_char[1];
-
-      symb_index--;
-      line_y += line_height_multiplier * line_height;
     } else if (zero_index == buff_size) {
       // Only print if within vertical bounds
       if (line_y >= y && line_y + line_height <= y + height) {
