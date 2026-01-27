@@ -740,9 +740,6 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
   }
 }
 
-// Maximum word buffer size for measuring single words (kept small since words are usually short)
-static constexpr size_t WRAP_TEXT_WORD_BUFFER_SIZE = 64;
-
 // Helper: skip whitespace characters, returns pointer to first non-whitespace or end
 static const char *wrap_text_skip_whitespace(const char *ptr, const char *end) {
   while (ptr < end && (*ptr == ' ' || *ptr == '\t')) {
@@ -767,15 +764,13 @@ static const char *wrap_text_find_line_end(const char *ptr) {
   return ptr;
 }
 
-// Helper: measure word width using a stack buffer to create null-terminated copy
+// Helper: measure word width using LineBuffer (handles any length)
 static int wrap_text_measure_word(Display *display, const char *word_start, size_t word_len, BaseFont *font) {
-  char word_buf[WRAP_TEXT_WORD_BUFFER_SIZE];
-  size_t copy_len = std::min(word_len, WRAP_TEXT_WORD_BUFFER_SIZE - 1);
-  memcpy(word_buf, word_start, copy_len);
-  word_buf[copy_len] = '\0';
+  LineBuffer word_buf;
+  word_buf.append(word_start, word_len);
 
   int x1, y1, width, height;
-  display->get_text_bounds(0, 0, word_buf, font, TextAlign::TOP_LEFT, &x1, &y1, &width, &height);
+  display->get_text_bounds(0, 0, word_buf.c_str(), font, TextAlign::TOP_LEFT, &x1, &y1, &width, &height);
   return width;
 }
 
