@@ -4,11 +4,15 @@
 #include "display_color_utils.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
+#include "esphome/core/small_string.h"
 
 namespace esphome {
 namespace display {
 
 static const char *const TAG = "display";
+
+// Line buffer type for text wrapping functions (stack-optimized, grows on heap if needed)
+using LineBuffer = SmallString<256>;
 
 const Color COLOR_OFF(0, 0, 0, 0);
 const Color COLOR_ON(255, 255, 255, 255);
@@ -646,106 +650,13 @@ void Display::print(int x, int y, BaseFont *font, const char *text) {
   this->print(x, y, font, COLOR_ON, TextAlign::TOP_LEFT, text);
 }
 
-// Default stack buffer size for text wrapping functions
-static constexpr size_t TEXT_WRAP_STACK_BUFFER_SIZE = 256;
-
-// Hybrid buffer that uses stack allocation for small lines, heap for large ones
-class HybridLineBuffer {
- public:
-  HybridLineBuffer() : buffer_(stack_buffer_), capacity_(TEXT_WRAP_STACK_BUFFER_SIZE), size_(0) {
-    stack_buffer_[0] = '\0';
-  }
-
-  ~HybridLineBuffer() {
-    if (buffer_ != stack_buffer_) {
-      delete[] buffer_;
-    }
-  }
-
-  // Non-copyable
-  HybridLineBuffer(const HybridLineBuffer &) = delete;
-  HybridLineBuffer &operator=(const HybridLineBuffer &) = delete;
-
-  // Add a single character
-  void push_back(char c) {
-    ensure_capacity(size_ + 2);  // +1 for char, +1 for null terminator
-    buffer_[size_++] = c;
-    buffer_[size_] = '\0';
-  }
-
-  // Add multiple characters from source
-  void append(const char *src, size_t len) {
-    ensure_capacity(size_ + len + 1);
-    memcpy(buffer_ + size_, src, len);
-    size_ += len;
-    buffer_[size_] = '\0';
-  }
-
-  // Get current content as C string
-  const char *c_str() const { return buffer_; }
-
-  // Get mutable buffer (for direct manipulation)
-  char *data() { return buffer_; }
-
-  // Current size (excluding null terminator)
-  size_t size() const { return size_; }
-
-  // Check if empty
-  bool empty() const { return size_ == 0; }
-
-  // Clear the buffer
-  void clear() {
-    size_ = 0;
-    buffer_[0] = '\0';
-  }
-
-  // Set size directly (for truncation)
-  void set_size(size_t new_size) {
-    if (new_size < size_) {
-      size_ = new_size;
-      buffer_[size_] = '\0';
-    }
-  }
-
-  // Access by index
-  char &operator[](size_t idx) { return buffer_[idx]; }
-  char operator[](size_t idx) const { return buffer_[idx]; }
-
- private:
-  void ensure_capacity(size_t needed) {
-    if (needed <= capacity_)
-      return;
-
-    // Double capacity until it fits
-    size_t new_capacity = capacity_;
-    while (new_capacity < needed) {
-      new_capacity *= 2;
-    }
-
-    char *new_buffer = new char[new_capacity];
-    memcpy(new_buffer, buffer_, size_ + 1);  // Include null terminator
-
-    if (buffer_ != stack_buffer_) {
-      delete[] buffer_;
-    }
-
-    buffer_ = new_buffer;
-    capacity_ = new_capacity;
-  }
-
-  char stack_buffer_[TEXT_WRAP_STACK_BUFFER_SIZE];
-  char *buffer_;
-  size_t capacity_;
-  size_t size_;
-};
-
 void Display::print_multiline(int x, int y, int width, int height, BaseFont *font, const char *text,
                               float line_height_multiplier) {
   if (!text || !*text)
     return;
 
   // Hybrid buffer - uses stack for small lines, heap for large ones
-  HybridLineBuffer line_buffer;
+  LineBuffer line_buffer;
 
   // Get default line height for empty lines using a sample character
   int default_line_height;
@@ -799,7 +710,7 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
     if (line_width > width && line_buffer.size() > 1) {
       // Remove the character that caused overflow
       char overflow_char = *ptr;
-      line_buffer.set_size(line_buffer.size() - 1);
+      line_buffer.resize(line_buffer.size() - 1);
 
       this->print(x, line_y, font, line_buffer.c_str());
       line_y += static_cast<int>(line_height * line_height_multiplier);
@@ -887,7 +798,7 @@ static int wrap_text_count_long_word_lines(Display *display, const char *word_st
 // Returns the number of lines printed and sets last_part_width to the width of the last part
 static int wrap_text_print_long_word(Display *display, int x, int *current_y, int display_height, int line_step,
                                      const char *word_start, size_t word_len, BaseFont *font, int max_width,
-                                     HybridLineBuffer &line_buffer, int *last_part_width) {
+                                     LineBuffer &line_buffer, int *last_part_width) {
   int current_width = 0;
   int lines_printed = 0;
   char char_buf[2] = {0, 0};
@@ -937,7 +848,7 @@ int Display::wrap_text(int x, int y, int max_width, BaseFont *font, const char *
   int line_step = static_cast<int>(line_height * line_height_multiplier);
 
   // Hybrid buffer - uses stack for small lines, heap for large ones
-  HybridLineBuffer line_buffer;
+  LineBuffer line_buffer;
 
   const char *ptr = text;
 
