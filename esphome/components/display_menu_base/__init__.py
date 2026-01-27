@@ -27,11 +27,11 @@ from esphome.const import (
     CONF_TRIGGER_ID,
     CONF_TYPE,
     CONF_VALUE,
+    CONF_VISIBLE,
 )
 
 CONF_GENERATE_LAMBDA = "generate_lambda"
 CONF_GENERATE_ON_ENTER = "generate_on_enter"
-CONF_VISIBLE = "visible"
 
 CODEOWNERS = ["@numo68"]
 
