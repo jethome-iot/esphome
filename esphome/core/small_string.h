@@ -32,12 +32,16 @@ template<size_t StackSize = 256> class SmallString : public SmallBuffer<char, St
   explicit SmallString(const std::string &s) : SmallString() { append(s.data(), s.size()); }
 
   /// Copy constructor
-  SmallString(const SmallString &other) : Base(other) { this->buffer_[this->size_] = '\0'; }
+  SmallString(const SmallString &other) : Base(other) {
+    this->ensure_capacity_(this->size_ + 1);  // Reserve space for null terminator
+    this->buffer_[this->size_] = '\0';
+  }
 
   /// Copy assignment
   SmallString &operator=(const SmallString &other) {
     if (this != &other) {
       Base::operator=(other);
+      this->ensure_capacity_(this->size_ + 1);  // Reserve space for null terminator
       this->buffer_[this->size_] = '\0';
     }
     return *this;
@@ -45,6 +49,7 @@ template<size_t StackSize = 256> class SmallString : public SmallBuffer<char, St
 
   /// Move constructor
   SmallString(SmallString &&other) noexcept : Base(std::move(other)) {
+    this->ensure_capacity_(this->size_ + 1);  // Reserve space for null terminator
     this->buffer_[this->size_] = '\0';
     other.stack_buffer_[0] = '\0';
   }
@@ -53,6 +58,7 @@ template<size_t StackSize = 256> class SmallString : public SmallBuffer<char, St
   SmallString &operator=(SmallString &&other) noexcept {
     if (this != &other) {
       Base::operator=(std::move(other));
+      this->ensure_capacity_(this->size_ + 1);  // Reserve space for null terminator
       this->buffer_[this->size_] = '\0';
       other.stack_buffer_[0] = '\0';
     }
@@ -69,11 +75,13 @@ template<size_t StackSize = 256> class SmallString : public SmallBuffer<char, St
 
   // String-specific modifiers (with null termination)
   void push_back(char c) {
+    this->ensure_capacity_(this->size_ + 2);  // +1 for char, +1 for null terminator
     Base::push_back(c);
     this->buffer_[this->size_] = '\0';
   }
 
   void append(const char *src, size_t len) {
+    this->ensure_capacity_(this->size_ + len + 1);  // +len for data, +1 for null terminator
     Base::append(src, len);
     this->buffer_[this->size_] = '\0';
   }
