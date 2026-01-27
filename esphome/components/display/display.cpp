@@ -652,11 +652,11 @@ void Display::print(int x, int y, BaseFont *font, const char *text) {
 
 void Display::print_multiline(int x, int y, int width, int height, BaseFont *font, const char *text,
                               float line_height_multiplier) {
-  if (!text || !*text)
-    return;
+  LineBuffer text_buff(text);
+  const size_t buff_size = text_buff.size();
 
-  // Hybrid buffer - uses stack for small lines, heap for large ones
-  LineBuffer line_buffer;
+  if (buff_size == 0)
+    return;
 
   // Get default line height for empty lines using a sample character
   int default_line_height;
@@ -665,14 +665,23 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
     this->get_text_bounds(0, 0, "A", font, TextAlign::TOP_LEFT, &tmp_x1, &tmp_y1, &tmp_width, &default_line_height);
   }
 
+  char buff_char[2] = {0};
   int line_y = y;
-  const char *ptr = text;
 
-  while (*ptr) {
-    // Handle explicit newline
-    if (*ptr == '\n') {
+  const char *last_buff_ptr = text_buff.c_str();
+
+  for (size_t symb_index = 0; symb_index < buff_size; symb_index++) {
+    size_t zero_index = symb_index + 1;
+
+    // Check for explicit newline character
+    if (text_buff[symb_index] == '\n') {
       int line_x1, line_y1, line_width, line_height;
-      this->get_text_bounds(0, 0, line_buffer.c_str(), font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
+
+      // Temporarily terminate string at newline position
+      text_buff[symb_index] = 0;
+
+      // Get line dimensions
+      this->get_text_bounds(0, 0, last_buff_ptr, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
                             &line_height);
 
       // Use default height for empty lines
@@ -680,51 +689,58 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
         line_height = default_line_height;
 
       // Check that doesn't exceed height
-      if (line_y + line_height > height)
+      if (line_y + line_height > height) {
         break;
+      }
 
-      // Print the line (if not empty)
-      if (!line_buffer.empty()) {
-        this->print(x, line_y, font, line_buffer.c_str());
+      // Print the line segment before the newline (if not empty)
+      if (last_buff_ptr[0] != 0) {
+        this->print(x, line_y, font, last_buff_ptr);
       }
 
       // Move to next line
-      line_y += static_cast<int>(line_height * line_height_multiplier);
-      line_buffer.clear();
-      ptr++;
+      line_y += line_height_multiplier * line_height;
+
+      // Restore the newline character
+      text_buff[symb_index] = '\n';
+
+      // Update pointer to character after the newline
+      last_buff_ptr = text_buff.c_str() + symb_index + 1;
+
       continue;
     }
 
-    // Add character to buffer
-    line_buffer.push_back(*ptr);
-
+    buff_char[0] = text_buff[zero_index];
     int line_x1, line_y1, line_width, line_height;
-    this->get_text_bounds(0, 0, line_buffer.c_str(), font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
+
+    text_buff[zero_index] = 0;
+
+    this->get_text_bounds(0, 0, last_buff_ptr, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
                           &line_height);
 
     // Check that doesn't exceed height
-    if (line_y + line_height > height)
+    if (line_y + line_height > height) {
       break;
-
-    // Width exceeded - print without last char and start new line
-    if (line_width > width && line_buffer.size() > 1) {
-      // Remove the character that caused overflow
-      char overflow_char = *ptr;
-      line_buffer.resize(line_buffer.size() - 1);
-
-      this->print(x, line_y, font, line_buffer.c_str());
-      line_y += static_cast<int>(line_height * line_height_multiplier);
-
-      // Start new line with the character that didn't fit
-      line_buffer.clear();
-      line_buffer.push_back(overflow_char);
     }
-    ptr++;
-  }
 
-  // Print remaining buffer content
-  if (!line_buffer.empty()) {
-    this->print(x, line_y, font, line_buffer.c_str());
+    // Exceed width, printing, current symbol should be analyzed again
+    if (line_width > width) {
+      buff_char[1] = text_buff[symb_index];
+
+      text_buff[symb_index] = 0;
+
+      this->print(x, line_y, font, last_buff_ptr);
+
+      last_buff_ptr = text_buff.c_str() + symb_index;
+      text_buff[symb_index] = buff_char[1];
+
+      symb_index--;
+      line_y += line_height_multiplier * line_height;
+    } else if (zero_index == buff_size) {
+      this->print(x, line_y, font, last_buff_ptr);
+    }
+
+    text_buff[zero_index] = buff_char[0];
   }
 }
 
