@@ -688,17 +688,12 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
       if (line_height == 0)
         line_height = default_line_height;
 
-      // Check that doesn't exceed height
-      if (line_y + line_height > height) {
-        break;
-      }
-
-      // Print the line segment before the newline (if not empty)
-      if (last_buff_ptr[0] != 0) {
+      // Print the line segment before the newline (if visible and not empty)
+      if (last_buff_ptr[0] != 0 && line_y >= y && line_y + line_height <= y + height) {
         this->print(x, line_y, font, last_buff_ptr);
       }
 
-      // Move to next line
+      // Move to next line (always advance, even if clipped)
       line_y += line_height_multiplier * line_height;
 
       // Restore the newline character
@@ -718,18 +713,16 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
     this->get_text_bounds(0, 0, last_buff_ptr, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
                           &line_height);
 
-    // Check that doesn't exceed height
-    if (line_y + line_height > height) {
-      break;
-    }
-
     // Exceed width, printing, current symbol should be analyzed again
     if (line_width > width) {
       buff_char[1] = text_buff[symb_index];
 
       text_buff[symb_index] = 0;
 
-      this->print(x, line_y, font, last_buff_ptr);
+      // Only print if within vertical bounds
+      if (line_y >= y && line_y + line_height <= y + height) {
+        this->print(x, line_y, font, last_buff_ptr);
+      }
 
       last_buff_ptr = text_buff.c_str() + symb_index;
       text_buff[symb_index] = buff_char[1];
@@ -737,7 +730,10 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
       symb_index--;
       line_y += line_height_multiplier * line_height;
     } else if (zero_index == buff_size) {
-      this->print(x, line_y, font, last_buff_ptr);
+      // Only print if within vertical bounds
+      if (line_y >= y && line_y + line_height <= y + height) {
+        this->print(x, line_y, font, last_buff_ptr);
+      }
     }
 
     text_buff[zero_index] = buff_char[0];
