@@ -821,6 +821,25 @@ def command_clean(args: ArgsProtocol, config: ConfigType) -> int | None:
     return 0
 
 
+def command_clean_cmake_cache(args: ArgsProtocol, config: ConfigType) -> int | None:
+    try:
+        build_path = CORE.build_path
+        count = 0
+        for cmake_cache in build_path.rglob("CMakeCache.txt"):
+            _LOGGER.info("Removing %s", cmake_cache)
+            cmake_cache.unlink()
+            count += 1
+        if count == 0:
+            _LOGGER.info("No CMakeCache.txt files found.")
+        else:
+            _LOGGER.info("Removed %d CMakeCache.txt file(s).", count)
+    except OSError as err:
+        _LOGGER.error("Error removing CMakeCache.txt: %s", err)
+        return 1
+    _LOGGER.info("Done!")
+    return 0
+
+
 def command_dashboard(args: ArgsProtocol) -> int | None:
     from esphome.dashboard import dashboard
 
@@ -1000,6 +1019,7 @@ POST_CONFIG_ACTIONS = {
     "logs": command_logs,
     "run": command_run,
     "clean": command_clean,
+    "clean-cmake-cache": command_clean_cmake_cache,
     "clean-mqtt": command_clean_mqtt,
     "mqtt-fingerprint": command_mqtt_fingerprint,
     "idedata": command_idedata,
@@ -1009,6 +1029,7 @@ POST_CONFIG_ACTIONS = {
 
 SIMPLE_CONFIG_ACTIONS = [
     "clean",
+    "clean-cmake-cache",
     "clean-mqtt",
     "config",
 ]
@@ -1217,6 +1238,14 @@ def parse_args(argv):
         "clean", help="Delete all temporary build files."
     )
     parser_clean.add_argument(
+        "configuration", help="Your YAML configuration file(s).", nargs="+"
+    )
+
+    parser_clean_cmake_cache = subparsers.add_parser(
+        "clean-cmake-cache",
+        help="Delete CMakeCache.txt files from the build directory.",
+    )
+    parser_clean_cmake_cache.add_argument(
         "configuration", help="Your YAML configuration file(s).", nargs="+"
     )
 
