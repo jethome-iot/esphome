@@ -36,8 +36,10 @@ template<size_t StackSize = 256> class SmallString : public SmallBuffer<char, St
 
   /// Copy assignment
   SmallString &operator=(const SmallString &other) {
-    Base::operator=(other);
-    this->buffer_[this->size_] = '\0';
+    if (this != &other) {
+      Base::operator=(other);
+      this->buffer_[this->size_] = '\0';
+    }
     return *this;
   }
 
@@ -49,9 +51,11 @@ template<size_t StackSize = 256> class SmallString : public SmallBuffer<char, St
 
   /// Move assignment
   SmallString &operator=(SmallString &&other) noexcept {
-    Base::operator=(std::move(other));
-    this->buffer_[this->size_] = '\0';
-    other.stack_buffer_[0] = '\0';
+    if (this != &other) {
+      Base::operator=(std::move(other));
+      this->buffer_[this->size_] = '\0';
+      other.stack_buffer_[0] = '\0';
+    }
     return *this;
   }
 
