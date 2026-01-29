@@ -11,11 +11,9 @@ static const char *const TAG = "web_server_base";
 
 WebServerBase *global_web_server_base = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-void WebServerBase::add_handler(AsyncWebHandler *handler) {
-  // remove all handlers
-
+void WebServerBase::add_handler(AsyncWebHandler *handler, bool add_auth) {
 #ifdef USE_WEBSERVER_AUTH
-  if (!credentials_.username.empty()) {
+  if (add_auth && !credentials_.username.empty()) {
     handler = new internal::AuthMiddlewareHandler(handler, &credentials_);
   }
 #endif
