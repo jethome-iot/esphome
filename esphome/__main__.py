@@ -814,6 +814,7 @@ def command_version(args: ArgsProtocol) -> int | None:
 def command_clean(args: ArgsProtocol, config: ConfigType) -> int | None:
     try:
         writer.clean_build()
+        writer.clean_generated()
     except OSError as err:
         _LOGGER.error("Error deleting build files: %s", err)
         return 1

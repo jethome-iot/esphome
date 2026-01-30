@@ -703,6 +703,9 @@ class EsphomeCore:
     def relative_src_path(self, *path: str | Path) -> Path:
         return self.relative_build_path("src", *path)
 
+    def relative_generated_path(self, *path: str | Path) -> Path:
+        return self.relative_src_path("generated", *path)
+
     def relative_pioenvs_path(self, *path: str | Path) -> Path:
         return self.relative_build_path(".pioenvs", *path)
 
