@@ -11,6 +11,7 @@ from esphome.components.switch import Switch
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ACTIVE,
+    CONF_AFTER,
     CONF_BINARY_SENSOR,
     CONF_COMMAND,
     CONF_CUSTOM,
@@ -21,12 +22,14 @@ from esphome.const import (
     CONF_MODE,
     CONF_NUMBER,
     CONF_ON_VALUE,
+    CONF_POSITION,
     CONF_SENSOR,
     CONF_SWITCH,
     CONF_TEXT,
     CONF_TRIGGER_ID,
     CONF_TYPE,
     CONF_VALUE,
+    CONF_WEIGHT,
 )
 
 CONF_GENERATE_LAMBDA = "generate_lambda"
@@ -63,10 +66,7 @@ CONF_ON_ENTER = "on_enter"
 CONF_ON_LEAVE = "on_leave"
 CONF_ON_NEXT = "on_next"
 CONF_ON_PREV = "on_prev"
-CONF_WEIGHT = "weight"
-CONF_POSITION = "position"
 CONF_BEFORE = "before"
-CONF_AFTER = "after"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 
