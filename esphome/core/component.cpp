@@ -164,11 +164,11 @@ void Component::call() {
       // State Construction: Call setup and set state to setup
       this->set_component_state_(COMPONENT_STATE_SETUP);
       ESP_LOGV(TAG, "Setup %s", LOG_STR_ARG(this->get_component_log_str()));
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG && !defined(JETHOME_DISABLE_SETUP_TIME_LOG)
       uint32_t start_time = millis();
 #endif
       this->call_setup();
-#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG
+#if ESPHOME_LOG_LEVEL >= ESPHOME_LOG_LEVEL_DEBUG && !defined(JETHOME_DISABLE_SETUP_TIME_LOG)
       uint32_t setup_time = millis() - start_time;
       ESP_LOGCONFIG(TAG, "Setup %s took %ums", LOG_STR_ARG(this->get_component_log_str()), (unsigned) setup_time);
 #endif
