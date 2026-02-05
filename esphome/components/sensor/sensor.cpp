@@ -128,8 +128,13 @@ float Sensor::get_raw_state() const { return this->raw_state; }
 void Sensor::internal_send_state_to_frontend(float state) {
   this->set_has_state(true);
   this->state = state;
+#ifdef JETHOME_DISABLE_SENDING_STATE_LOG
+  ESP_LOGV(TAG, "'%s': Sending state %.5f %s with %d decimals of accuracy", this->get_name().c_str(), state,
+           this->get_unit_of_measurement_ref().c_str(), this->get_accuracy_decimals());
+#else
   ESP_LOGD(TAG, "'%s': Sending state %.5f %s with %d decimals of accuracy", this->get_name().c_str(), state,
            this->get_unit_of_measurement_ref().c_str(), this->get_accuracy_decimals());
+#endif
   this->callback_.call(state);
 }
 

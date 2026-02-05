@@ -69,7 +69,11 @@ void Switch::publish_state(bool state) {
   if (restore_mode & RESTORE_MODE_PERSISTENT_MASK)
     this->rtc_.save(&this->state);
 
+#ifdef JETHOME_DISABLE_SENDING_STATE_LOG
+  ESP_LOGV(TAG, "'%s': Sending state %s", this->name_.c_str(), ONOFF(this->state));
+#else
   ESP_LOGD(TAG, "'%s': Sending state %s", this->name_.c_str(), ONOFF(this->state));
+#endif
   this->state_callback_.call(this->state);
 }
 bool Switch::assumed_state() { return false; }

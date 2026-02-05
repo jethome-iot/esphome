@@ -12,7 +12,11 @@ void Select::publish_state(const std::string &state) {
   if (index.has_value()) {
     this->set_has_state(true);
     this->state = state;
+#ifdef JETHOME_DISABLE_SENDING_STATE_LOG
+    ESP_LOGV(TAG, "'%s': Sending state %s (index %zu)", name, state.c_str(), index.value());
+#else
     ESP_LOGD(TAG, "'%s': Sending state %s (index %zu)", name, state.c_str(), index.value());
+#endif
     this->state_callback_.call(state, index.value());
   } else {
     ESP_LOGE(TAG, "'%s': invalid state for publish_state(): %s", name, state.c_str());
