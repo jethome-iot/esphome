@@ -141,6 +141,13 @@ template<typename... Ts> class Automation;
 
 template<typename... Ts> class Trigger {
  public:
+  virtual ~Trigger() = default;
+
+  /// Called before deletion to allow cleanup (e.g. disable_loop() for Component-based triggers).
+  /// Returns true if the trigger can be safely deleted, false if it must remain alive
+  /// (e.g. Component-based triggers that are registered in Application::components_).
+  virtual bool prepare_for_deletion() { return true; }
+
   /// Inform the parent automation that the event has triggered.
   void trigger(Ts... x) {
     if (this->automation_parent_ == nullptr)
@@ -285,8 +292,33 @@ template<typename... Ts> class Automation {
  public:
   explicit Automation(Trigger<Ts...> *trigger) : trigger_(trigger) { this->trigger_->set_automation_parent(this); }
 
+  ~Automation() {
+    if (this->owns_triggers_) {
+      for (auto *t : this->additional_triggers_) {
+        if (t->prepare_for_deletion()) {
+          delete t;
+        } else {
+          // Component-based trigger: can't delete (Application holds pointer),
+          // just neutralize so it won't fire into destroyed automation
+          t->set_automation_parent(nullptr);
+        }
+      }
+      if (this->trigger_->prepare_for_deletion()) {
+        delete this->trigger_;
+      } else {
+        this->trigger_->set_automation_parent(nullptr);
+      }
+    }
+  }
+
   void add_action(Action<Ts...> *action) { this->actions_.add_action(action); }
   void add_actions(const std::vector<Action<Ts...> *> &actions) { this->actions_.add_actions(actions); }
+
+  /// Add an additional trigger to this automation (sets automation_parent automatically).
+  void add_trigger(Trigger<Ts...> *trigger) {
+    trigger->set_automation_parent(this);
+    this->additional_triggers_.push_back(trigger);
+  }
 
   void stop() { this->actions_.stop(); }
 
@@ -304,9 +336,14 @@ template<typename... Ts> class Automation {
 
   void set_enabled(bool val) { this->enabled_ = val; }
 
+  /// Set whether this automation owns its triggers and should delete them on destruction.
+  void set_owns_triggers(bool owns) { this->owns_triggers_ = owns; }
+
  protected:
   bool enabled_{true};
+  bool owns_triggers_{false};
   Trigger<Ts...> *trigger_;
+  std::vector<Trigger<Ts...> *> additional_triggers_;
   ActionList<Ts...> actions_;
 };
 
