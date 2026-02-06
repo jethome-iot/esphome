@@ -712,9 +712,11 @@ template<typename... Ts> class CallbackManager<void(Ts...)> {
 
   /// Call all active callbacks in this manager (skips removed/null slots).
   void call(Ts... args) {
-    for (auto &cb : this->callbacks_)
-      if (cb)
+    for (auto &cb : this->callbacks_) {
+      if (cb) {
         cb(args...);
+      }
+    }
   }
   size_t size() const { return this->callbacks_.size(); }
 
