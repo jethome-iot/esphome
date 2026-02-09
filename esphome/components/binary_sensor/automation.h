@@ -20,22 +20,32 @@ struct MultiClickTriggerEvent {
 
 class PressTrigger : public Trigger<> {
  public:
-  explicit PressTrigger(BinarySensor *parent) {
-    parent->add_on_state_callback([this](bool state) {
+  explicit PressTrigger(BinarySensor *parent) : parent_(parent) {
+    this->handle_ = parent->add_on_state_callback([this](bool state) {
       if (state)
         this->trigger();
     });
   }
+  ~PressTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
+
+ protected:
+  BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 class ReleaseTrigger : public Trigger<> {
  public:
-  explicit ReleaseTrigger(BinarySensor *parent) {
-    parent->add_on_state_callback([this](bool state) {
+  explicit ReleaseTrigger(BinarySensor *parent) : parent_(parent) {
+    this->handle_ = parent->add_on_state_callback([this](bool state) {
       if (!state)
         this->trigger();
     });
   }
+  ~ReleaseTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
+
+ protected:
+  BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 bool match_interval(uint32_t min_length, uint32_t max_length, uint32_t length);
@@ -43,8 +53,8 @@ bool match_interval(uint32_t min_length, uint32_t max_length, uint32_t length);
 class ClickTrigger : public Trigger<> {
  public:
   explicit ClickTrigger(BinarySensor *parent, uint32_t min_length, uint32_t max_length)
-      : min_length_(min_length), max_length_(max_length) {
-    parent->add_on_state_callback([this](bool state) {
+      : parent_(parent), min_length_(min_length), max_length_(max_length) {
+    this->handle_ = parent->add_on_state_callback([this](bool state) {
       if (state) {
         this->start_time_ = millis();
       } else {
@@ -54,8 +64,11 @@ class ClickTrigger : public Trigger<> {
       }
     });
   }
+  ~ClickTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
 
  protected:
+  BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
   uint32_t start_time_{0};  /// The millis() time when the click started.
   uint32_t min_length_;     /// Minimum length of click. 0 means no minimum.
   uint32_t max_length_;     /// Maximum length of click. 0 means no maximum.
@@ -64,8 +77,8 @@ class ClickTrigger : public Trigger<> {
 class DoubleClickTrigger : public Trigger<> {
  public:
   explicit DoubleClickTrigger(BinarySensor *parent, uint32_t min_length, uint32_t max_length)
-      : min_length_(min_length), max_length_(max_length) {
-    parent->add_on_state_callback([this](bool state) {
+      : parent_(parent), min_length_(min_length), max_length_(max_length) {
+    this->handle_ = parent->add_on_state_callback([this](bool state) {
       const uint32_t now = millis();
 
       if (state && this->start_time_ != 0 && this->end_time_ != 0) {
@@ -82,8 +95,11 @@ class DoubleClickTrigger : public Trigger<> {
       this->end_time_ = now;
     });
   }
+  ~DoubleClickTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
 
  protected:
+  BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
   uint32_t start_time_{0};
   uint32_t end_time_{0};
   uint32_t min_length_;  /// Minimum length of click. 0 means no minimum.
@@ -98,10 +114,15 @@ class MultiClickTrigger : public Trigger<>, public Component {
   void setup() override {
     this->last_state_ = this->parent_->get_state_default(false);
     auto f = std::bind(&MultiClickTrigger::on_state_, this, std::placeholders::_1);
-    this->parent_->add_on_state_callback(f);
+    this->handle_ = this->parent_->add_on_state_callback(f);
   }
+  ~MultiClickTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
 
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
+  bool prepare_for_deletion() override {
+    this->disable_loop();
+    return false;  // registered in Application, not safe to delete
+  }
 
   void set_invalid_cooldown(uint32_t invalid_cooldown) { this->invalid_cooldown_ = invalid_cooldown; }
 
@@ -115,6 +136,7 @@ class MultiClickTrigger : public Trigger<>, public Component {
   void trigger_();
 
   BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
   std::vector<MultiClickTriggerEvent> timing_;
   uint32_t invalid_cooldown_{1000};
   optional<size_t> at_index_{};
@@ -125,17 +147,27 @@ class MultiClickTrigger : public Trigger<>, public Component {
 
 class StateTrigger : public Trigger<bool> {
  public:
-  explicit StateTrigger(BinarySensor *parent) {
-    parent->add_on_state_callback([this](bool state) { this->trigger(state); });
+  explicit StateTrigger(BinarySensor *parent) : parent_(parent) {
+    this->handle_ = parent->add_on_state_callback([this](bool state) { this->trigger(state); });
   }
+  ~StateTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
+
+ protected:
+  BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 class StateChangeTrigger : public Trigger<optional<bool>, optional<bool> > {
  public:
-  explicit StateChangeTrigger(BinarySensor *parent) {
-    parent->add_full_state_callback(
+  explicit StateChangeTrigger(BinarySensor *parent) : parent_(parent) {
+    this->handle_ = parent->add_full_state_callback(
         [this](optional<bool> old_state, optional<bool> state) { this->trigger(old_state, state); });
   }
+  ~StateChangeTrigger() override { this->parent_->remove_full_state_callback(this->handle_); }
+
+ protected:
+  BinarySensor *parent_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 template<typename... Ts> class BinarySensorCondition : public Condition<Ts...> {

@@ -93,8 +93,15 @@ class Switch : public EntityBase, public EntityBase_DeviceClass {
   /** Set callback for state changes.
    *
    * @param callback The void(bool) callback.
+   * @return A handle that can be used to remove the callback later.
    */
-  void add_on_state_callback(std::function<void(bool)> &&callback);
+  CallbackHandle add_on_state_callback(std::function<void(bool)> &&callback);
+
+  /** Remove a previously registered state callback.
+   *
+   * @param handle The handle returned by add_on_state_callback.
+   */
+  void remove_on_state_callback(CallbackHandle handle);
 
   /** Returns the initial state of the switch, as persisted previously,
     or empty if never persisted.

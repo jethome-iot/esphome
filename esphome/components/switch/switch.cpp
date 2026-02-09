@@ -78,9 +78,10 @@ void Switch::publish_state(bool state) {
 }
 bool Switch::assumed_state() { return false; }
 
-void Switch::add_on_state_callback(std::function<void(bool)> &&callback) {
-  this->state_callback_.add(std::move(callback));
+CallbackHandle Switch::add_on_state_callback(std::function<void(bool)> &&callback) {
+  return this->state_callback_.add(std::move(callback));
 }
+void Switch::remove_on_state_callback(CallbackHandle handle) { this->state_callback_.remove(handle); }
 void Switch::set_inverted(bool inverted) { this->inverted_ = inverted; }
 bool Switch::is_inverted() const { return this->inverted_; }
 

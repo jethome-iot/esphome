@@ -220,15 +220,23 @@ template<typename T> class StatefulEntityBase : public EntityBase {
   virtual T get_state_default(T default_value) const { return this->state_.value_or(default_value); }
   void invalidate_state() { this->set_state_({}); }
 
-  void add_full_state_callback(std::function<void(optional<T> previous, optional<T> current)> &&callback) {
+  CallbackHandle add_full_state_callback(std::function<void(optional<T> previous, optional<T> current)> &&callback) {
     if (this->full_state_callbacks_ == nullptr)
       this->full_state_callbacks_ = new CallbackManager<void(optional<T> previous, optional<T> current)>();  // NOLINT
-    this->full_state_callbacks_->add(std::move(callback));
+    return this->full_state_callbacks_->add(std::move(callback));
   }
-  void add_on_state_callback(std::function<void(T)> &&callback) {
+  void remove_full_state_callback(CallbackHandle handle) {
+    if (this->full_state_callbacks_ != nullptr)
+      this->full_state_callbacks_->remove(handle);
+  }
+  CallbackHandle add_on_state_callback(std::function<void(T)> &&callback) {
     if (this->state_callbacks_ == nullptr)
       this->state_callbacks_ = new CallbackManager<void(T)>();  // NOLINT
-    this->state_callbacks_->add(std::move(callback));
+    return this->state_callbacks_->add(std::move(callback));
+  }
+  void remove_on_state_callback(CallbackHandle handle) {
+    if (this->state_callbacks_ != nullptr)
+      this->state_callbacks_->remove(handle);
   }
 
   void set_trigger_on_initial_state(bool trigger_on_initial_state) {
