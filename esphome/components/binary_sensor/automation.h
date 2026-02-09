@@ -119,6 +119,10 @@ class MultiClickTrigger : public Trigger<>, public Component {
   ~MultiClickTrigger() override { this->parent_->remove_on_state_callback(this->handle_); }
 
   float get_setup_priority() const override { return setup_priority::HARDWARE; }
+  bool prepare_for_deletion() override {
+    this->disable_loop();
+    return false;  // registered in Application, not safe to delete
+  }
 
   void set_invalid_cooldown(uint32_t invalid_cooldown) { this->invalid_cooldown_ = invalid_cooldown; }
 
