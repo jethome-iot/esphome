@@ -14,6 +14,7 @@
 
 #include "esphome/core/optional.h"
 #include "esphome/core/entity_types.h"
+#include "esphome/core/defines.h"
 
 #ifdef USE_ESP8266
 #include <Esp.h>
