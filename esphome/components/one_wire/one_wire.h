@@ -17,6 +17,9 @@ class OneWireDevice {
   /// @param address of the device
   void set_address(uint64_t address) { this->address_ = address; }
 
+  /// @brief get the address of the device
+  uint64_t get_address() const { return this->address_; }
+
   /// @brief store the pointer to the OneWireBus to use
   /// @param bus pointer to the OneWireBus object
   void set_one_wire_bus(OneWireBus *bus) { this->bus_ = bus; }
