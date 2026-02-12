@@ -50,6 +50,9 @@ class MenuItem {
   std::string get_text() const { return const_cast<MenuItem *>(this)->text_.value(this); }
   virtual bool get_immediate_edit() const { return false; }
 
+  bool is_visible() const { return this->visible_; }
+  void set_visible(bool visible) { this->visible_ = visible; }
+
   virtual bool has_value() const { return false; }
   virtual std::string get_value_text() const { return ""; }
 
@@ -100,6 +103,15 @@ class MenuItem {
   size_t items_size() const { return this->items_.size(); }
   MenuItem *get_item(size_t i) const { return this->items_[i]; }
 
+  size_t visible_items_size() const {
+    size_t count = 0;
+    for (const auto *item : this->items_) {
+      if (item->is_visible())
+        count++;
+    }
+    return count;
+  }
+
   std::vector<MenuItem *> &items() { return items_; }
 
   virtual bool select_next() { return false; }
@@ -120,6 +132,7 @@ class MenuItem {
 
   std::vector<MenuItem *> items_;
   bool has_internal_items_{false};
+  bool visible_{true};
 };
 
 class MenuItemValueBase : public MenuItem {

@@ -67,6 +67,9 @@ class DisplayMenuComponent : public Component {
   MenuItem *get_selected_item_() { return this->displayed_item_->get_item(this->cursor_index_); }
   bool cursor_up_();
   bool cursor_down_();
+  optional<size_t> find_next_visible_(size_t start);
+  optional<size_t> find_prev_visible_(size_t start);
+  optional<size_t> find_first_visible_();
   bool enter_menu_();
   bool leave_menu_();
   void finish_editing_();

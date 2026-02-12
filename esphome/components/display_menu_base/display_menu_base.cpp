@@ -353,7 +353,8 @@ void DisplayMenuComponent::hide() {
 
 void DisplayMenuComponent::reset_() {
   this->displayed_item_ = this->root_item_;
-  this->cursor_index_ = this->top_index_ = 0;
+  auto first_visible = this->find_first_visible_();
+  this->cursor_index_ = this->top_index_ = first_visible.value_or(0);
   this->selection_stack_.clear();
 }
 
@@ -373,34 +374,56 @@ bool DisplayMenuComponent::check_healthy_and_active_() {
   return this->active_;
 }
 
+optional<size_t> DisplayMenuComponent::find_next_visible_(size_t start) {
+  for (size_t i = start; i < this->displayed_item_->items_size(); i++) {
+    if (this->displayed_item_->get_item(i)->is_visible()) {
+      return i;
+    }
+  }
+  return {};
+}
+
+optional<size_t> DisplayMenuComponent::find_prev_visible_(size_t start) {
+  for (size_t i = start + 1; i > 0; i--) {
+    if (this->displayed_item_->get_item(i - 1)->is_visible()) {
+      return i - 1;
+    }
+  }
+  return {};
+}
+
+optional<size_t> DisplayMenuComponent::find_first_visible_() { return this->find_next_visible_(0); }
+
 bool DisplayMenuComponent::cursor_up_() {
-  bool changed = false;
-
-  if (this->cursor_index_ > 0) {
-    changed = true;
-
-    --this->cursor_index_;
-
-    if (this->cursor_index_ < this->top_index_)
-      this->top_index_ = this->cursor_index_;
+  if (this->cursor_index_ == 0) {
+    return false;
   }
 
-  return changed;
+  auto prev = this->find_prev_visible_(this->cursor_index_ - 1);
+  if (!prev.has_value()) {
+    return false;
+  }
+
+  this->cursor_index_ = prev.value();
+
+  if (this->cursor_index_ < this->top_index_)
+    this->top_index_ = this->cursor_index_;
+
+  return true;
 }
 
 bool DisplayMenuComponent::cursor_down_() {
-  bool changed = false;
-
-  if (this->cursor_index_ + 1 < this->displayed_item_->items_size()) {
-    changed = true;
-
-    ++this->cursor_index_;
-
-    if (this->cursor_index_ >= this->top_index_ + this->rows_)
-      this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+  auto next = this->find_next_visible_(this->cursor_index_ + 1);
+  if (!next.has_value()) {
+    return false;
   }
 
-  return changed;
+  this->cursor_index_ = next.value();
+
+  if (this->cursor_index_ >= this->top_index_ + this->rows_)
+    this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+
+  return true;
 }
 
 bool DisplayMenuComponent::enter_menu_() {
@@ -411,7 +434,8 @@ bool DisplayMenuComponent::enter_menu_() {
     this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
   }
   this->selection_stack_.emplace_front(this->top_index_, this->cursor_index_);
-  this->cursor_index_ = this->top_index_ = 0;
+  auto first_visible = this->find_first_visible_();
+  this->cursor_index_ = this->top_index_ = first_visible.value_or(0);
   this->displayed_item_->on_enter();
 
   return true;
@@ -443,6 +467,18 @@ bool DisplayMenuComponent::leave_menu_() {
         this->cursor_index_ = menu_item->items_size() - 1;
       }
     }
+
+    // Ensure cursor is on a visible item
+    if (!this->displayed_item_->get_item(this->cursor_index_)->is_visible()) {
+      auto next = this->find_next_visible_(this->cursor_index_);
+      if (next.has_value()) {
+        this->cursor_index_ = next.value();
+      } else {
+        auto prev = this->find_prev_visible_(this->cursor_index_);
+        this->cursor_index_ = prev.value_or(0);
+      }
+    }
+
     this->displayed_item_->on_enter();
     changed = true;
   }
@@ -466,9 +502,14 @@ void DisplayMenuComponent::finish_editing_() {
 }
 
 void DisplayMenuComponent::draw_menu() {
-  for (size_t i = 0; i < this->rows_ && this->top_index_ + i < this->displayed_item_->items_size(); ++i) {
-    this->draw_item(this->displayed_item_->get_item(this->top_index_ + i), i,
-                    this->top_index_ + i == this->cursor_index_);
+  uint8_t row = 0;
+  for (size_t i = this->top_index_; i < this->displayed_item_->items_size() && row < this->rows_; ++i) {
+    MenuItem *item = this->displayed_item_->get_item(i);
+    if (!item->is_visible()) {
+      continue;
+    }
+    this->draw_item(item, row, i == this->cursor_index_);
+    ++row;
   }
 }
 
