@@ -87,8 +87,7 @@ def test_web_server_ota_arduino_with_auth(generate_main: Callable[[str], str]) -
     assert "WebServerOTAComponent" in main_cpp
 
     # Check authentication is set up for web server
-    assert "set_auth_username" in main_cpp
-    assert "set_auth_password" in main_cpp
+    assert "set_credentials" in main_cpp
 
 
 def test_web_server_ota_esp8266(generate_main: Callable[[str], str]) -> None:

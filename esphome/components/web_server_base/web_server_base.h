@@ -65,6 +65,7 @@ class MiddlewareHandler : public AsyncWebHandler {
 struct Credentials {
   std::string username;
   std::string password;
+  std::string auth_base64;  // Pre-computed base64(username:password) for fast auth
 };
 
 class AuthMiddlewareHandler : public MiddlewareHandler {
@@ -73,7 +74,7 @@ class AuthMiddlewareHandler : public MiddlewareHandler {
       : MiddlewareHandler(next), credentials_(credentials) {}
 
   bool check_auth(AsyncWebServerRequest *request) {
-    bool success = request->authenticate(credentials_->username.c_str(), credentials_->password.c_str());
+    bool success = request->authenticate_base64(credentials_->auth_base64.c_str());
     if (!success) {
       request->requestAuthentication();
     }
@@ -131,8 +132,8 @@ class WebServerBase : public Component {
   float get_setup_priority() const override;
 
 #ifdef USE_WEBSERVER_AUTH
-  void set_auth_username(std::string auth_username) { credentials_.username = std::move(auth_username); }
-  void set_auth_password(std::string auth_password) { credentials_.password = std::move(auth_password); }
+  void set_credentials(std::string username, std::string password);
+  void set_auth_base64(const std::string &auth_base64) { credentials_.auth_base64 = auth_base64; }
 #endif
 
   void add_handler(AsyncWebHandler *handler, bool add_auth = true);

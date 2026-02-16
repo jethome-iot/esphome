@@ -11,6 +11,15 @@ static const char *const TAG = "web_server_base";
 
 WebServerBase *global_web_server_base = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
+#ifdef USE_WEBSERVER_AUTH
+void WebServerBase::set_credentials(std::string username, std::string password) {
+  credentials_.username = std::move(username);
+  credentials_.password = std::move(password);
+  std::string user_info = credentials_.username + ':' + credentials_.password;
+  credentials_.auth_base64 = base64_encode(reinterpret_cast<const uint8_t *>(user_info.c_str()), user_info.size());
+}
+#endif
+
 void WebServerBase::add_handler(AsyncWebHandler *handler, bool add_auth) {
 #ifdef USE_WEBSERVER_AUTH
   if (add_auth && !credentials_.username.empty()) {

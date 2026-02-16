@@ -112,7 +112,7 @@ class AsyncWebServerRequest {
   size_t contentLength() const { return this->req_->content_len; }
 
 #ifdef USE_WEBSERVER_AUTH
-  bool authenticate(const char *username, const char *password) const;
+  bool authenticate_base64(const char *precomputed_base64) const;
   // NOLINTNEXTLINE(readability-identifier-naming)
   void requestAuthentication(const char *realm = nullptr) const;
 #endif
