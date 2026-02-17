@@ -335,13 +335,24 @@ void WiFiComponent::set_sta(const WiFiAP &ap) {
 }
 void WiFiComponent::clear_sta() { this->sta_.clear(); }
 void WiFiComponent::save_wifi_sta(const std::string &ssid, const std::string &password) {
-  SavedWifiSettings save{};  // zero-initialized - all bytes set to \0, guaranteeing null termination
-  strncpy(save.ssid, ssid.c_str(), sizeof(save.ssid) - 1);              // max 32 chars, byte 32 remains \0
-  strncpy(save.password, password.c_str(), sizeof(save.password) - 1);  // max 64 chars, byte 64 remains \0
-  this->pref_.save(&save);
-  // ensure it's written immediately
-  global_preferences->sync();
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
+  if (this->wifi_save_handler_ != nullptr) {
+    // Use external handler (e.g., config_json) for persistence
+    this->wifi_save_handler_(ssid, password);
+  } else {
+#endif
+    // Default: save to NVS preferences
+    SavedWifiSettings save{};  // zero-initialized - all bytes set to \0, guaranteeing null termination
+    strncpy(save.ssid, ssid.c_str(), sizeof(save.ssid) - 1);              // max 32 chars, byte 32 remains \0
+    strncpy(save.password, password.c_str(), sizeof(save.password) - 1);  // max 64 chars, byte 64 remains \0
+    this->pref_.save(&save);
+    // ensure it's written immediately
+    global_preferences->sync();
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
+  }
+#endif
 
+  // Always update in-memory state
   WiFiAP sta{};
   sta.set_ssid(ssid);
   sta.set_password(password);
