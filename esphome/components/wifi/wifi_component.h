@@ -253,7 +253,7 @@ class WiFiComponent : public Component {
 
   void save_wifi_sta(const std::string &ssid, const std::string &password);
 
-#ifdef USE_NETWORK_SETTINGS_JSON
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
   using WiFiSaveHandler = std::function<void(const std::string &, const std::string &)>;
   void set_wifi_save_handler(WiFiSaveHandler handler) { this->wifi_save_handler_ = std::move(handler); }
 #endif
@@ -436,7 +436,7 @@ class WiFiComponent : public Component {
   Trigger<> *connect_trigger_{new Trigger<>()};
   Trigger<> *disconnect_trigger_{new Trigger<>()};
 
-#ifdef USE_NETWORK_SETTINGS_JSON
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
   WiFiSaveHandler wifi_save_handler_{nullptr};
 #endif
 };

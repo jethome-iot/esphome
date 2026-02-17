@@ -335,7 +335,7 @@ void WiFiComponent::set_sta(const WiFiAP &ap) {
 }
 void WiFiComponent::clear_sta() { this->sta_.clear(); }
 void WiFiComponent::save_wifi_sta(const std::string &ssid, const std::string &password) {
-#ifdef USE_NETWORK_SETTINGS_JSON
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
   if (this->wifi_save_handler_ != nullptr) {
     // Use external handler (e.g., config_json) for persistence
     this->wifi_save_handler_(ssid, password);
@@ -348,7 +348,7 @@ void WiFiComponent::save_wifi_sta(const std::string &ssid, const std::string &pa
     this->pref_.save(&save);
     // ensure it's written immediately
     global_preferences->sync();
-#ifdef USE_NETWORK_SETTINGS_JSON
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
   }
 #endif
 
