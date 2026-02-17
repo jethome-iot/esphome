@@ -276,6 +276,28 @@ void AsyncWebServerRequest::init_response_(AsyncWebServerResponse *rsp, int code
 }
 
 #ifdef USE_WEBSERVER_AUTH
+#ifdef JETHOME_PRECOMPUTED_BASE64
+bool AsyncWebServerRequest::authenticate_base64(const char *precomputed_base64) const {
+  if (precomputed_base64 == nullptr || *precomputed_base64 == 0) {
+    return true;  // No auth configured
+  }
+  auto auth = this->get_header("Authorization");
+  if (!auth.has_value()) {
+    return false;
+  }
+
+  auto *auth_str = auth.value().c_str();
+
+  const auto auth_prefix_len = sizeof("Basic ") - 1;
+  if (strncmp("Basic ", auth_str, auth_prefix_len) != 0) {
+    ESP_LOGW(TAG, "Only Basic authorization supported yet");
+    return false;
+  }
+
+  // Direct string comparison - no base64 encoding needed
+  return strcmp(precomputed_base64, auth_str + auth_prefix_len) == 0;
+}
+#else
 bool AsyncWebServerRequest::authenticate(const char *username, const char *password) const {
   if (username == nullptr || password == nullptr || *username == 0) {
     return true;
@@ -307,6 +329,7 @@ bool AsyncWebServerRequest::authenticate(const char *username, const char *passw
 
   return strcmp(digest.get(), auth_str + auth_prefix_len) == 0;
 }
+#endif
 
 void AsyncWebServerRequest::requestAuthentication(const char *realm) const {
   httpd_resp_set_hdr(*this, "Connection", "keep-alive");
