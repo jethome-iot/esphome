@@ -22,9 +22,15 @@ void WebServerBase::set_credentials(std::string username, std::string password) 
 
 void WebServerBase::add_handler(AsyncWebHandler *handler, bool add_auth) {
 #ifdef USE_WEBSERVER_AUTH
+#ifdef JETHOME_PRECOMPILED_BASE64
+  if (add_auth && !credentials_.auth_base64.empty()) {
+    handler = new internal::AuthMiddlewareHandler(handler, &credentials_);
+  }
+#else
   if (add_auth && !credentials_.username.empty()) {
     handler = new internal::AuthMiddlewareHandler(handler, &credentials_);
   }
+#endif
 #endif
   this->handlers_.push_back(handler);
   if (this->server_ != nullptr) {
