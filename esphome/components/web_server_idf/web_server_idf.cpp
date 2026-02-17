@@ -276,7 +276,7 @@ void AsyncWebServerRequest::init_response_(AsyncWebServerResponse *rsp, int code
 }
 
 #ifdef USE_WEBSERVER_AUTH
-#ifdef JETHOME_PRECOMPILED_BASE64
+#ifdef JETHOME_PRECOMPUTED_BASE64
 bool AsyncWebServerRequest::authenticate_base64(const char *precomputed_base64) const {
   if (precomputed_base64 == nullptr || *precomputed_base64 == 0) {
     return true;  // No auth configured

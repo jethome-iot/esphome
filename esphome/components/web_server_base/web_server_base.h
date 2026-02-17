@@ -65,7 +65,7 @@ class MiddlewareHandler : public AsyncWebHandler {
 struct Credentials {
   std::string username;
   std::string password;
-#ifdef JETHOME_PRECOMPILED_BASE64
+#ifdef JETHOME_PRECOMPUTED_BASE64
   std::string auth_base64;  // Pre-computed base64(username:password) for fast auth
 #endif
 };
@@ -76,7 +76,7 @@ class AuthMiddlewareHandler : public MiddlewareHandler {
       : MiddlewareHandler(next), credentials_(credentials) {}
 
   bool check_auth(AsyncWebServerRequest *request) {
-#ifdef JETHOME_PRECOMPILED_BASE64
+#ifdef JETHOME_PRECOMPUTED_BASE64
     bool success = request->authenticate_base64(credentials_->auth_base64.c_str());
 #else
     bool success = request->authenticate(credentials_->username.c_str(), credentials_->password.c_str());
@@ -138,7 +138,7 @@ class WebServerBase : public Component {
   float get_setup_priority() const override;
 
 #ifdef USE_WEBSERVER_AUTH
-#ifdef JETHOME_PRECOMPILED_BASE64
+#ifdef JETHOME_PRECOMPUTED_BASE64
   void set_credentials(std::string username, std::string password);
   void set_auth_base64(const std::string &auth_base64) { credentials_.auth_base64 = auth_base64; }
 #else

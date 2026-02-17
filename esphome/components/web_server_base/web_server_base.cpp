@@ -11,7 +11,7 @@ static const char *const TAG = "web_server_base";
 
 WebServerBase *global_web_server_base = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-#if defined(USE_WEBSERVER_AUTH) && defined(JETHOME_PRECOMPILED_BASE64)
+#if defined(USE_WEBSERVER_AUTH) && defined(JETHOME_PRECOMPUTED_BASE64)
 void WebServerBase::set_credentials(std::string username, std::string password) {
   credentials_.username = std::move(username);
   credentials_.password = std::move(password);
@@ -22,7 +22,7 @@ void WebServerBase::set_credentials(std::string username, std::string password) 
 
 void WebServerBase::add_handler(AsyncWebHandler *handler, bool add_auth) {
 #ifdef USE_WEBSERVER_AUTH
-#ifdef JETHOME_PRECOMPILED_BASE64
+#ifdef JETHOME_PRECOMPUTED_BASE64
   if (add_auth && !credentials_.auth_base64.empty()) {
     handler = new internal::AuthMiddlewareHandler(handler, &credentials_);
   }
