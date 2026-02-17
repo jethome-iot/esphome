@@ -276,11 +276,11 @@ void AsyncWebServerRequest::init_response_(AsyncWebServerResponse *rsp, int code
 }
 
 #ifdef USE_WEBSERVER_AUTH
+#ifdef JETHOME_PRECOMPILED_BASE64
 bool AsyncWebServerRequest::authenticate_base64(const char *precomputed_base64) const {
   if (precomputed_base64 == nullptr || *precomputed_base64 == 0) {
     return true;  // No auth configured
   }
-
   auto auth = this->get_header("Authorization");
   if (!auth.has_value()) {
     return false;
@@ -297,6 +297,39 @@ bool AsyncWebServerRequest::authenticate_base64(const char *precomputed_base64) 
   // Direct string comparison - no base64 encoding needed
   return strcmp(precomputed_base64, auth_str + auth_prefix_len) == 0;
 }
+#else
+bool AsyncWebServerRequest::authenticate(const char *username, const char *password) const {
+  if (username == nullptr || password == nullptr || *username == 0) {
+    return true;
+  }
+  auto auth = this->get_header("Authorization");
+  if (!auth.has_value()) {
+    return false;
+  }
+
+  auto *auth_str = auth.value().c_str();
+
+  const auto auth_prefix_len = sizeof("Basic ") - 1;
+  if (strncmp("Basic ", auth_str, auth_prefix_len) != 0) {
+    ESP_LOGW(TAG, "Only Basic authorization supported yet");
+    return false;
+  }
+
+  std::string user_info;
+  user_info += username;
+  user_info += ':';
+  user_info += password;
+
+  size_t n = 0, out;
+  esp_crypto_base64_encode(nullptr, 0, &n, reinterpret_cast<const uint8_t *>(user_info.c_str()), user_info.size());
+
+  auto digest = std::unique_ptr<char[]>(new char[n + 1]);
+  esp_crypto_base64_encode(reinterpret_cast<uint8_t *>(digest.get()), n, &out,
+                           reinterpret_cast<const uint8_t *>(user_info.c_str()), user_info.size());
+
+  return strcmp(digest.get(), auth_str + auth_prefix_len) == 0;
+}
+#endif
 
 void AsyncWebServerRequest::requestAuthentication(const char *realm) const {
   httpd_resp_set_hdr(*this, "Connection", "keep-alive");

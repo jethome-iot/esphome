@@ -11,7 +11,7 @@ static const char *const TAG = "web_server_base";
 
 WebServerBase *global_web_server_base = nullptr;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)
 
-#ifdef USE_WEBSERVER_AUTH
+#if defined(USE_WEBSERVER_AUTH) && defined(JETHOME_PRECOMPILED_BASE64)
 void WebServerBase::set_credentials(std::string username, std::string password) {
   credentials_.username = std::move(username);
   credentials_.password = std::move(password);
