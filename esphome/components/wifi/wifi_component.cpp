@@ -88,6 +88,7 @@ void WiFiComponent::start() {
     this->fast_connect_pref_ = global_preferences->make_preference<wifi::SavedWifiFastConnectSettings>(hash + 1, false);
   }
 
+#ifndef JETHOME_NETWORK_SETTINGS_SAVE
   SavedWifiSettings save{};
   if (this->pref_.load(&save)) {
     if (strlen(save.ssid) > 0) {
@@ -98,6 +99,7 @@ void WiFiComponent::start() {
       this->set_sta(sta);
     }
   }
+#endif
 
   if (this->has_sta()) {
     this->wifi_sta_pre_setup_();
