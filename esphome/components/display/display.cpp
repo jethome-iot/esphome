@@ -4,11 +4,15 @@
 #include "display_color_utils.h"
 #include "esphome/core/hal.h"
 #include "esphome/core/log.h"
+#include "esphome/core/small_string.h"
 
 namespace esphome {
 namespace display {
 
 static const char *const TAG = "display";
+
+// Line buffer type for text wrapping functions (stack-optimized, grows on heap if needed)
+using LineBuffer = SmallString<256>;
 
 const Color COLOR_OFF(0, 0, 0, 0);
 const Color COLOR_ON(255, 255, 255, 255);
@@ -648,11 +652,18 @@ void Display::print(int x, int y, BaseFont *font, const char *text) {
 
 void Display::print_multiline(int x, int y, int width, int height, BaseFont *font, const char *text,
                               float line_height_multiplier) {
-  std::string text_buff(text);
+  LineBuffer text_buff(text);
   const size_t buff_size = text_buff.size();
 
   if (buff_size == 0)
     return;
+
+  // Get default line height for empty lines using a sample character
+  int default_line_height;
+  {
+    int tmp_x1, tmp_y1, tmp_width;
+    this->get_text_bounds(0, 0, "A", font, TextAlign::TOP_LEFT, &tmp_x1, &tmp_y1, &tmp_width, &default_line_height);
+  }
 
   char buff_char[2] = {0};
   int line_y = y;
@@ -662,6 +673,38 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
   for (size_t symb_index = 0; symb_index < buff_size; symb_index++) {
     size_t zero_index = symb_index + 1;
 
+    // Check for explicit newline character
+    if (text_buff[symb_index] == '\n') {
+      int line_x1, line_y1, line_width, line_height;
+
+      // Temporarily terminate string at newline position
+      text_buff[symb_index] = 0;
+
+      // Get line dimensions
+      this->get_text_bounds(0, 0, last_buff_ptr, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
+                            &line_height);
+
+      // Use default height for empty lines
+      if (line_height == 0)
+        line_height = default_line_height;
+
+      // Print the line segment before the newline (if visible and not empty)
+      if (last_buff_ptr[0] != 0 && line_y >= y && line_y + line_height <= y + height) {
+        this->print(x, line_y, font, last_buff_ptr);
+      }
+
+      // Move to next line (always advance, even if clipped)
+      line_y += line_height_multiplier * line_height;
+
+      // Restore the newline character
+      text_buff[symb_index] = '\n';
+
+      // Update pointer to character after the newline
+      last_buff_ptr = text_buff.c_str() + symb_index + 1;
+
+      continue;
+    }
+
     buff_char[0] = text_buff[zero_index];
     int line_x1, line_y1, line_width, line_height;
 
@@ -670,30 +713,230 @@ void Display::print_multiline(int x, int y, int width, int height, BaseFont *fon
     this->get_text_bounds(0, 0, last_buff_ptr, font, TextAlign::TOP_LEFT, &line_x1, &line_y1, &line_width,
                           &line_height);
 
-    // Check that doesn't exceed height
-    if (line_y + line_height > height) {
-      break;
-    }
-
-    // Exceed width, printing, current symbol should be analyze again
+    // Exceed width, printing, current symbol should be analyzed again
     if (line_width > width) {
-      buff_char[1] = text_buff[symb_index];
+      // Check if it's a single character that's too wide for the width
+      size_t line_start_pos = last_buff_ptr - text_buff.c_str();
+      if (symb_index == line_start_pos) {
+        // Single character exceeds width - print it anyway to avoid infinite loop
+        if (line_y >= y && line_y + line_height <= y + height) {
+          this->print(x, line_y, font, last_buff_ptr);
+        }
+        last_buff_ptr = text_buff.c_str() + symb_index + 1;
+        line_y += line_height_multiplier * line_height;
+        // Don't decrement symb_index - let the loop continue normally
+      } else {
+        // Multiple characters - back up and re-analyze
+        buff_char[1] = text_buff[symb_index];
 
-      text_buff[symb_index] = 0;
+        text_buff[symb_index] = 0;
 
-      this->print(x, line_y, font, last_buff_ptr);
+        // Only print if within vertical bounds
+        if (line_y >= y && line_y + line_height <= y + height) {
+          this->print(x, line_y, font, last_buff_ptr);
+        }
 
-      last_buff_ptr = text_buff.c_str() + symb_index;
-      text_buff[symb_index] = buff_char[1];
+        last_buff_ptr = text_buff.c_str() + symb_index;
+        text_buff[symb_index] = buff_char[1];
 
-      symb_index--;
-      line_y += line_height_multiplier * line_height;
+        symb_index--;
+        line_y += line_height_multiplier * line_height;
+      }
     } else if (zero_index == buff_size) {
-      this->print(x, line_y, font, last_buff_ptr);
+      // Only print if within vertical bounds
+      if (line_y >= y && line_y + line_height <= y + height) {
+        this->print(x, line_y, font, last_buff_ptr);
+      }
     }
 
     text_buff[zero_index] = buff_char[0];
   }
+}
+
+// Helper: skip whitespace characters, returns pointer to first non-whitespace or end
+static const char *wrap_text_skip_whitespace(const char *ptr, const char *end) {
+  while (ptr < end && (*ptr == ' ' || *ptr == '\t')) {
+    ptr++;
+  }
+  return ptr;
+}
+
+// Helper: find end of current word (non-whitespace sequence)
+static const char *wrap_text_find_word_end(const char *ptr, const char *end) {
+  while (ptr < end && *ptr != ' ' && *ptr != '\t' && *ptr != '\n') {
+    ptr++;
+  }
+  return ptr;
+}
+
+// Helper: find next newline or end of string
+static const char *wrap_text_find_line_end(const char *ptr) {
+  while (*ptr && *ptr != '\n') {
+    ptr++;
+  }
+  return ptr;
+}
+
+// Helper: measure word width using LineBuffer (handles any length)
+static int wrap_text_measure_word(Display *display, const char *word_start, size_t word_len, BaseFont *font) {
+  LineBuffer word_buf;
+  word_buf.append(word_start, word_len);
+
+  int x1, y1, width, height;
+  display->get_text_bounds(0, 0, word_buf.c_str(), font, TextAlign::TOP_LEFT, &x1, &y1, &width, &height);
+  return width;
+}
+
+// Helper: print a long word broken into parts that fit max_width
+// Returns the number of lines printed and sets last_part_width to the width of the last part
+static int wrap_text_print_long_word(Display *display, int x, int *current_y, int display_height, int line_step,
+                                     const char *word_start, size_t word_len, BaseFont *font, int max_width,
+                                     LineBuffer &line_buffer, int *last_part_width) {
+  int current_width = 0;
+  int lines_printed = 0;
+  char char_buf[2] = {0, 0};
+
+  for (size_t i = 0; i < word_len; i++) {
+    char_buf[0] = word_start[i];
+    int cx1, cy1, cw, ch;
+    display->get_text_bounds(0, 0, char_buf, font, TextAlign::TOP_LEFT, &cx1, &cy1, &cw, &ch);
+
+    if (current_width + cw > max_width && !line_buffer.empty()) {
+      // Flush current part
+      if (*current_y >= 0 && *current_y < display_height) {
+        display->print(x, *current_y, font, line_buffer.c_str());
+      }
+      *current_y += line_step;
+      lines_printed++;
+      line_buffer.clear();
+      current_width = 0;
+    }
+
+    line_buffer.push_back(word_start[i]);
+    current_width += cw;
+  }
+
+  // Keep the last part in the buffer (don't print yet - caller will handle)
+  if (last_part_width) {
+    *last_part_width = current_width;
+  }
+
+  return lines_printed;
+}
+
+int Display::wrap_text(int x, int y, int max_width, BaseFont *font, const char *text, float line_height_multiplier) {
+  if (!text || !*text) {
+    return 0;
+  }
+
+  // Get space width and line height once
+  int space_x1, space_y1, space_width, space_height;
+  this->get_text_bounds(0, 0, " ", font, TextAlign::TOP_LEFT, &space_x1, &space_y1, &space_width, &space_height);
+
+  int char_x1, char_y1, char_width, line_height;
+  this->get_text_bounds(0, 0, "A", font, TextAlign::TOP_LEFT, &char_x1, &char_y1, &char_width, &line_height);
+
+  int current_y = y;
+  int display_height = this->get_height();
+  int line_step = static_cast<int>(line_height * line_height_multiplier);
+
+  // Hybrid buffer - uses stack for small lines, heap for large ones
+  LineBuffer line_buffer;
+
+  const char *ptr = text;
+
+  while (*ptr) {
+    // Find end of current paragraph (newline or end of string)
+    const char *line_end = wrap_text_find_line_end(ptr);
+
+    if (ptr == line_end) {
+      // Empty line - just advance Y
+      current_y += line_step;
+      ptr = (*line_end) ? line_end + 1 : line_end;
+      continue;
+    }
+
+    // Process words within this paragraph using pointer arithmetic
+    int current_line_width = 0;
+    const char *word_ptr = ptr;
+
+    while (word_ptr < line_end) {
+      // Skip whitespace
+      word_ptr = wrap_text_skip_whitespace(word_ptr, line_end);
+      if (word_ptr >= line_end) {
+        break;
+      }
+
+      // Find word boundaries
+      const char *word_start = word_ptr;
+      const char *word_end = wrap_text_find_word_end(word_ptr, line_end);
+      size_t word_len = word_end - word_start;
+
+      // Measure word width
+      int word_width = wrap_text_measure_word(this, word_start, word_len, font);
+
+      // Check if word itself is too long for the line
+      if (word_width > max_width) {
+        // Flush current line first if not empty
+        if (!line_buffer.empty()) {
+          if (current_y >= 0 && current_y < display_height) {
+            this->print(x, current_y, font, line_buffer.c_str());
+          }
+          current_y += line_step;
+          line_buffer.clear();
+        }
+
+        // Break and print the long word character by character
+        int last_part_width = 0;
+        wrap_text_print_long_word(this, x, &current_y, display_height, line_step, word_start, word_len, font, max_width,
+                                  line_buffer, &last_part_width);
+
+        // The last part remains in line_buffer - update width
+        current_line_width = last_part_width;
+        word_ptr = word_end;
+        continue;
+      }
+
+      // Check if word fits on current line
+      int test_width = current_line_width + (!line_buffer.empty() ? space_width : 0) + word_width;
+
+      if (test_width > max_width && !line_buffer.empty()) {
+        // Flush current line
+        if (current_y >= 0 && current_y < display_height) {
+          this->print(x, current_y, font, line_buffer.c_str());
+        }
+        current_y += line_step;
+        line_buffer.clear();
+        current_line_width = 0;
+      }
+
+      // Add space before word if not first word on line
+      if (!line_buffer.empty()) {
+        line_buffer.push_back(' ');
+        current_line_width += space_width;
+      }
+
+      // Copy word to buffer
+      line_buffer.append(word_start, word_len);
+      current_line_width += word_width;
+
+      word_ptr = word_end;
+    }
+
+    // Flush any remaining content in the line buffer
+    if (!line_buffer.empty()) {
+      if (current_y >= 0 && current_y < display_height) {
+        this->print(x, current_y, font, line_buffer.c_str());
+      }
+      current_y += line_step;
+      line_buffer.clear();
+    }
+
+    // Move to next paragraph (skip newline)
+    ptr = (*line_end) ? line_end + 1 : line_end;
+  }
+
+  return current_y - y;
 }
 
 void Display::printf(int x, int y, BaseFont *font, Color color, Color background, TextAlign align, const char *format,
