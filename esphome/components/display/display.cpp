@@ -884,7 +884,6 @@ int Display::wrap_text(int x, int y, int max_width, BaseFont *font, const char *
           }
           current_y += line_step;
           line_buffer.clear();
-          current_line_width = 0;
         }
 
         // Break and print the long word character by character
