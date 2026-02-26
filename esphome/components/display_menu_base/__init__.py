@@ -11,6 +11,7 @@ from esphome.components.switch import Switch
 import esphome.config_validation as cv
 from esphome.const import (
     CONF_ACTIVE,
+    CONF_AFTER,
     CONF_BINARY_SENSOR,
     CONF_COMMAND,
     CONF_CUSTOM,
@@ -21,12 +22,14 @@ from esphome.const import (
     CONF_MODE,
     CONF_NUMBER,
     CONF_ON_VALUE,
+    CONF_POSITION,
     CONF_SENSOR,
     CONF_SWITCH,
     CONF_TEXT,
     CONF_TRIGGER_ID,
     CONF_TYPE,
     CONF_VALUE,
+    CONF_WEIGHT,
 )
 
 CONF_GENERATE_LAMBDA = "generate_lambda"
@@ -63,21 +66,23 @@ CONF_ON_ENTER = "on_enter"
 CONF_ON_LEAVE = "on_leave"
 CONF_ON_NEXT = "on_next"
 CONF_ON_PREV = "on_prev"
+CONF_BEFORE = "before"
 
 DisplayMenuComponent = display_menu_base_ns.class_("DisplayMenuComponent", cg.Component)
 
 MenuItem = display_menu_base_ns.class_("MenuItem")
 MenuItemPtr = MenuItem.operator("ptr")
 MenuItemConstPtr = MenuItem.operator("ptr").operator("const")
-MenuItemMenu = display_menu_base_ns.class_("MenuItemMenu")
+# Menu item classes inherit from MenuItem for proper ID type checking
+MenuItemMenu = display_menu_base_ns.class_("MenuItemMenu", MenuItem)
 MenuItemMenuPtr = MenuItemMenu.operator("ptr")
-MenuItemSelect = display_menu_base_ns.class_("MenuItemSelect")
-MenuItemNumber = display_menu_base_ns.class_("MenuItemNumber")
-MenuItemSwitch = display_menu_base_ns.class_("MenuItemSwitch")
-MenuItemCommand = display_menu_base_ns.class_("MenuItemCommand")
-MenuItemCustom = display_menu_base_ns.class_("MenuItemCustom")
-MenuItemBinarySensor = display_menu_base_ns.class_("MenuItemBinarySensor")
-MenuItemValue = display_menu_base_ns.class_("MenuItemValue")
+MenuItemSelect = display_menu_base_ns.class_("MenuItemSelect", MenuItem)
+MenuItemNumber = display_menu_base_ns.class_("MenuItemNumber", MenuItem)
+MenuItemSwitch = display_menu_base_ns.class_("MenuItemSwitch", MenuItem)
+MenuItemCommand = display_menu_base_ns.class_("MenuItemCommand", MenuItem)
+MenuItemCustom = display_menu_base_ns.class_("MenuItemCustom", MenuItem)
+MenuItemBinarySensor = display_menu_base_ns.class_("MenuItemBinarySensor", MenuItem)
+MenuItemValue = display_menu_base_ns.class_("MenuItemValue", MenuItem)
 
 UpAction = display_menu_base_ns.class_("UpAction", automation.Action)
 DownAction = display_menu_base_ns.class_("DownAction", automation.Action)
@@ -173,9 +178,18 @@ def menu_item_schema(value):
     return MENU_ITEM_SCHEMA(value)
 
 
+MENU_ITEM_POSITION_SCHEMA = cv.Schema(
+    {
+        cv.Exclusive(CONF_BEFORE, "position"): cv.use_id(MenuItem),
+        cv.Exclusive(CONF_AFTER, "position"): cv.use_id(MenuItem),
+    }
+)
+
 MENU_ITEM_COMMON_SCHEMA = cv.Schema(
     {
         cv.Optional(CONF_TEXT): cv.templatable(cv.string),
+        cv.Optional(CONF_WEIGHT): cv.int_,
+        cv.Optional(CONF_POSITION): MENU_ITEM_POSITION_SCHEMA,
     }
 )
 
@@ -426,12 +440,17 @@ async def display_menu_is_active_to_code(config, condition_id, template_arg, arg
     return cg.new_Pvariable(condition_id, template_arg, paren)
 
 
-async def menu_item_to_code(menu, config, parent):
+async def menu_item_to_code(menu, config):
+    """Create and configure a menu item. Returns the item variable.
+
+    Note: This function does NOT add the item to parent. Use add_sorted_items()
+    to add items to parent in weight-sorted order.
+    """
     if config[CONF_TYPE] in MENU_ITEMS_WITH_SPECIALIZED_CLASSES:
         item = cg.new_Pvariable(config[CONF_ID])
     else:
         item = cg.new_Pvariable(config[CONF_ID], MENU_ITEM_TYPES[config[CONF_TYPE]])
-    cg.add(parent.add_item(item))
+
     if CONF_TEXT in config:
         if isinstance(config[CONF_TEXT], core.Lambda):
             template_ = await cg.templatable(
@@ -447,9 +466,11 @@ async def menu_item_to_code(menu, config, parent):
             return_type=cg.std_string,
         )
         cg.add(item.set_value_lambda(template_))
+
+    # Process nested items with weight sorting
     if CONF_ITEMS in config:
-        for c in config[CONF_ITEMS]:
-            await menu_item_to_code(menu, c, item)
+        await add_sorted_items(menu, config[CONF_ITEMS], item)
+
     if CONF_IMMEDIATE_EDIT in config:
         cg.add(item.set_immediate_edit(config[CONF_IMMEDIATE_EDIT]))
     if config[CONF_TYPE] == CONF_SELECT:
@@ -503,6 +524,91 @@ async def menu_item_to_code(menu, config, parent):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], item)
         await automation.build_automation(trigger, [(MenuItemConstPtr, "it")], conf)
 
+    return item
+
+
+async def add_sorted_items(menu, items_config, parent):
+    """Create menu items and add them to parent sorted by weight and position.
+
+    Ordering rules:
+    1. Items are first sorted by weight (lower weight = appears first)
+    2. Items with relative position (before/after) are then repositioned
+    3. Items without weight default to 0
+    4. Items with equal weights preserve their declaration order (stable sort)
+    """
+    # First pass: Create all items and collect metadata
+    items_data = []
+    id_to_index = {}  # Map config ID to index in items_data
+
+    for index, c in enumerate(items_config):
+        item_var = await menu_item_to_code(menu, c)
+        weight = c.get(CONF_WEIGHT, 0)
+        position = c.get(CONF_POSITION)
+        item_id = c.get(CONF_ID)
+
+        items_data.append(
+            {
+                "var": item_var,
+                "weight": weight,
+                "index": index,
+                "position": position,
+                "id": item_id,
+            }
+        )
+
+        if item_id is not None:
+            id_to_index[item_id] = index
+
+    # Sort by weight (stable sort - preserves order for equal weights)
+    items_data.sort(key=lambda x: (x["weight"], x["index"]))
+
+    # Process relative positions (before/after)
+    # Items with relative position are moved to be adjacent to their reference
+    final_order = []
+    pending_before = {}  # ref_id -> list of items to insert before
+    pending_after = {}  # ref_id -> list of items to insert after
+
+    for item in items_data:
+        position = item["position"]
+        if position is not None:
+            if CONF_BEFORE in position:
+                ref_id = position[CONF_BEFORE]
+                pending_before.setdefault(ref_id, []).append(item)
+            elif CONF_AFTER in position:
+                ref_id = position[CONF_AFTER]
+                pending_after.setdefault(ref_id, []).append(item)
+        else:
+            final_order.append(item)
+
+    # Build final list with relative positions resolved
+    result = []
+    for item in final_order:
+        item_id = item["id"]
+        # Insert items that should be before this one
+        if item_id in pending_before:
+            result.extend(pending_before[item_id])
+        # Insert this item
+        result.append(item)
+        # Insert items that should be after this one
+        if item_id in pending_after:
+            result.extend(pending_after[item_id])
+
+    # Add any items whose reference wasn't found (append at end)
+    for ref_id, items in pending_before.items():
+        if ref_id not in id_to_index or id_to_index[ref_id] not in [
+            i["index"] for i in final_order
+        ]:
+            result.extend(items)
+    for ref_id, items in pending_after.items():
+        if ref_id not in id_to_index or id_to_index[ref_id] not in [
+            i["index"] for i in final_order
+        ]:
+            result.extend(items)
+
+    # Add items in final order
+    for item in result:
+        cg.add(parent.add_item(item["var"]))
+
 
 async def display_menu_to_code(menu, config):
     cg.add(menu.set_active(config[CONF_ACTIVE]))
@@ -510,8 +616,10 @@ async def display_menu_to_code(menu, config):
     cg.add(menu.set_root_item(root_item))
     cg.add(menu.set_mode(config[CONF_MODE]))
     cg.add(menu.set_right_for_menu_enter_opt(config[CONF_RIGHT_FOR_MENU_ENTER]))
-    for c in config[CONF_ITEMS]:
-        await menu_item_to_code(menu, c, root_item)
+
+    # Add items sorted by weight
+    await add_sorted_items(menu, config[CONF_ITEMS], root_item)
+
     for conf in config.get(CONF_ON_ENTER, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], root_item)
         await automation.build_automation(trigger, [(MenuItemConstPtr, "it")], conf)

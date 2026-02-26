@@ -119,12 +119,18 @@ def update_storage_json() -> None:
                 "Components removed (%s), cleaning build files...",
                 ", ".join(sorted(removed)),
             )
+            clean_generated_for_removed_components(removed)
         else:
             _LOGGER.info("Core config or version changed, cleaning build files...")
         clean_build()
     elif storage_should_update_cmake_cache(old, new):
         _LOGGER.info("Integrations changed, cleaning cmake cache...")
         clean_cmake_cache()
+        # Clean generated folders for removed components
+        if old is not None:
+            removed = old.loaded_integrations - new.loaded_integrations
+            if removed:
+                clean_generated_for_removed_components(removed)
 
     new.save(path)
 
@@ -299,6 +305,30 @@ def clean_cmake_cache():
         if pioenvs_cmake_path.is_file():
             _LOGGER.info("Deleting %s", pioenvs_cmake_path)
             pioenvs_cmake_path.unlink()
+
+
+def clean_generated():
+    """Clean the entire generated folder (codegen output files)."""
+    import shutil
+
+    generated = CORE.relative_generated_path()
+    if generated.is_dir():
+        _LOGGER.info("Deleting %s", generated)
+        shutil.rmtree(generated)
+
+
+def clean_generated_for_removed_components(removed_components: set[str]):
+    """Clean generated folders for removed components only."""
+    import shutil
+
+    generated = CORE.relative_generated_path()
+    if not generated.is_dir():
+        return
+
+    for subdir in generated.iterdir():
+        if subdir.is_dir() and subdir.name in removed_components:
+            _LOGGER.info("Deleting generated files for removed component: %s", subdir)
+            shutil.rmtree(subdir)
 
 
 def clean_build():

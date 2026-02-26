@@ -30,7 +30,11 @@ void log_number(const char *tag, const char *prefix, const char *type, Number *o
 void Number::publish_state(float state) {
   this->set_has_state(true);
   this->state = state;
+#ifdef JETHOME_DISABLE_SENDING_STATE_LOG
+  ESP_LOGV(TAG, "'%s': Sending state %f", this->get_name().c_str(), state);
+#else
   ESP_LOGD(TAG, "'%s': Sending state %f", this->get_name().c_str(), state);
+#endif
   this->state_callback_.call(state);
 }
 

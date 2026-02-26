@@ -29,6 +29,10 @@ class CronTrigger : public Trigger<>, public Component {
   bool matches(const ESPTime &time);
   void loop() override;
   float get_setup_priority() const override;
+  bool prepare_for_deletion() override {
+    this->disable_loop();
+    return false;  // registered in Application, not safe to delete
+  }
 
  protected:
   std::bitset<61> seconds_;

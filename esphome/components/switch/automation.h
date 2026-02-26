@@ -66,31 +66,46 @@ template<typename... Ts> class SwitchCondition : public Condition<Ts...> {
 
 class SwitchStateTrigger : public Trigger<bool> {
  public:
-  SwitchStateTrigger(Switch *a_switch) {
-    a_switch->add_on_state_callback([this](bool state) { this->trigger(state); });
+  SwitchStateTrigger(Switch *a_switch) : switch_(a_switch) {
+    this->handle_ = a_switch->add_on_state_callback([this](bool state) { this->trigger(state); });
   }
+  ~SwitchStateTrigger() override { this->switch_->remove_on_state_callback(this->handle_); }
+
+ protected:
+  Switch *switch_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 class SwitchTurnOnTrigger : public Trigger<> {
  public:
-  SwitchTurnOnTrigger(Switch *a_switch) {
-    a_switch->add_on_state_callback([this](bool state) {
+  SwitchTurnOnTrigger(Switch *a_switch) : switch_(a_switch) {
+    this->handle_ = a_switch->add_on_state_callback([this](bool state) {
       if (state) {
         this->trigger();
       }
     });
   }
+  ~SwitchTurnOnTrigger() override { this->switch_->remove_on_state_callback(this->handle_); }
+
+ protected:
+  Switch *switch_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 class SwitchTurnOffTrigger : public Trigger<> {
  public:
-  SwitchTurnOffTrigger(Switch *a_switch) {
-    a_switch->add_on_state_callback([this](bool state) {
+  SwitchTurnOffTrigger(Switch *a_switch) : switch_(a_switch) {
+    this->handle_ = a_switch->add_on_state_callback([this](bool state) {
       if (!state) {
         this->trigger();
       }
     });
   }
+  ~SwitchTurnOffTrigger() override { this->switch_->remove_on_state_callback(this->handle_); }
+
+ protected:
+  Switch *switch_;
+  CallbackHandle handle_{CALLBACK_HANDLE_INVALID};
 };
 
 template<typename... Ts> class SwitchPublishAction : public Action<Ts...> {
