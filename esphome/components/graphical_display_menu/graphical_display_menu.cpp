@@ -126,15 +126,23 @@ void GraphicalDisplayMenu::draw_menu_internal_(display::Display *display, const 
 
   // First pass: measure only visible items and collect their indices
   bool first_visible = true;
+  size_t cursor_visible_pos = 0;
+  bool cursor_found = false;
   for (size_t i = 0; max_item_index >= 0 && i <= static_cast<size_t>(max_item_index); i++) {
     const auto *item = this->displayed_item_->get_item(i);
     if (!item->is_visible()) {
       continue;
     }
 
+    size_t visible_pos = visible_indices.size();
     visible_indices.push_back(i);
     const bool selected = i == this->cursor_index_;
     const display::Rect item_dimensions = this->measure_item(display, item, bounds, selected);
+
+    if (selected) {
+      cursor_visible_pos = visible_pos;
+      cursor_found = true;
+    }
 
     menu_dimensions.push_back(item_dimensions);
     total_height += item_dimensions.h + (first_visible ? 0 : y_padding);
@@ -144,8 +152,7 @@ void GraphicalDisplayMenu::draw_menu_internal_(display::Display *display, const 
     if (total_height <= bounds->h) {
       number_items_fit_to_screen++;
     } else {
-      // Scroll the display if the selected item or the item immediately after it overflows
-      if ((selected) || (i == this->cursor_index_ + 1)) {
+      if ((selected) || (cursor_found && visible_pos == cursor_visible_pos + 1)) {
         scroll_menu_items = true;
       }
     }
@@ -155,27 +162,18 @@ void GraphicalDisplayMenu::draw_menu_internal_(display::Display *display, const 
     return;
   }
 
-  // Find cursor position in visible indices
-  size_t cursor_visible_index = 0;
-  for (size_t vi = 0; vi < visible_indices.size(); vi++) {
-    if (visible_indices[vi] == this->cursor_index_) {
-      cursor_visible_index = vi;
-      break;
-    }
-  }
-
   // Determine what items to draw (using visible indices)
   size_t first_visible_idx = 0;
   size_t last_visible_idx = visible_indices.size() - 1;
 
   if (number_items_fit_to_screen <= 1) {
     // If only one item can fit to the bounds draw the current cursor item
-    last_visible_idx = std::min(last_visible_idx, cursor_visible_index + 1);
-    first_visible_idx = cursor_visible_index;
+    last_visible_idx = std::min(last_visible_idx, cursor_visible_pos + 1);
+    first_visible_idx = cursor_visible_pos;
   } else {
     if (scroll_menu_items) {
       // Attempt to draw the item after the current item (+1 for equality check in the draw loop)
-      last_visible_idx = std::min(last_visible_idx, cursor_visible_index + 1);
+      last_visible_idx = std::min(last_visible_idx, cursor_visible_pos + 1);
 
       // Go back through the measurements to determine how many prior items we can fit
       int height_left_to_use = bounds->h;
@@ -191,7 +189,7 @@ void GraphicalDisplayMenu::draw_menu_internal_(display::Display *display, const 
       }
       const size_t items_to_draw = last_visible_idx - first_visible_idx;
       // Don't draw last item partially if it is the selected item
-      if ((cursor_visible_index == last_visible_idx) &&
+      if ((cursor_visible_pos == last_visible_idx) &&
           (static_cast<size_t>(number_items_fit_to_screen) <= items_to_draw) &&
           (first_visible_idx < visible_indices.size() - 1)) {
         first_visible_idx++;

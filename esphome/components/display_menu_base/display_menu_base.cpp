@@ -479,6 +479,12 @@ bool DisplayMenuComponent::leave_menu_() {
       }
     }
 
+    // Keep top_index_ consistent with cursor after visibility adjustment
+    if (this->cursor_index_ < this->top_index_)
+      this->top_index_ = this->cursor_index_;
+    else if (this->cursor_index_ >= this->top_index_ + this->rows_)
+      this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+
     this->displayed_item_->on_enter();
     changed = true;
   }
