@@ -213,6 +213,40 @@ void DisplayMenuComponent::back() {
   }
 }
 
+void DisplayMenuComponent::back_n(int levels) {
+  if (this->check_healthy_and_active_() && levels > 0) {
+    bool changed = false;
+
+    if (this->editing_) {
+      this->finish_editing_();
+      changed = true;
+    }
+
+    // Lightweight unwind for intermediate levels — skip regeneration and cursor fixes
+    for (int i = 0; i < levels - 1 && this->displayed_item_->get_parent() != nullptr; i++) {
+      this->displayed_item_->on_leave();
+      auto *item = this->displayed_item_;
+      if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
+        static_cast<MenuItemMenu *>(item)->clear_items();
+      }
+      this->displayed_item_ = this->displayed_item_->get_parent();
+      this->selection_stack_.pop_front();
+      changed = true;
+    }
+
+    if (this->displayed_item_->get_parent() != nullptr) {
+      // Full leave for the final level — with regeneration and cursor adjustment
+      changed = this->leave_menu_() || changed;
+    } else if (changed) {
+      // Already at root after intermediate unwind — fix stale cursor state
+      this->reset_();
+    }
+
+    if (changed)
+      this->draw_and_update();
+  }
+}
+
 void DisplayMenuComponent::enter() {
   if (this->check_healthy_and_active_()) {
     bool changed = false;

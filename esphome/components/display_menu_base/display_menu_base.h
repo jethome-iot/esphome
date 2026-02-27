@@ -43,6 +43,8 @@ class DisplayMenuComponent : public Component {
   void right();
   void enter();
   void back();
+  // Go back multiple levels at once
+  void back_n(int levels);
 
   // Go to root of menu and show it
   void show_main();
