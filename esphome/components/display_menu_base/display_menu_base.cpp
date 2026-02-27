@@ -390,10 +390,11 @@ void DisplayMenuComponent::ensure_cursor_visible_() {
       this->cursor_index_ = prev.value_or(0);
     }
 
-    if (this->cursor_index_ < this->top_index_)
+    if (this->cursor_index_ < this->top_index_) {
       this->top_index_ = this->cursor_index_;
-    else if (this->cursor_index_ >= this->top_index_ + this->rows_)
+    } else if (this->cursor_index_ >= this->top_index_ + this->rows_) {
       this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+    }
   }
 }
 
