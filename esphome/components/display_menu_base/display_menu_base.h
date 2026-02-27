@@ -66,9 +66,13 @@ class DisplayMenuComponent : public Component {
   void reset_();
   void process_initial_();
   bool check_healthy_and_active_();
+  void ensure_cursor_visible_();
   MenuItem *get_selected_item_() { return this->displayed_item_->get_item(this->cursor_index_); }
   bool cursor_up_();
   bool cursor_down_();
+  optional<size_t> find_next_visible_(size_t start);
+  optional<size_t> find_prev_visible_(size_t start);
+  optional<size_t> find_first_visible_();
   bool enter_menu_();
   bool leave_menu_();
   void finish_editing_();
@@ -76,6 +80,7 @@ class DisplayMenuComponent : public Component {
   virtual void draw_item(const MenuItem *item, uint8_t row, bool selected) = 0;
   virtual void update() {}
   virtual void draw_and_update() {
+    ensure_cursor_visible_();
     draw_menu();
     update();
   }

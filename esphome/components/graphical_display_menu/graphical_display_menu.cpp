@@ -54,9 +54,9 @@ void GraphicalDisplayMenu::dump_config() {
                 this->mode_ == display_menu_base::MENU_MODE_ROTARY ? "Rotary" : "Joystick", YESNO(this->active_));
   for (size_t i = 0; i < this->displayed_item_->items_size(); i++) {
     auto *item = this->displayed_item_->get_item(i);
-    ESP_LOGCONFIG(TAG, "  %i: %s (Type: %s, Immediate Edit: %s)", i, item->get_text().c_str(),
+    ESP_LOGCONFIG(TAG, "  %i: %s (Type: %s, Immediate Edit: %s, Visible: %s)", i, item->get_text().c_str(),
                   LOG_STR_ARG(display_menu_base::menu_item_type_to_string(item->get_type())),
-                  YESNO(item->get_immediate_edit()));
+                  YESNO(item->get_immediate_edit()), YESNO(item->is_visible()));
   }
 }
 
@@ -92,6 +92,7 @@ void GraphicalDisplayMenu::on_before_hide() {
 }
 
 void GraphicalDisplayMenu::draw_and_update() {
+  this->ensure_cursor_visible_();
   this->update();
 
   // If we're in advanced drawing mode we won't have a display and will instead require the update callback to do
@@ -120,58 +121,79 @@ void GraphicalDisplayMenu::draw_menu_internal_(display::Display *display, const 
   int y_padding = 2;
   bool scroll_menu_items = false;
   std::vector<display::Rect> menu_dimensions;
+  std::vector<size_t> visible_indices;
   int number_items_fit_to_screen = 0;
   const int max_item_index = this->displayed_item_->items_size() - 1;
 
+  // First pass: measure only visible items and collect their indices
+  bool first_visible = true;
+  size_t cursor_visible_pos = 0;
+  bool cursor_found = false;
   for (size_t i = 0; max_item_index >= 0 && i <= static_cast<size_t>(max_item_index); i++) {
     const auto *item = this->displayed_item_->get_item(i);
+    if (!item->is_visible()) {
+      continue;
+    }
+
+    size_t visible_pos = visible_indices.size();
+    visible_indices.push_back(i);
     const bool selected = i == this->cursor_index_;
     const display::Rect item_dimensions = this->measure_item(display, item, bounds, selected);
 
+    if (selected) {
+      cursor_visible_pos = visible_pos;
+      cursor_found = true;
+    }
+
     menu_dimensions.push_back(item_dimensions);
-    total_height += item_dimensions.h + (i == 0 ? 0 : y_padding);
+    total_height += item_dimensions.h + (first_visible ? 0 : y_padding);
+    first_visible = false;
     max_width = std::max(max_width, item_dimensions.w);
 
     if (total_height <= bounds->h) {
       number_items_fit_to_screen++;
     } else {
-      // Scroll the display if the selected item or the item immediately after it overflows
-      if ((selected) || (i == this->cursor_index_ + 1)) {
+      if ((selected) || (cursor_found && visible_pos == cursor_visible_pos + 1)) {
         scroll_menu_items = true;
       }
     }
   }
 
-  // Determine what items to draw
-  int first_item_index = 0;
-  int last_item_index = max_item_index;
+  if (visible_indices.empty()) {
+    return;
+  }
+
+  // Determine what items to draw (using visible indices)
+  size_t first_visible_idx = 0;
+  size_t last_visible_idx = visible_indices.size() - 1;
 
   if (number_items_fit_to_screen <= 1) {
     // If only one item can fit to the bounds draw the current cursor item
-    last_item_index = std::min(last_item_index, this->cursor_index_ + 1);
-    first_item_index = this->cursor_index_;
+    last_visible_idx = std::min(last_visible_idx, cursor_visible_pos + 1);
+    first_visible_idx = cursor_visible_pos;
   } else {
     if (scroll_menu_items) {
       // Attempt to draw the item after the current item (+1 for equality check in the draw loop)
-      last_item_index = std::min(last_item_index, this->cursor_index_ + 1);
+      last_visible_idx = std::min(last_visible_idx, cursor_visible_pos + 1);
 
       // Go back through the measurements to determine how many prior items we can fit
       int height_left_to_use = bounds->h;
-      for (int i = last_item_index; i >= 0; i--) {
-        const display::Rect item_dimensions = menu_dimensions[i];
+      for (int vi = static_cast<int>(last_visible_idx); vi >= 0; vi--) {
+        const display::Rect item_dimensions = menu_dimensions[vi];
         height_left_to_use -= (item_dimensions.h + y_padding);
 
         if (height_left_to_use <= 0) {
-          // Ran out of space -  this is our first item to draw
-          first_item_index = i;
+          // Ran out of space - this is our first item to draw
+          first_visible_idx = vi;
           break;
         }
       }
-      const int items_to_draw = last_item_index - first_item_index;
-      // Dont't draw last item partially if it is the selected item
-      if ((this->cursor_index_ == last_item_index) && (number_items_fit_to_screen <= items_to_draw) &&
-          (first_item_index < max_item_index)) {
-        first_item_index++;
+      const size_t items_to_draw = last_visible_idx - first_visible_idx;
+      // Don't draw last item partially if it is the selected item
+      if ((cursor_visible_pos == last_visible_idx) &&
+          (static_cast<size_t>(number_items_fit_to_screen) <= items_to_draw) &&
+          (first_visible_idx < visible_indices.size() - 1)) {
+        first_visible_idx++;
       }
     }
   }
@@ -181,11 +203,11 @@ void GraphicalDisplayMenu::draw_menu_internal_(display::Display *display, const 
 
   display->filled_rectangle(bounds->x, bounds->y, max_width, total_height, this->background_color_);
   auto y_offset = bounds->y;
-  for (size_t i = static_cast<size_t>(first_item_index);
-       last_item_index >= 0 && i <= static_cast<size_t>(last_item_index); i++) {
-    const auto *item = this->displayed_item_->get_item(i);
-    const bool selected = i == this->cursor_index_;
-    display::Rect dimensions = menu_dimensions[i];
+  for (size_t vi = first_visible_idx; vi <= last_visible_idx; vi++) {
+    size_t item_index = visible_indices[vi];
+    const auto *item = this->displayed_item_->get_item(item_index);
+    const bool selected = item_index == this->cursor_index_;
+    display::Rect dimensions = menu_dimensions[vi];
 
     dimensions.y = y_offset;
     dimensions.x = bounds->x;

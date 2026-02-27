@@ -104,6 +104,18 @@ template<typename... Ts> class IsActiveCondition : public Condition<Ts...> {
   DisplayMenuComponent *menu_;
 };
 
+template<typename... Ts> class SetItemVisibleAction : public Action<Ts...> {
+ public:
+  explicit SetItemVisibleAction(MenuItem *item) : item_(item) {}
+
+  TEMPLATABLE_VALUE(bool, visible)
+
+  void play(Ts... x) override { this->item_->set_visible(this->visible_.value(x...)); }
+
+ protected:
+  MenuItem *item_;
+};
+
 class DisplayMenuOnEnterTrigger : public Trigger<const MenuItem *> {
  public:
   explicit DisplayMenuOnEnterTrigger(MenuItem *parent) {
