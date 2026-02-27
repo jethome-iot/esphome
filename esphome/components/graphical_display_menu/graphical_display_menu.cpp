@@ -92,6 +92,7 @@ void GraphicalDisplayMenu::on_before_hide() {
 }
 
 void GraphicalDisplayMenu::draw_and_update() {
+  this->ensure_cursor_visible_();
   this->update();
 
   // If we're in advanced drawing mode we won't have a display and will instead require the update callback to do
