@@ -38,7 +38,9 @@ void BangBangClimate::setup() {
     } else if (supports_heat_) {
       this->mode = climate::CLIMATE_MODE_HEAT;
     }
+#ifndef USE_JETHOME_CLIMATE_STORAGE
     this->change_away_(false);
+#endif
   }
 }
 void BangBangClimate::control(const climate::ClimateCall &call) {
@@ -48,8 +50,10 @@ void BangBangClimate::control(const climate::ClimateCall &call) {
     this->target_temperature_low = *call.get_target_temperature_low();
   if (call.get_target_temperature_high().has_value())
     this->target_temperature_high = *call.get_target_temperature_high();
+#ifndef USE_JETHOME_CLIMATE_STORAGE
   if (call.get_preset().has_value())
     this->change_away_(*call.get_preset() == climate::CLIMATE_PRESET_AWAY);
+#endif
 
   this->compute_state_();
   this->publish_state();
@@ -69,12 +73,14 @@ climate::ClimateTraits BangBangClimate::traits() {
   if (supports_cool_ && supports_heat_)
     traits.add_supported_mode(climate::CLIMATE_MODE_HEAT_COOL);
   traits.set_supports_two_point_target_temperature(true);
+#ifndef USE_JETHOME_CLIMATE_STORAGE
   if (supports_away_) {
     traits.set_supported_presets({
         climate::CLIMATE_PRESET_HOME,
         climate::CLIMATE_PRESET_AWAY,
     });
   }
+#endif
   traits.set_supports_action(true);
   return traits;
 }

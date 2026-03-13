@@ -272,6 +272,10 @@
 
 #define USE_DASHBOARD_IMPORT
 
+// Climate storage: presets and visual config managed externally.
+// When defined, built-in preset handling in bang_bang/pid is disabled.
+#define USE_JETHOME_CLIMATE_STORAGE
+
 // Enable dynamic vectors for runtime entity creation (uses std::vector instead of StaticVector)
 // Uncomment if you need to create entities dynamically (e.g., dallas_temp_searcher)
 // When enabled, reserve_*() methods become available for performance optimization
