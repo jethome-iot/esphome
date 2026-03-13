@@ -14,6 +14,25 @@ struct PIDController {
 
   bool in_deadband();
 
+  void set_kp(float kp) { kp_ = kp; }
+  void set_ki(float ki) { ki_ = ki; }
+  void set_kd(float kd) { kd_ = kd; }
+  void set_min_integral(float v) { min_integral_ = v; }
+  void set_max_integral(float v) { max_integral_ = v; }
+  void set_output_samples(int v) { output_samples_ = v; }
+  void set_derivative_samples(int v) { derivative_samples_ = v; }
+  void set_threshold_low(float v) { threshold_low_ = v; }
+  void set_threshold_high(float v) { threshold_high_ = v; }
+  void set_kp_multiplier(float v) { kp_multiplier_ = v; }
+  void set_ki_multiplier(float v) { ki_multiplier_ = v; }
+  void set_kd_multiplier(float v) { kd_multiplier_ = v; }
+  void set_deadband_output_samples(int v) { deadband_output_samples_ = v; }
+
+  float get_error() const { return error_; }
+  float get_proportional_term() const { return proportional_term_; }
+  float get_integral_term() const { return integral_term_; }
+  float get_derivative_term() const { return derivative_term_; }
+
   friend class PIDClimate;
 
  private:
