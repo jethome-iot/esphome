@@ -288,6 +288,8 @@ template<typename... Ts> class ActionList {
   Action<Ts...> *actions_end_{nullptr};
 };
 
+enum class AutomationMode : uint8_t { SINGLE = 0, RESTART = 1, PARALLEL = 2 };
+
 template<typename... Ts> class Automation {
  public:
   explicit Automation(Trigger<Ts...> *trigger) : trigger_(trigger) { this->trigger_->set_automation_parent(this); }
@@ -322,9 +324,24 @@ template<typename... Ts> class Automation {
 
   void stop() { this->actions_.stop(); }
 
+  void set_mode(AutomationMode mode) { this->mode_ = mode; }
+
   void trigger(Ts... x) {
-    if (this->enabled_)
-      this->actions_.play(x...);
+    if (!this->enabled_)
+      return;
+    if (this->actions_.is_running()) {
+      switch (this->mode_) {
+        case AutomationMode::SINGLE:
+          return;
+        case AutomationMode::RESTART:
+          this->actions_.stop();
+          break;
+        case AutomationMode::PARALLEL:
+        default:
+          break;
+      }
+    }
+    this->actions_.play(x...);
   }
 
   bool is_running() { return this->actions_.is_running(); }
@@ -342,6 +359,7 @@ template<typename... Ts> class Automation {
  protected:
   bool enabled_{true};
   bool owns_triggers_{false};
+  AutomationMode mode_{AutomationMode::SINGLE};
   Trigger<Ts...> *trigger_;
   std::vector<Trigger<Ts...> *> additional_triggers_;
   ActionList<Ts...> actions_;
