@@ -1452,7 +1452,12 @@ bool APIConnection::send_device_info_response(const DeviceInfoRequest &msg) {
   std::string mac_address = get_mac_address_pretty();
   resp.set_mac_address(StringRef(mac_address));
 
-  resp.set_esphome_version(ESPHOME_VERSION_REF);
+  if (this->parent_->get_use_api_version()) {
+    static constexpr auto API_VERSION_REF = StringRef::from_lit("API 1.12");
+    resp.set_esphome_version(API_VERSION_REF);
+  } else {
+    resp.set_esphome_version(ESPHOME_VERSION_REF);
+  }
 
   resp.set_compilation_time(App.get_compilation_time_ref());
 
