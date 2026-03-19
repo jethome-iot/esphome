@@ -20,6 +20,7 @@ from esphome.const import (
     CONF_PATH,
     CONF_PLATFORM_VERSION,
     CONF_PLATFORMIO_OPTIONS,
+    CONF_PROJECT,
     CONF_REF,
     CONF_REFRESH,
     CONF_SOURCE,
@@ -33,7 +34,6 @@ from esphome.const import (
     KEY_TARGET_PLATFORM,
     PLATFORM_ESP32,
     ThreadModel,
-    __version__,
 )
 from esphome.core import CORE, HexInt, TimePeriod
 import esphome.final_validate as fv
@@ -1032,10 +1032,16 @@ def copy_files():
     # IDF build scripts look for version string to put in the build.
     # However, if the build path does not have an initialized git repo,
     # and no version.txt file exists, the CMake script fails for some setups.
-    # Fix by manually pasting a version.txt file, containing the ESPHome version
+    # Use project version when available, otherwise device name
+    project_version = None
+    if (esphome_conf := CORE.config.get(CONF_ESPHOME)) and (
+        project_conf := esphome_conf.get(CONF_PROJECT)
+    ):
+        project_version = project_conf.get(CONF_VERSION)
+    version_txt = project_version if project_version else CORE.name
     write_file_if_changed(
         CORE.relative_build_path("version.txt"),
-        __version__,
+        version_txt,
     )
 
     for file in CORE.data[KEY_ESP32][KEY_EXTRA_BUILD_FILES].values():
