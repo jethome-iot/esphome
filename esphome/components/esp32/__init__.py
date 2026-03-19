@@ -706,6 +706,7 @@ FLASH_SIZES = [
 CONF_FLASH_SIZE = "flash_size"
 CONF_CPU_FREQUENCY = "cpu_frequency"
 CONF_PARTITIONS = "partitions"
+CONF_PREFERENCES_NAMESPACE = "preferences_namespace"
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
@@ -718,6 +719,7 @@ CONFIG_SCHEMA = cv.All(
             ),
             cv.Optional(CONF_PARTITIONS): cv.file_,
             cv.Optional(CONF_VARIANT): cv.one_of(*VARIANTS, upper=True),
+            cv.Optional(CONF_PREFERENCES_NAMESPACE): cv.string_strict,
             cv.Optional(CONF_FRAMEWORK): FRAMEWORK_SCHEMA,
         }
     ),
@@ -737,6 +739,8 @@ async def to_code(config):
     cg.set_cpp_standard("gnu++20")
     cg.add_build_flag("-DUSE_ESP32")
     cg.add_define("ESPHOME_BOARD", config[CONF_BOARD])
+    if CONF_PREFERENCES_NAMESPACE in config:
+        cg.add_define("ESP32_PREFERENCES_NAMESPACE", config[CONF_PREFERENCES_NAMESPACE])
     variant = config[CONF_VARIANT]
     cg.add_build_flag(f"-DUSE_ESP32_VARIANT_{variant}")
     cg.add_define("ESPHOME_VARIANT", VARIANT_FRIENDLY[variant])

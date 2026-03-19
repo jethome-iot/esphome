@@ -65,6 +65,8 @@ ProjectUpdateTrigger = cg.esphome_ns.class_(
 Device = cg.esphome_ns.class_("Device")
 Area = cg.esphome_ns.class_("Area")
 
+CONF_VERSION_BANNER = "version_banner"
+CONF_DUMP_CONFIG = "dump_config"
 VALID_INCLUDE_EXTS = {".h", ".hpp", ".tcc", ".ino", ".cpp", ".c"}
 
 
@@ -230,6 +232,8 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_LIBRARIES, default=[]): cv.ensure_list(cv.string_strict),
             cv.Optional(CONF_NAME_ADD_MAC_SUFFIX, default=False): cv.boolean,
             cv.Optional(CONF_DEBUG_SCHEDULER, default=False): cv.boolean,
+            cv.Optional(CONF_VERSION_BANNER, default=True): cv.boolean,
+            cv.Optional(CONF_DUMP_CONFIG, default=True): cv.boolean,
             cv.Optional(CONF_PROJECT): cv.Schema(
                 {
                     cv.Required(CONF_NAME): cv.All(
@@ -499,6 +503,10 @@ async def to_code(config: ConfigType) -> None:
     cg.add_build_flag("-Wno-sign-compare")
     if config[CONF_DEBUG_SCHEDULER]:
         cg.add_define("ESPHOME_DEBUG_SCHEDULER")
+    if config[CONF_VERSION_BANNER]:
+        cg.add_define("USE_VERSION_BANNER")
+    if not config[CONF_DUMP_CONFIG]:
+        cg.add(cg.App.set_dump_config(False))
 
     if CORE.using_arduino and not CORE.is_bk72xx:
         CORE.add_job(add_arduino_global_workaround)

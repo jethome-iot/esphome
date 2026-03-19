@@ -33,8 +33,9 @@ static const char *const TAG = "mdns";
 // Define all constant strings using the macro
 MDNS_STATIC_CONST_CHAR(SERVICE_TCP, "_tcp");
 
-// Wrap build-time defines into flash storage
+#ifdef USE_VERSION_BANNER
 MDNS_STATIC_CONST_CHAR(VALUE_VERSION, ESPHOME_VERSION);
+#endif
 
 void MDNSComponent::compile_records_() {
   this->hostname_ = App.get_name();
@@ -43,7 +44,11 @@ void MDNSComponent::compile_records_() {
   // in mdns/__init__.py. If you add a new service here, update both locations.
 
 #ifdef USE_API
+#ifdef USE_VERSION_BANNER
   MDNS_STATIC_CONST_CHAR(SERVICE_ESPHOMELIB, "_esphomelib");
+#else
+  MDNS_STATIC_CONST_CHAR(SERVICE_ESPHOMELIB, "_api");
+#endif
   MDNS_STATIC_CONST_CHAR(TXT_FRIENDLY_NAME, "friendly_name");
   MDNS_STATIC_CONST_CHAR(TXT_VERSION, "version");
   MDNS_STATIC_CONST_CHAR(TXT_MAC, "mac");
@@ -88,7 +93,9 @@ void MDNSComponent::compile_records_() {
     if (!friendly_name_empty) {
       txt_records.push_back({MDNS_STR(TXT_FRIENDLY_NAME), MDNS_STR(friendly_name.c_str())});
     }
+#ifdef USE_VERSION_BANNER
     txt_records.push_back({MDNS_STR(TXT_VERSION), MDNS_STR(VALUE_VERSION)});
+#endif
     txt_records.push_back({MDNS_STR(TXT_MAC), MDNS_STR(this->add_dynamic_txt_value(get_mac_address()))});
 
 #ifdef USE_ESP8266
@@ -171,7 +178,9 @@ void MDNSComponent::compile_records_() {
   fallback_service.service_type = MDNS_STR(SERVICE_HTTP);
   fallback_service.proto = MDNS_STR(SERVICE_TCP);
   fallback_service.port = USE_WEBSERVER_PORT;
+#ifdef USE_VERSION_BANNER
   fallback_service.txt_records.push_back({MDNS_STR(TXT_VERSION), MDNS_STR(VALUE_VERSION)});
+#endif
 #endif
 }
 

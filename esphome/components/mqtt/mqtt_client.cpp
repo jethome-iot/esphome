@@ -109,7 +109,9 @@ void MQTTClientComponent::send_device_info_() {
 #ifdef USE_API
         root["port"] = api::global_api_server->get_port();
 #endif
+#ifdef USE_VERSION_BANNER
         root["version"] = ESPHOME_VERSION;
+#endif
         root["mac"] = get_mac_address();
 
 #ifdef USE_ESP8266

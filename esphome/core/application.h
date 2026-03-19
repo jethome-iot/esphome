@@ -351,7 +351,12 @@ class Application {
 
   uint32_t get_loop_interval() const { return static_cast<uint32_t>(this->loop_interval_); }
 
-  void schedule_dump_config() { this->dump_config_at_ = 0; }
+  void schedule_dump_config() {
+    if (this->dump_config_enabled_)
+      this->dump_config_at_ = 0;
+  }
+
+  void set_dump_config(bool enabled) { this->dump_config_enabled_ = enabled; }
 
   void feed_wdt(uint32_t time = 0);
 
@@ -665,6 +670,7 @@ class Application {
   // 1-byte members (grouped together to minimize padding)
   uint8_t app_state_{0};
   bool name_add_mac_suffix_;
+  bool dump_config_enabled_{true};
   bool in_loop_{false};
   bool looping_components_initialized_{false};  // True after calculate_looping_components_() has been called
   volatile bool has_pending_enable_loop_requests_{false};

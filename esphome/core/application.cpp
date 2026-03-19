@@ -221,7 +221,9 @@ void Application::loop() {
 
   if (this->dump_config_at_ < this->components_.size()) {
     if (this->dump_config_at_ == 0) {
+#ifdef USE_VERSION_BANNER
       ESP_LOGI(TAG, "ESPHome version " ESPHOME_VERSION " compiled on %s", this->compilation_time_);
+#endif
 #ifdef ESPHOME_PROJECT_NAME
       ESP_LOGI(TAG, "Project " ESPHOME_PROJECT_NAME " version " ESPHOME_PROJECT_VERSION);
 #endif

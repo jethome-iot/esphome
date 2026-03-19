@@ -30,8 +30,10 @@ void DebugComponent::dump_config() {
 
   std::string device_info;
   device_info.reserve(256);
+#ifdef USE_VERSION_BANNER
   ESP_LOGD(TAG, "ESPHome version %s", ESPHOME_VERSION);
   device_info += ESPHOME_VERSION;
+#endif
 
   this->free_heap_ = get_free_heap_();
   ESP_LOGD(TAG, "Free Heap Size: %" PRIu32 " bytes", this->free_heap_);
