@@ -443,6 +443,7 @@ uint32_t WarnIfComponentBlockingGuard::finish() {
     global_runtime_stats->record_component_time(this->component_, blocking_time, curr_time);
   }
 #endif
+#ifndef JETHOME_DISABLE_BLOCKING_WARNING
   bool should_warn;
   if (this->component_ != nullptr) {
     should_warn = this->component_->should_warn_of_blocking(blocking_time);
@@ -455,7 +456,7 @@ uint32_t WarnIfComponentBlockingGuard::finish() {
              blocking_time);
     ESP_LOGW(TAG, "Components should block for at most 30 ms");
   }
-
+#endif
   return curr_time;
 }
 
