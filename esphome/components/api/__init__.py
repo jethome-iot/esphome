@@ -239,7 +239,7 @@ async def to_code(config):
     cg.add(var.set_reboot_timeout(config[CONF_REBOOT_TIMEOUT]))
     cg.add(var.set_batch_delay(config[CONF_BATCH_DELAY]))
     if config[CONF_USE_API_VERSION]:
-        cg.add(var.set_use_api_version(True))
+        cg.add_define("USE_API_VERSION_STRING")
     if CONF_LISTEN_BACKLOG in config:
         cg.add(var.set_listen_backlog(config[CONF_LISTEN_BACKLOG]))
     if CONF_MAX_CONNECTIONS in config:
