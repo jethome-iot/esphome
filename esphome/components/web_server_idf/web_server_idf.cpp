@@ -149,7 +149,9 @@ esp_err_t AsyncWebServer::request_post_handler(httpd_req_t *r) {
       return server->handle_multipart_upload_(r, content_type_char);
 #endif
     } else {
+#ifndef JETHOME_POST_SUPPORTED
       ESP_LOGW(TAG, "Unsupported content type for POST: %s", content_type_char);
+#endif
       // fallback to get handler to support backward compatibility
       return AsyncWebServer::request_handler(r);
     }
