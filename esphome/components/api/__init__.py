@@ -83,6 +83,7 @@ CONF_HOMEASSISTANT_SERVICES = "homeassistant_services"
 CONF_HOMEASSISTANT_STATES = "homeassistant_states"
 CONF_LISTEN_BACKLOG = "listen_backlog"
 CONF_MAX_SEND_QUEUE = "max_send_queue"
+CONF_USE_API_VERSION = "use_api_version"
 
 
 def validate_encryption_key(value):
@@ -173,6 +174,7 @@ CONFIG_SCHEMA = cv.All(
                 cv.positive_time_period_milliseconds,
                 cv.Range(max=cv.TimePeriod(milliseconds=65535)),
             ),
+            cv.Optional(CONF_USE_API_VERSION, default=False): cv.boolean,
             cv.Optional(CONF_CUSTOM_SERVICES, default=False): cv.boolean,
             cv.Optional(CONF_HOMEASSISTANT_SERVICES, default=False): cv.boolean,
             cv.Optional(CONF_HOMEASSISTANT_STATES, default=False): cv.boolean,
@@ -236,6 +238,8 @@ async def to_code(config):
         cg.add(var.set_password(config[CONF_PASSWORD]))
     cg.add(var.set_reboot_timeout(config[CONF_REBOOT_TIMEOUT]))
     cg.add(var.set_batch_delay(config[CONF_BATCH_DELAY]))
+    if config[CONF_USE_API_VERSION]:
+        cg.add_define("USE_API_VERSION_STRING")
     if CONF_LISTEN_BACKLOG in config:
         cg.add(var.set_listen_backlog(config[CONF_LISTEN_BACKLOG]))
     if CONF_MAX_CONNECTIONS in config:

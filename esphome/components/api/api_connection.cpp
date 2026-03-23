@@ -45,7 +45,11 @@ static constexpr uint8_t MAX_PING_RETRIES = 60;
 static constexpr uint16_t PING_RETRY_INTERVAL = 1000;
 static constexpr uint32_t KEEPALIVE_DISCONNECT_TIMEOUT = (KEEPALIVE_TIMEOUT_MS * 5) / 2;
 
+#ifdef USE_API_VERSION_STRING
+static constexpr auto API_VERSION_REF = StringRef::from_lit("API 1.12");
+#else
 static constexpr auto ESPHOME_VERSION_REF = StringRef::from_lit(ESPHOME_VERSION);
+#endif
 
 static const char *const TAG = "api.connection";
 #ifdef USE_CAMERA
@@ -1407,8 +1411,11 @@ bool APIConnection::send_hello_response(const HelloRequest &msg) {
   HelloResponse resp;
   resp.api_version_major = 1;
   resp.api_version_minor = 12;
-  // Send only the version string - the client only logs this for debugging and doesn't use it otherwise
+#ifdef USE_API_VERSION_STRING
+  resp.set_server_info(API_VERSION_REF);
+#else
   resp.set_server_info(ESPHOME_VERSION_REF);
+#endif
   resp.set_name(StringRef(App.get_name()));
 
 #ifdef USE_API_PASSWORD
@@ -1452,7 +1459,11 @@ bool APIConnection::send_device_info_response(const DeviceInfoRequest &msg) {
   std::string mac_address = get_mac_address_pretty();
   resp.set_mac_address(StringRef(mac_address));
 
+#ifdef USE_API_VERSION_STRING
+  resp.set_esphome_version(API_VERSION_REF);
+#else
   resp.set_esphome_version(ESPHOME_VERSION_REF);
+#endif
 
   resp.set_compilation_time(App.get_compilation_time_ref());
 

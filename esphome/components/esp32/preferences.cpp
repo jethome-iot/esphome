@@ -16,7 +16,10 @@ namespace esphome {
 namespace esp32 {
 
 static const char *const TAG = "esp32.preferences";
-static const char *const NAMESPACE = "esphome";
+#ifndef ESP32_PREFERENCES_NAMESPACE
+#define ESP32_PREFERENCES_NAMESPACE "esphome"
+#endif
+static const char *const NAMESPACE = ESP32_PREFERENCES_NAMESPACE;
 
 class ESP32Preferences : public ESPPreferences, protected ESP32BasePreferences {
  public:
