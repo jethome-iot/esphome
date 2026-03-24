@@ -335,7 +335,10 @@ void WiFiComponent::set_sta(const WiFiAP &ap) {
   this->clear_sta();
   this->add_sta(ap);
 }
-void WiFiComponent::clear_sta() { this->sta_.clear(); }
+void WiFiComponent::clear_sta() {
+  this->sta_.clear();
+  this->selected_ap_ = WiFiAP();  // Clear selected AP as well
+}
 void WiFiComponent::save_wifi_sta(const std::string &ssid, const std::string &password) {
 #ifdef JETHOME_NETWORK_SETTINGS_SAVE
   if (this->wifi_save_handler_ != nullptr) {
@@ -715,6 +718,7 @@ void WiFiComponent::check_connecting_finished() {
     if (this->has_ap()) {
 #ifdef USE_CAPTIVE_PORTAL
       if (this->is_captive_portal_active_()) {
+        captive_portal::global_captive_portal->notify_connection_success();
         captive_portal::global_captive_portal->end();
       }
 #endif
@@ -807,6 +811,19 @@ void WiFiComponent::retry_connect() {
     }
   } else {
     this->num_retried_++;
+#ifdef USE_CAPTIVE_PORTAL
+    // Notify captive portal after 2 failed retries and stop retrying
+    if (this->is_captive_portal_active_() && this->num_retried_ >= 2) {
+      captive_portal::global_captive_portal->notify_connection_failed();
+      // Clear credentials and stop retrying - wait for user to submit new ones
+      this->clear_sta();
+      this->error_from_callback_ = false;
+      this->num_retried_ = 0;
+      this->state_ = WIFI_COMPONENT_STATE_COOLDOWN;
+      this->action_started_ = millis();
+      return;
+    }
+#endif
   }
   this->error_from_callback_ = false;
   if (this->state_ == WIFI_COMPONENT_STATE_STA_CONNECTING) {
