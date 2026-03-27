@@ -396,9 +396,50 @@ void Climate::save_state_() {
   this->rtc_.save(&state);
 }
 void Climate::publish_state() {
-  ESP_LOGD(TAG, "'%s' - Sending state:", this->name_.c_str());
   auto traits = this->get_traits();
 
+#ifdef JETHOME_CLIMATE_LOG
+  // Short temperature log at DEBUG level
+  if (traits.get_supports_current_temperature()) {
+    ESP_LOGD(TAG, "'%s': %.2f°C", this->name_.c_str(), this->current_temperature);
+  }
+
+  // Log state changes at INFO level
+  if (this->mode != this->prev_mode_) {
+    ESP_LOGI(TAG, "'%s' Mode: %s", this->name_.c_str(), LOG_STR_ARG(climate_mode_to_string(this->mode)));
+    this->prev_mode_ = this->mode;
+  }
+  if (traits.get_supports_action() && this->action != this->prev_action_) {
+    ESP_LOGI(TAG, "'%s' Action: %s", this->name_.c_str(), LOG_STR_ARG(climate_action_to_string(this->action)));
+    this->prev_action_ = this->action;
+  }
+  if (traits.get_supports_two_point_target_temperature()) {
+    if (this->target_temperature_low != this->prev_target_temperature_low_ ||
+        this->target_temperature_high != this->prev_target_temperature_high_) {
+      ESP_LOGI(TAG, "'%s' Target: Low: %.2f°C High: %.2f°C", this->name_.c_str(), this->target_temperature_low,
+               this->target_temperature_high);
+      this->prev_target_temperature_low_ = this->target_temperature_low;
+      this->prev_target_temperature_high_ = this->target_temperature_high;
+    }
+  } else if (this->target_temperature != this->prev_target_temperature_) {
+    ESP_LOGI(TAG, "'%s' Target: %.2f°C", this->name_.c_str(), this->target_temperature);
+    this->prev_target_temperature_ = this->target_temperature;
+  }
+  if (traits.get_supports_presets() && this->preset != this->prev_preset_) {
+    if (this->preset.has_value()) {
+      ESP_LOGI(TAG, "'%s' Preset: %s", this->name_.c_str(),
+               LOG_STR_ARG(climate_preset_to_string(this->preset.value())));
+    }
+    this->prev_preset_ = this->preset;
+  }
+  if (!traits.get_supported_custom_presets().empty() && this->custom_preset != this->prev_custom_preset_) {
+    if (this->custom_preset.has_value()) {
+      ESP_LOGI(TAG, "'%s' Custom Preset: %s", this->name_.c_str(), this->custom_preset.value().c_str());
+    }
+    this->prev_custom_preset_ = this->custom_preset;
+  }
+#else
+  ESP_LOGD(TAG, "'%s' - Sending state:", this->name_.c_str());
   ESP_LOGD(TAG, "  Mode: %s", LOG_STR_ARG(climate_mode_to_string(this->mode)));
   if (traits.get_supports_action()) {
     ESP_LOGD(TAG, "  Action: %s", LOG_STR_ARG(climate_action_to_string(this->action)));
@@ -433,6 +474,7 @@ void Climate::publish_state() {
   if (traits.get_supports_target_humidity()) {
     ESP_LOGD(TAG, "  Target Humidity: %.0f%%", this->target_humidity);
   }
+#endif
 
   // Send state to frontend
   this->state_callback_.call(*this);

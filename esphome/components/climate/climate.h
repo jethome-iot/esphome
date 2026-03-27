@@ -301,6 +301,16 @@ class Climate : public EntityBase {
   optional<float> visual_current_temperature_step_override_{};
   optional<float> visual_min_humidity_override_{};
   optional<float> visual_max_humidity_override_{};
+
+#ifdef JETHOME_CLIMATE_LOG
+  ClimateMode prev_mode_{ClimateMode::CLIMATE_MODE_OFF};
+  ClimateAction prev_action_{ClimateAction::CLIMATE_ACTION_OFF};
+  float prev_target_temperature_{NAN};
+  float prev_target_temperature_low_{NAN};
+  float prev_target_temperature_high_{NAN};
+  optional<ClimatePreset> prev_preset_{};
+  optional<std::string> prev_custom_preset_{};
+#endif
 };
 
 }  // namespace climate
