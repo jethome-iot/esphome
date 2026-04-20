@@ -34,7 +34,7 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
 
   if (num_items == 0) {
     display_menu_base::MenuItem *back_item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_BACK);
-    back_item->set_text("No items in menu. Back");
+    back_item->set_text("No items. Back");
     menu->add_item(back_item);
   }
 
