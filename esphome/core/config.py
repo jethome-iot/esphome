@@ -426,20 +426,28 @@ async def _add_automations(config):
 # Datetime component has special subtypes that need additional defines
 DATETIME_SUBTYPES = {"date", "time", "datetime"}
 
+# Platforms that must always have USE_* and count defines emitted, even when no
+# entities of that type are configured.
+ALWAYS_DEFINED_PLATFORMS = {"switch", "binary_sensor"}
+
 
 @coroutine_with_priority(CoroPriority.FINAL)
 async def _add_platform_defines() -> None:
-    # Generate compile-time defines for platforms that have actual entities
-    # Only add USE_* and count defines when there are entities
-    for platform_name, count in sorted(CORE.platform_counts.items()):
-        if count <= 0:
+    # Generate compile-time defines for platforms that have actual entities,
+    # plus the ones in ALWAYS_DEFINED_PLATFORMS regardless of count.
+    platform_names = set(CORE.platform_counts) | ALWAYS_DEFINED_PLATFORMS
+    for platform_name in sorted(platform_names):
+        count = CORE.platform_counts.get(platform_name, 0)
+        if count <= 0 and platform_name not in ALWAYS_DEFINED_PLATFORMS:
             continue
 
         define_name = f"ESPHOME_ENTITY_{platform_name.upper()}_COUNT"
         cg.add_define(define_name, count)
 
         # Reserve space when using dynamic vectors
-        if any(d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines):
+        if count > 0 and any(
+            d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines
+        ):
             cg.add(
                 cg.RawStatement(f"App.reserve_{platform_name}({count});"), prepend=True
             )
