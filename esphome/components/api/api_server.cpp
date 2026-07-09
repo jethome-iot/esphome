@@ -518,6 +518,30 @@ void APIServer::request_time() {
 
 bool APIServer::is_connected() const { return !this->clients_.empty(); }
 
+void APIServer::disconnect_all_clients(bool graceful) {
+  for (auto &c : this->clients_) {
+    if (c->flags_.remove)
+      continue;  // already being torn down
+    if (graceful) {
+      // Ask the client to disconnect cleanly; it will reconnect on its own.
+      DisconnectRequest req;
+      if (!c->send_message(req, DisconnectRequest::MESSAGE_TYPE)) {
+        // If we can't send the disconnect request directly (tx_buffer full),
+        // schedule it at the front of the batch so it will be sent with priority
+        c->schedule_message_front_(nullptr, &APIConnection::try_send_disconnect_request,
+                                   DisconnectRequest::MESSAGE_TYPE, DisconnectRequest::ESTIMATED_SIZE);
+      }
+    } else {
+      // Hard reset: immediately close the socket. The client will notice the
+      // dropped TCP connection and reconnect. The connection is removed from
+      // clients_ on the next APIServer::loop().
+      c->on_fatal_error();
+      ESP_LOGD(TAG, "%s (%s): connection reset by request", c->client_info_.name.c_str(),
+               c->client_info_.peername.c_str());
+    }
+  }
+}
+
 void APIServer::on_shutdown() {
   this->shutting_down_ = true;
 

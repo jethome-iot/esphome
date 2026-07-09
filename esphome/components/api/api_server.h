@@ -144,6 +144,12 @@ class APIServer : public Component, public Controller {
 
   bool is_connected() const;
 
+  /// Disconnect all currently connected API clients. Callable from other components
+  /// via ::esphome::api::global_api_server. Clients are expected to reconnect on their own.
+  /// @param graceful  true (default): send a DisconnectRequest so the client disconnects
+  ///                  cleanly; false: immediately close the socket (hard reset).
+  void disconnect_all_clients(bool graceful = true);
+
 #ifdef USE_API_HOMEASSISTANT_STATES
   struct HomeAssistantStateSubscription {
     std::string entity_id;
