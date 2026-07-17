@@ -426,19 +426,17 @@ async def _add_automations(config):
 # Datetime component has special subtypes that need additional defines
 DATETIME_SUBTYPES = {"date", "time", "datetime"}
 
-# Platforms that must always have USE_* and count defines emitted, even when no
-# entities of that type are configured.
-ALWAYS_DEFINED_PLATFORMS = {"switch", "binary_sensor"}
-
 
 @coroutine_with_priority(CoroPriority.FINAL)
 async def _add_platform_defines() -> None:
     # Generate compile-time defines for platforms that have actual entities,
-    # plus the ones in ALWAYS_DEFINED_PLATFORMS regardless of count.
-    platform_names = set(CORE.platform_counts) | ALWAYS_DEFINED_PLATFORMS
+    # plus any platform a component requested via CORE.require_platform_define()
+    # regardless of count (e.g. a component using App.get_switches()).
+    always_defined = CORE.required_platform_defines
+    platform_names = set(CORE.platform_counts) | always_defined
     for platform_name in sorted(platform_names):
         count = CORE.platform_counts.get(platform_name, 0)
-        if count <= 0 and platform_name not in ALWAYS_DEFINED_PLATFORMS:
+        if count <= 0 and platform_name not in always_defined:
             continue
 
         define_name = f"ESPHOME_ENTITY_{platform_name.upper()}_COUNT"
