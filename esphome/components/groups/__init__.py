@@ -1,6 +1,6 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.const import CONF_ENTITIES, CONF_GROUPS, CONF_ID, CONF_NAME
+from esphome.const import CONF_ENTITIES, CONF_GROUPS, CONF_ICON, CONF_ID, CONF_NAME
 
 GROUPS_STORAGE_ID = "groups_storage_id"
 
@@ -8,9 +8,13 @@ groups_ns = cg.esphome_ns.namespace("groups")
 GroupClass = groups_ns.class_("Group")
 GroupStorage = groups_ns.class_("GroupsStorage")
 
+# `icon` is a plain Material Design Icon name carried on the group for consumers to
+# read (e.g. a dashboard that draws a group's members with it). Only the name shape
+# is checked here — which names a consumer accepts is that consumer's business.
 GROUP_BASE_SCHEMA = {
     cv.Required(CONF_ID): cv.declare_id(GroupClass),
     cv.Optional(CONF_NAME): cv.string,
+    cv.Optional(CONF_ICON): cv.icon,
     cv.Optional(CONF_ENTITIES): cv.ensure_list(cv.use_id(cg.EntityBase)),
 }
 
@@ -44,7 +48,9 @@ async def to_code(config):
 
     for group_config in config:
         group_var = cg.new_Pvariable(group_config[CONF_ID])
-        cg.add(group_var.set_group_name(group_config[CONF_NAME]))
+        cg.add(group_var.set_group_name(group_config.get(CONF_NAME, "")))
+        if CONF_ICON in group_config:
+            cg.add(group_var.set_group_icon(group_config[CONF_ICON]))
         # Add entities to group
         for entity_id in group_config.get(CONF_ENTITIES, []):
             entity_var = await cg.get_variable(entity_id)
