@@ -11,7 +11,8 @@ namespace groups {
 class Group {
  public:
   void set_group_name(std::string group_name) { this->group_name_ = std::move(group_name); }
-  // Material Design Icon name carried for consumers to read; empty when the group
+  // Icon identifier in ESPHome's usual "[icon pack]:[icon]" form (e.g.
+  // "mdi:electric-switch"), carried for consumers to read; empty when the group
   // declares none.
   void set_group_icon(std::string icon) { this->icon_ = std::move(icon); }
   void add_entity(EntityBase *entity) { entities_.push_back(entity); }

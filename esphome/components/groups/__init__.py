@@ -8,9 +8,10 @@ groups_ns = cg.esphome_ns.namespace("groups")
 GroupClass = groups_ns.class_("Group")
 GroupStorage = groups_ns.class_("GroupsStorage")
 
-# `icon` is a plain Material Design Icon name carried on the group for consumers to
-# read (e.g. a dashboard that draws a group's members with it). Only the name shape
-# is checked here — which names a consumer accepts is that consumer's business.
+# `icon` is carried on the group for consumers to read (e.g. a dashboard that draws
+# a group's members with it). Only the shape is checked here — cv.icon accepts any
+# "[icon pack]:[icon]" identifier; which names a consumer actually understands is
+# that consumer's business.
 GROUP_BASE_SCHEMA = {
     cv.Required(CONF_ID): cv.declare_id(GroupClass),
     cv.Optional(CONF_NAME): cv.string,
