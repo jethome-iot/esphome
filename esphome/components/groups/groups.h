@@ -11,9 +11,14 @@ namespace groups {
 class Group {
  public:
   void set_group_name(std::string group_name) { this->group_name_ = std::move(group_name); }
+  // Icon identifier in ESPHome's usual "[icon pack]:[icon]" form (e.g.
+  // "mdi:electric-switch"), carried for consumers to read; empty when the group
+  // declares none.
+  void set_group_icon(std::string icon) { this->icon_ = std::move(icon); }
   void add_entity(EntityBase *entity) { entities_.push_back(entity); }
   const std::vector<EntityBase *> &items() { return entities_; }
   const std::string &get_name() { return group_name_; }
+  const std::string &get_icon() { return icon_; }
 
   bool has_entity(EntityBase *entity) {
     return std::find(entities_.begin(), entities_.end(), entity) != entities_.end();
@@ -21,6 +26,7 @@ class Group {
 
  protected:
   std::string group_name_;
+  std::string icon_;
   std::vector<EntityBase *> entities_;
 };
 
@@ -35,6 +41,8 @@ class GroupsStorage {
   }
   void add_group(Group *group) { groups_.push_back(group); }
   bool has_group(Group *group) { return std::find(groups_.begin(), groups_.end(), group) != groups_.end(); }
+  /// Every group, in declaration order.
+  const std::vector<Group *> &items() const { return groups_; }
 
  protected:
   std::vector<Group *> groups_;
