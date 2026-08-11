@@ -36,6 +36,21 @@ class OneWireBus {
   /// Get the description string for this model.
   const LogString *get_model_str(uint8_t model);
 
+  /* Public so a proxy bus can forward these through a OneWireBus* — protected access does not
+   * reach through a base-class pointer. Implementations may re-declare them protected. */
+
+  /**
+   * Bus Reset
+   * @return -1: signal fail, 0: no device detected, 1: device detected
+   */
+  virtual int reset_int() = 0;
+
+  /// Reset the device search.
+  virtual void reset_search() = 0;
+
+  /// Search for a 1-Wire device on the bus. Returns 0 if all devices have been found.
+  virtual uint64_t search_int() = 0;
+
  protected:
   std::vector<uint64_t> devices_;
 
@@ -49,18 +64,6 @@ class OneWireBus {
    * @return Whether the operation was successful.
    */
   bool reset_();
-
-  /**
-   * Bus Reset
-   * @return -1: signal fail, 0: no device detected, 1: device detected
-   */
-  virtual int reset_int() = 0;
-
-  /// Reset the device search.
-  virtual void reset_search() = 0;
-
-  /// Search for a 1-Wire device on the bus. Returns 0 if all devices have been found.
-  virtual uint64_t search_int() = 0;
 };
 
 }  // namespace one_wire
