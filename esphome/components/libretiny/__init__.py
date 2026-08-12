@@ -50,12 +50,32 @@ CODEOWNERS = ["@kuba2k2"]
 AUTO_LOAD = ["preferences"]
 IS_TARGET_PLATFORM = True
 
+# Board ids upstream LibreTiny renamed; configs written against the old id
+# keep validating and building against the new one (with a warning), but only
+# for the chip component that owns the new id.
+# generic-ln882hki -> generic-ln882h: LibreTiny v1.13.0.
+_RENAMED_BOARDS = {
+    "generic-ln882hki": "generic-ln882h",
+}
+
 
 def _detect_variant(value):
     if KEY_LIBRETINY not in CORE.data:
         raise cv.Invalid("Family component didn't populate core data properly!")
     component: LibreTinyComponent = CORE.data[KEY_LIBRETINY][KEY_COMPONENT_DATA]
     board = value[CONF_BOARD]
+    if (
+        board not in component.boards
+        and (renamed := _RENAMED_BOARDS.get(board))
+        and renamed in component.boards
+    ):
+        _LOGGER.warning(
+            "Board '%s' was renamed to '%s'; please update your configuration",
+            board,
+            renamed,
+        )
+        value = value.copy()
+        value[CONF_BOARD] = board = renamed
     # read board-default family if not specified
     if board not in component.boards:
         if CONF_FAMILY not in value:
@@ -173,10 +193,17 @@ def _notify_old_style(config):
 
 
 # The dev and latest branches will be at *least* this version, which is what matters.
+# Use GitHub releases directly to avoid PlatformIO moderation delays.
 ARDUINO_VERSIONS = {
-    "dev": (cv.Version(1, 9, 1), "https://github.com/libretiny-eu/libretiny.git"),
-    "latest": (cv.Version(1, 9, 1), "libretiny"),
-    "recommended": (cv.Version(1, 9, 1), None),
+    "dev": (cv.Version(1, 13, 0), "https://github.com/libretiny-eu/libretiny.git"),
+    "latest": (
+        cv.Version(1, 13, 0),
+        "https://github.com/libretiny-eu/libretiny.git#v1.13.0",
+    ),
+    "recommended": (
+        cv.Version(1, 13, 0),
+        "https://github.com/libretiny-eu/libretiny.git#v1.13.0",
+    ),
 }
 
 
