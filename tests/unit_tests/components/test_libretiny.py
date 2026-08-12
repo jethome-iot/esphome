@@ -5,6 +5,7 @@ import pytest
 from esphome.components.bk72xx import COMPONENT_DATA as BK72XX_COMPONENT_DATA
 from esphome.components.libretiny import _detect_variant
 from esphome.components.libretiny.const import (
+    FAMILY_BK7231N,
     FAMILY_LN882H,
     KEY_COMPONENT_DATA,
     KEY_LIBRETINY,
@@ -60,8 +61,20 @@ def test_detect_variant_unknown_board_still_raises(ln882x_core_data: None) -> No
 
 
 def test_detect_variant_rename_is_scoped_to_owning_component(
-    bk72xx_core_data: None,
+    bk72xx_core_data: None, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """A rename never substitutes a board the selected component doesn't own."""
+    """A rename never fires for a component that doesn't own the new id."""
     with pytest.raises(cv.Invalid, match="This board is unknown"):
         _detect_variant({CONF_BOARD: "generic-ln882hki"})
+    assert "renamed" not in caplog.text
+
+
+def test_detect_variant_foreign_rename_keeps_literal_board_id(
+    bk72xx_core_data: None, caplog: pytest.LogCaptureFixture
+) -> None:
+    """With a family override, the foreign id reaches PlatformIO verbatim."""
+    result = _detect_variant(
+        {CONF_BOARD: "generic-ln882hki", CONF_FAMILY: FAMILY_BK7231N}
+    )
+    assert result[CONF_BOARD] == "generic-ln882hki"
+    assert "renamed" not in caplog.text
