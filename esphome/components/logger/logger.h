@@ -365,6 +365,7 @@ class Logger : public Component {
     buffer[pos++] = ']';
     buffer[pos++] = '[';
     copy_string(buffer, pos, tag);
+#ifndef JETHOME_DISABLE_LOG_LINE
     buffer[pos++] = ':';
     // Format line number without modulo operations (passed by value, safe to mutate)
     if (line > 999) [[unlikely]] {
@@ -378,6 +379,7 @@ class Logger : public Component {
     buffer[pos++] = '0' + hundreds;
     buffer[pos++] = '0' + tens;
     buffer[pos++] = '0' + (remainder - tens * 10);
+#endif
     buffer[pos++] = ']';
 
 #if defined(USE_ESP32) || defined(USE_LIBRETINY) || defined(USE_ZEPHYR)

@@ -158,48 +158,35 @@ MQTT_DISCOVERY_OBJECT_ID_GENERATOR_OPTIONS = {
 def validate_config(value):
     # Populate default fields
     out = value.copy()
-    topic_prefix = value[CONF_TOPIC_PREFIX]
-    # If the topic prefix is not null and these messages are not configured, then set them to the default
-    # If the topic prefix is null and these messages are not configured, then set them to null
-    if CONF_BIRTH_MESSAGE not in value:
-        if topic_prefix != "":
+    topic_prefix = value.get(CONF_TOPIC_PREFIX)
+    if topic_prefix:
+        if CONF_BIRTH_MESSAGE not in value:
             out[CONF_BIRTH_MESSAGE] = {
                 CONF_TOPIC: f"{topic_prefix}/status",
                 CONF_PAYLOAD: "online",
                 CONF_QOS: 0,
                 CONF_RETAIN: True,
             }
-        else:
-            out[CONF_BIRTH_MESSAGE] = {}
-    if CONF_WILL_MESSAGE not in value:
-        if topic_prefix != "":
+        if CONF_WILL_MESSAGE not in value:
             out[CONF_WILL_MESSAGE] = {
                 CONF_TOPIC: f"{topic_prefix}/status",
                 CONF_PAYLOAD: "offline",
                 CONF_QOS: 0,
                 CONF_RETAIN: True,
             }
-        else:
-            out[CONF_WILL_MESSAGE] = {}
-    if CONF_SHUTDOWN_MESSAGE not in value:
-        if topic_prefix != "":
+        if CONF_SHUTDOWN_MESSAGE not in value:
             out[CONF_SHUTDOWN_MESSAGE] = {
                 CONF_TOPIC: f"{topic_prefix}/status",
                 CONF_PAYLOAD: "offline",
                 CONF_QOS: 0,
                 CONF_RETAIN: True,
             }
-        else:
-            out[CONF_SHUTDOWN_MESSAGE] = {}
-    if CONF_LOG_TOPIC not in value:
-        if topic_prefix != "":
+        if CONF_LOG_TOPIC not in value:
             out[CONF_LOG_TOPIC] = {
                 CONF_TOPIC: f"{topic_prefix}/debug",
                 CONF_QOS: 0,
                 CONF_RETAIN: True,
             }
-        else:
-            out[CONF_LOG_TOPIC] = {}
     return out
 
 
@@ -254,7 +241,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_BIRTH_MESSAGE): MQTT_MESSAGE_SCHEMA,
             cv.Optional(CONF_WILL_MESSAGE): MQTT_MESSAGE_SCHEMA,
             cv.Optional(CONF_SHUTDOWN_MESSAGE): MQTT_MESSAGE_SCHEMA,
-            cv.Optional(CONF_TOPIC_PREFIX, default=lambda: CORE.name): cv.publish_topic,
+            cv.Optional(CONF_TOPIC_PREFIX): cv.publish_topic,
             cv.Optional(CONF_LOG_TOPIC): cv.Any(
                 None,
                 MQTT_MESSAGE_BASE.extend(
@@ -376,35 +363,41 @@ async def to_code(config):
             )
         )
 
-    cg.add(var.set_topic_prefix(config[CONF_TOPIC_PREFIX], CORE.name))
+    if CONF_TOPIC_PREFIX in config:
+        cg.add(var.set_topic_prefix(config[CONF_TOPIC_PREFIX]))
 
     if config[CONF_USE_ABBREVIATIONS]:
         cg.add_define("USE_MQTT_ABBREVIATIONS")
 
-    birth_message = config[CONF_BIRTH_MESSAGE]
-    if not birth_message:
-        cg.add(var.disable_birth_message())
-    else:
-        cg.add(var.set_birth_message(exp_mqtt_message(birth_message)))
-    will_message = config[CONF_WILL_MESSAGE]
-    if not will_message:
-        cg.add(var.disable_last_will())
-    else:
-        cg.add(var.set_last_will(exp_mqtt_message(will_message)))
-    shutdown_message = config[CONF_SHUTDOWN_MESSAGE]
-    if not shutdown_message:
-        cg.add(var.disable_shutdown_message())
-    else:
-        cg.add(var.set_shutdown_message(exp_mqtt_message(shutdown_message)))
+    if CONF_BIRTH_MESSAGE in config:
+        birth_message = config[CONF_BIRTH_MESSAGE]
+        if birth_message:
+            cg.add(var.set_birth_message(exp_mqtt_message(birth_message)))
+        else:
+            cg.add(var.disable_birth_message())
 
-    log_topic = config[CONF_LOG_TOPIC]
-    if not log_topic:
-        cg.add(var.disable_log_message())
-    else:
-        cg.add(var.set_log_message_template(exp_mqtt_message(log_topic)))
+    if CONF_WILL_MESSAGE in config:
+        will_message = config[CONF_WILL_MESSAGE]
+        if will_message:
+            cg.add(var.set_last_will(exp_mqtt_message(will_message)))
+        else:
+            cg.add(var.disable_last_will())
 
-        if CONF_LEVEL in log_topic:
-            cg.add(var.set_log_level(logger.LOG_LEVELS[log_topic[CONF_LEVEL]]))
+    if CONF_SHUTDOWN_MESSAGE in config:
+        shutdown_message = config[CONF_SHUTDOWN_MESSAGE]
+        if shutdown_message:
+            cg.add(var.set_shutdown_message(exp_mqtt_message(shutdown_message)))
+        else:
+            cg.add(var.disable_shutdown_message())
+
+    if CONF_LOG_TOPIC in config:
+        log_topic = config[CONF_LOG_TOPIC]
+        if log_topic:
+            cg.add(var.set_log_message_template(exp_mqtt_message(log_topic)))
+            if CONF_LEVEL in log_topic:
+                cg.add(var.set_log_level(logger.LOG_LEVELS[log_topic[CONF_LEVEL]]))
+        else:
+            cg.add(var.disable_log_message())
 
     if CONF_SSL_FINGERPRINTS in config:
         for fingerprint in config[CONF_SSL_FINGERPRINTS]:

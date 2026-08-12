@@ -27,40 +27,44 @@ CONF_REFERENCE_CURRENT = "reference_current"
 PHASE_KEYS = [CONF_PHASE_A, CONF_PHASE_B, CONF_PHASE_C]
 
 
+# The platform's own keys are extended ONTO the base number schema, not the other
+# way round: `extend` replaces a key's marker object, so the base's
+# `Optional(mode, default="AUTO")` would otherwise overwrite the default declared
+# here and every reference number would validate to AUTO.
 REFERENCE_VOLTAGE_PHASE_SCHEMA = cv.All(
-    cv.Schema(
+    number.number_schema(
+        class_=ATM90E32Number,
+        unit_of_measurement=UNIT_VOLT,
+        entity_category=ENTITY_CATEGORY_CONFIG,
+        icon="mdi:power-plug",
+    ).extend(
         {
-            cv.Optional(CONF_MODE, default="box"): cv.string,
+            cv.Optional(CONF_MODE, default="BOX"): cv.enum(
+                number.NUMBER_MODES, upper=True
+            ),
             cv.Optional(CONF_MIN_VALUE, default=100.0): cv.float_,
             cv.Optional(CONF_MAX_VALUE, default=260.0): cv.float_,
             cv.Optional(CONF_STEP, default=0.1): cv.float_,
         }
-    ).extend(
-        number.number_schema(
-            class_=ATM90E32Number,
-            unit_of_measurement=UNIT_VOLT,
-            entity_category=ENTITY_CATEGORY_CONFIG,
-            icon="mdi:power-plug",
-        )
     )
 )
 
 
 REFERENCE_CURRENT_PHASE_SCHEMA = cv.All(
-    cv.Schema(
+    number.number_schema(
+        class_=ATM90E32Number,
+        unit_of_measurement=UNIT_AMPERE,
+        entity_category=ENTITY_CATEGORY_CONFIG,
+        icon="mdi:home-lightning-bolt",
+    ).extend(
         {
-            cv.Optional(CONF_MODE, default="box"): cv.string,
+            cv.Optional(CONF_MODE, default="BOX"): cv.enum(
+                number.NUMBER_MODES, upper=True
+            ),
             cv.Optional(CONF_MIN_VALUE, default=1.0): cv.float_,
             cv.Optional(CONF_MAX_VALUE, default=200.0): cv.float_,
             cv.Optional(CONF_STEP, default=0.1): cv.float_,
         }
-    ).extend(
-        number.number_schema(
-            class_=ATM90E32Number,
-            unit_of_measurement=UNIT_AMPERE,
-            entity_category=ENTITY_CATEGORY_CONFIG,
-            icon="mdi:home-lightning-bolt",
-        )
     )
 )
 

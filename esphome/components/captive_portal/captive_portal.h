@@ -60,6 +60,12 @@ class CaptivePortal : public AsyncWebHandler, public Component {
 
   void handleRequest(AsyncWebServerRequest *req) override;
 
+  /// Called by WiFi component when connection attempt fails
+  virtual void notify_connection_failed() {}
+
+  /// Called by WiFi component when connection succeeds
+  virtual void notify_connection_success() {}
+
  protected:
   web_server_base::WebServerBase *base_;
   bool initialized_{false};

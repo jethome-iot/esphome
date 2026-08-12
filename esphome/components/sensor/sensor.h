@@ -122,8 +122,10 @@ class Sensor : public EntityBase, public EntityBase_DeviceClass, public EntityBa
 
   // ========== INTERNAL METHODS ==========
   // (In most use cases you won't need these)
-  /// Add a callback that will be called every time a filtered value arrives.
-  void add_on_state_callback(std::function<void(float)> &&callback);
+  /// Add a callback that will be called every time a filtered value arrives. Returns a handle for removal.
+  CallbackHandle add_on_state_callback(std::function<void(float)> &&callback);
+  /// Remove a previously registered state callback by handle.
+  void remove_on_state_callback(CallbackHandle handle);
   /// Add a callback that will be called every time the sensor sends a raw value.
   void add_on_raw_state_callback(std::function<void(float)> &&callback);
 

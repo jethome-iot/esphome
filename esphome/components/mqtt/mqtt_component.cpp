@@ -156,7 +156,11 @@ bool MQTTComponent::send_discovery_() {
         device_info[MQTT_DEVICE_IDENTIFIERS] = mac;
         device_info[MQTT_DEVICE_NAME] = node_friendly_name;
 #ifdef ESPHOME_PROJECT_NAME
+#ifdef JETHOME_MQTT_VERSION
+        device_info[MQTT_DEVICE_SW_VERSION] = ESPHOME_PROJECT_VERSION;
+#else
         device_info[MQTT_DEVICE_SW_VERSION] = ESPHOME_PROJECT_VERSION " (ESPHome " ESPHOME_VERSION ")";
+#endif
         const char *model = std::strchr(ESPHOME_PROJECT_NAME, '.');
         if (model == nullptr) {  // must never happen but check anyway
           device_info[MQTT_DEVICE_MODEL] = ESPHOME_BOARD;

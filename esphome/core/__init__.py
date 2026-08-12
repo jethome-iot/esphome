@@ -578,6 +578,11 @@ class EsphomeCore:
         # Dict to track platform entity counts for pre-allocation
         # Key: platform name (e.g. "sensor", "binary_sensor"), Value: count
         self.platform_counts: defaultdict[str, int] = defaultdict(int)
+        # Platforms whose USE_*/count defines must be emitted even with zero
+        # entities, because a component references their registry (e.g.
+        # App.get_switches()) unconditionally. Populated via
+        # require_platform_define().
+        self.required_platform_defines: set[str] = set()
         # Track entity unique IDs to handle duplicates
         # Dict mapping (device_id, platform, sanitized_name) -> entity metadata
         self.unique_ids: dict[tuple[str, str, str], EntityMetadata] = {}
@@ -616,6 +621,7 @@ class EsphomeCore:
         self.loaded_integrations = set()
         self.component_ids = set()
         self.platform_counts = defaultdict(int)
+        self.required_platform_defines = set()
         self.unique_ids = {}
         self.current_component = None
         self.address_cache = None
@@ -702,6 +708,9 @@ class EsphomeCore:
 
     def relative_src_path(self, *path: str | Path) -> Path:
         return self.relative_build_path("src", *path)
+
+    def relative_generated_path(self, *path: str | Path) -> Path:
+        return self.relative_src_path("generated", *path)
 
     def relative_pioenvs_path(self, *path: str | Path) -> Path:
         return self.relative_build_path(".pioenvs", *path)
@@ -911,6 +920,18 @@ class EsphomeCore:
         :param var: The variable (component) being registered (currently unused but kept for future use)
         """
         self.platform_counts[platform_name] += 1
+
+    def require_platform_define(self, platform_name: str) -> None:
+        """Force a platform's USE_*/count defines to be emitted even when no
+        entities of that type are configured.
+
+        Use this when a component references a platform's registry (e.g.
+        ``App.get_switches()``) unconditionally, so the platform must be
+        compiled in regardless of how many entities the user declared.
+
+        :param platform_name: The platform name (e.g. 'switch', 'binary_sensor')
+        """
+        self.required_platform_defines.add(platform_name)
 
     @property
     def cpp_main_section(self):

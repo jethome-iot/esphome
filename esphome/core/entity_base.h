@@ -53,6 +53,12 @@ class EntityBase {
   bool is_disabled_by_default() const { return this->flags_.disabled_by_default; }
   void set_disabled_by_default(bool disabled_by_default) { this->flags_.disabled_by_default = disabled_by_default; }
 
+#ifdef JETHOME_DISABLE_LOG
+  // Get/set whether debug logging is disabled for this entity
+  bool is_log_disabled() const { return this->flags_.disable_log; }
+  void set_disable_log(bool disable) { this->flags_.disable_log = disable; }
+#endif
+
   // Get/set the entity category.
   EntityCategory get_entity_category() const { return static_cast<EntityCategory>(this->flags_.entity_category); }
   void set_entity_category(EntityCategory entity_category) {
@@ -153,7 +159,12 @@ class EntityBase {
     uint8_t disabled_by_default : 1;
     uint8_t has_state : 1;
     uint8_t entity_category : 2;  // Supports up to 4 categories
-    uint8_t reserved : 2;         // Reserved for future use
+#ifdef JETHOME_DISABLE_LOG
+    uint8_t disable_log : 1;  // Disable debug logging for this entity
+    uint8_t reserved : 1;     // Reserved for future use
+#else
+    uint8_t reserved : 2;  // Reserved for future use
+#endif
   } flags_{};
 };
 
@@ -209,15 +220,23 @@ template<typename T> class StatefulEntityBase : public EntityBase {
   virtual T get_state_default(T default_value) const { return this->state_.value_or(default_value); }
   void invalidate_state() { this->set_state_({}); }
 
-  void add_full_state_callback(std::function<void(optional<T> previous, optional<T> current)> &&callback) {
+  CallbackHandle add_full_state_callback(std::function<void(optional<T> previous, optional<T> current)> &&callback) {
     if (this->full_state_callbacks_ == nullptr)
       this->full_state_callbacks_ = new CallbackManager<void(optional<T> previous, optional<T> current)>();  // NOLINT
-    this->full_state_callbacks_->add(std::move(callback));
+    return this->full_state_callbacks_->add(std::move(callback));
   }
-  void add_on_state_callback(std::function<void(T)> &&callback) {
+  void remove_full_state_callback(CallbackHandle handle) {
+    if (this->full_state_callbacks_ != nullptr)
+      this->full_state_callbacks_->remove(handle);
+  }
+  CallbackHandle add_on_state_callback(std::function<void(T)> &&callback) {
     if (this->state_callbacks_ == nullptr)
       this->state_callbacks_ = new CallbackManager<void(T)>();  // NOLINT
-    this->state_callbacks_->add(std::move(callback));
+    return this->state_callbacks_->add(std::move(callback));
+  }
+  void remove_on_state_callback(CallbackHandle handle) {
+    if (this->state_callbacks_ != nullptr)
+      this->state_callbacks_->remove(handle);
   }
 
   void set_trigger_on_initial_state(bool trigger_on_initial_state) {

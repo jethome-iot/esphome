@@ -34,6 +34,24 @@ MQTTClientComponent::MQTTClientComponent() {
 
 // Connection
 void MQTTClientComponent::setup() {
+  if (this->topic_prefix_auto_) {
+    this->topic_prefix_ = str_sanitize(App.get_name());
+  }
+  std::string status_topic = this->topic_prefix_ + "/status";
+  if (this->birth_message_auto_) {
+    this->birth_message_ = {.topic = status_topic, .payload = "online", .qos = 0, .retain = true};
+  }
+  if (this->last_will_auto_) {
+    this->last_will_ = {.topic = status_topic, .payload = "offline", .qos = 0, .retain = true};
+  }
+  if (this->shutdown_message_auto_) {
+    this->shutdown_message_ = {.topic = status_topic, .payload = "offline", .qos = 0, .retain = true};
+  }
+  if (this->log_message_auto_) {
+    this->log_message_ = {.topic = this->topic_prefix_ + "/debug", .payload = "", .qos = 0, .retain = true};
+  }
+  this->recalculate_availability_();
+
   this->mqtt_backend_.set_on_message(
       [this](const char *topic, const char *payload, size_t len, size_t index, size_t total) {
         if (index == 0)
@@ -109,7 +127,9 @@ void MQTTClientComponent::send_device_info_() {
 #ifdef USE_API
         root["port"] = api::global_api_server->get_port();
 #endif
+#ifdef USE_VERSION_BANNER
         root["version"] = ESPHOME_VERSION;
+#endif
         root["mac"] = get_mac_address();
 
 #ifdef USE_ESP8266
@@ -616,20 +636,23 @@ void MQTTClientComponent::on_message(const std::string &topic, const std::string
 }
 
 // Setters
-void MQTTClientComponent::disable_log_message() { this->log_message_.topic = ""; }
+void MQTTClientComponent::disable_log_message() {
+  this->log_message_.topic = "";
+  this->log_message_auto_ = false;
+}
 bool MQTTClientComponent::is_log_message_enabled() const { return !this->log_message_.topic.empty(); }
 void MQTTClientComponent::set_reboot_timeout(uint32_t reboot_timeout) { this->reboot_timeout_ = reboot_timeout; }
 void MQTTClientComponent::register_mqtt_component(MQTTComponent *component) { this->children_.push_back(component); }
 void MQTTClientComponent::set_log_level(int level) { this->log_level_ = level; }
 void MQTTClientComponent::set_keep_alive(uint16_t keep_alive_s) { this->mqtt_backend_.set_keep_alive(keep_alive_s); }
-void MQTTClientComponent::set_log_message_template(MQTTMessage &&message) { this->log_message_ = std::move(message); }
+void MQTTClientComponent::set_log_message_template(MQTTMessage &&message) {
+  this->log_message_ = std::move(message);
+  this->log_message_auto_ = false;
+}
 const MQTTDiscoveryInfo &MQTTClientComponent::get_discovery_info() const { return this->discovery_info_; }
-void MQTTClientComponent::set_topic_prefix(const std::string &topic_prefix, const std::string &check_topic_prefix) {
-  if (App.is_name_add_mac_suffix_enabled() && (topic_prefix == check_topic_prefix)) {
-    this->topic_prefix_ = str_sanitize(App.get_name());
-  } else {
-    this->topic_prefix_ = topic_prefix;
-  }
+void MQTTClientComponent::set_topic_prefix(const std::string &topic_prefix) {
+  this->topic_prefix_ = topic_prefix;
+  this->topic_prefix_auto_ = false;
 }
 const std::string &MQTTClientComponent::get_topic_prefix() const { return this->topic_prefix_; }
 void MQTTClientComponent::set_publish_nan_as_none(bool publish_nan_as_none) {
@@ -638,10 +661,12 @@ void MQTTClientComponent::set_publish_nan_as_none(bool publish_nan_as_none) {
 bool MQTTClientComponent::is_publish_nan_as_none() const { return this->publish_nan_as_none_; }
 void MQTTClientComponent::disable_birth_message() {
   this->birth_message_.topic = "";
+  this->birth_message_auto_ = false;
   this->recalculate_availability_();
 }
 void MQTTClientComponent::disable_shutdown_message() {
   this->shutdown_message_.topic = "";
+  this->shutdown_message_auto_ = false;
   this->recalculate_availability_();
 }
 bool MQTTClientComponent::is_discovery_enabled() const { return !this->discovery_info_.prefix.empty(); }
@@ -659,15 +684,20 @@ void MQTTClientComponent::recalculate_availability_() {
 
 void MQTTClientComponent::set_last_will(MQTTMessage &&message) {
   this->last_will_ = std::move(message);
+  this->last_will_auto_ = false;
   this->recalculate_availability_();
 }
 
 void MQTTClientComponent::set_birth_message(MQTTMessage &&message) {
   this->birth_message_ = std::move(message);
+  this->birth_message_auto_ = false;
   this->recalculate_availability_();
 }
 
-void MQTTClientComponent::set_shutdown_message(MQTTMessage &&message) { this->shutdown_message_ = std::move(message); }
+void MQTTClientComponent::set_shutdown_message(MQTTMessage &&message) {
+  this->shutdown_message_ = std::move(message);
+  this->shutdown_message_auto_ = false;
+}
 
 void MQTTClientComponent::set_discovery_info(std::string &&prefix, MQTTDiscoveryUniqueIdGenerator unique_id_generator,
                                              MQTTDiscoveryObjectIdGenerator object_id_generator, bool retain,
@@ -680,7 +710,10 @@ void MQTTClientComponent::set_discovery_info(std::string &&prefix, MQTTDiscovery
   this->discovery_info_.clean = clean;
 }
 
-void MQTTClientComponent::disable_last_will() { this->last_will_.topic = ""; }
+void MQTTClientComponent::disable_last_will() {
+  this->last_will_.topic = "";
+  this->last_will_auto_ = false;
+}
 
 void MQTTClientComponent::disable_discovery() {
   this->discovery_info_ = MQTTDiscoveryInfo{

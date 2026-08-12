@@ -47,7 +47,6 @@ class APIServer : public Component, public Controller {
   uint16_t get_batch_delay() const { return batch_delay_; }
   void set_listen_backlog(uint8_t listen_backlog) { this->listen_backlog_ = listen_backlog; }
   void set_max_connections(uint8_t max_connections) { this->max_connections_ = max_connections; }
-
   // Get reference to shared buffer for API connections
   std::vector<uint8_t> &get_shared_buffer_ref() { return shared_write_buffer_; }
 
@@ -145,6 +144,12 @@ class APIServer : public Component, public Controller {
 
   bool is_connected() const;
 
+  /// Disconnect all currently connected API clients. Callable from other components
+  /// via ::esphome::api::global_api_server. Clients are expected to reconnect on their own.
+  /// @param graceful  true (default): send a DisconnectRequest so the client disconnects
+  ///                  cleanly; false: immediately close the socket (hard reset).
+  void disconnect_all_clients(bool graceful = true);
+
 #ifdef USE_API_HOMEASSISTANT_STATES
   struct HomeAssistantStateSubscription {
     std::string entity_id;
@@ -214,7 +219,6 @@ class APIServer : public Component, public Controller {
   uint8_t listen_backlog_{4};
   uint8_t max_connections_{8};
   bool shutting_down_ = false;
-  // 7 bytes used, 1 byte padding
 
 #ifdef USE_API_NOISE
   std::shared_ptr<APINoiseContext> noise_ctx_ = std::make_shared<APINoiseContext>();

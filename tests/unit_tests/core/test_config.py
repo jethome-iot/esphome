@@ -282,6 +282,46 @@ def test_add_platform_defines_priority() -> None:
     )
 
 
+@pytest.mark.asyncio
+async def test_add_platform_defines_emits_required_platforms() -> None:
+    """Platforms registered via require_platform_define() must emit their
+    USE_*/count defines even with zero entities, while unrequested empty
+    platforms stay compiled out.
+
+    Covers JetHome components (e.g. automations) that reference a platform's
+    registry (App.get_switches()) unconditionally regardless of entity count.
+    """
+    CORE.platform_counts["sensor"] = 3  # real, non-required platform
+    CORE.platform_counts["binary_sensor"] = 0  # empty and NOT required
+    CORE.require_platform_define("switch")  # required, zero entities
+
+    with patch("esphome.core.config.cg") as mock_cg:
+        await config._add_platform_defines()
+
+    # Single-arg add_define calls are USE_* flags; two-arg calls are
+    # ESPHOME_ENTITY_*_COUNT with their value.
+    use_defines = {
+        c.args[0] for c in mock_cg.add_define.call_args_list if len(c.args) == 1
+    }
+    count_defines = {
+        c.args[0]: c.args[1]
+        for c in mock_cg.add_define.call_args_list
+        if len(c.args) == 2
+    }
+
+    # Required platform is emitted despite having zero entities
+    assert "USE_SWITCH" in use_defines
+    assert count_defines["ESPHOME_ENTITY_SWITCH_COUNT"] == 0
+    # A real platform is still emitted (unchanged behavior)
+    assert "USE_SENSOR" in use_defines
+    assert count_defines["ESPHOME_ENTITY_SENSOR_COUNT"] == 3
+    # An empty, non-required platform stays compiled out
+    assert "USE_BINARY_SENSOR" not in use_defines
+    assert "ESPHOME_ENTITY_BINARY_SENSOR_COUNT" not in count_defines
+    # No vector pre-reservation for a zero-count platform
+    mock_cg.add.assert_not_called()
+
+
 def test_valid_include_with_angle_brackets() -> None:
     """Test valid_include accepts angle bracket includes."""
     assert valid_include("<ArduinoJson.h>") == "<ArduinoJson.h>"

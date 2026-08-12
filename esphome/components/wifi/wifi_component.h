@@ -7,6 +7,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/helpers.h"
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -251,6 +252,12 @@ class WiFiComponent : public Component {
   void set_passive_scan(bool passive);
 
   void save_wifi_sta(const std::string &ssid, const std::string &password);
+
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
+  using WiFiSaveHandler = std::function<void(const std::string &, const std::string &)>;
+  void set_wifi_save_handler(WiFiSaveHandler handler) { this->wifi_save_handler_ = std::move(handler); }
+#endif
+
   // ========== INTERNAL METHODS ==========
   // (In most use cases you won't need these)
   /// Setup WiFi interface.
@@ -428,6 +435,10 @@ class WiFiComponent : public Component {
   // Pointers at the end (naturally aligned)
   Trigger<> *connect_trigger_{new Trigger<>()};
   Trigger<> *disconnect_trigger_{new Trigger<>()};
+
+#ifdef JETHOME_NETWORK_SETTINGS_SAVE
+  WiFiSaveHandler wifi_save_handler_{nullptr};
+#endif
 };
 
 extern WiFiComponent *global_wifi_component;  // NOLINT(cppcoreguidelines-avoid-non-const-global-variables)

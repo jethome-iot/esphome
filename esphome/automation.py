@@ -8,6 +8,8 @@ from esphome.const import (
     CONF_COUNT,
     CONF_ELSE,
     CONF_ID,
+    CONF_MODE,
+    CONF_RESTART,
     CONF_THEN,
     CONF_TIME,
     CONF_TIMEOUT,
@@ -20,6 +22,15 @@ from esphome.cpp_generator import MockObj, MockObjClass, TemplateArgsType
 from esphome.schema_extractors import SCHEMA_EXTRACT, schema_extractor
 from esphome.types import ConfigType
 from esphome.util import Registry
+
+CONF_SINGLE = "single"
+CONF_PARALLEL = "parallel"
+
+AUTOMATION_MODES = {
+    CONF_SINGLE: "SINGLE",
+    CONF_RESTART: "RESTART",
+    CONF_PARALLEL: "PARALLEL",
+}
 
 
 def maybe_simple_id(*validators):
@@ -95,6 +106,7 @@ UpdateComponentAction = cg.esphome_ns.class_("UpdateComponentAction", Action)
 SuspendComponentAction = cg.esphome_ns.class_("SuspendComponentAction", Action)
 ResumeComponentAction = cg.esphome_ns.class_("ResumeComponentAction", Action)
 Automation = cg.esphome_ns.class_("Automation")
+AutomationMode = cg.esphome_ns.enum("AutomationMode", is_class=True)
 
 LambdaCondition = cg.esphome_ns.class_("LambdaCondition", Condition)
 ForCondition = cg.esphome_ns.class_("ForCondition", Condition, cg.Component)
@@ -156,6 +168,9 @@ AUTOMATION_SCHEMA = cv.Schema(
     {
         cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(Trigger),
         cv.GenerateID(CONF_AUTOMATION_ID): cv.declare_id(Automation),
+        cv.Optional(CONF_MODE, default=CONF_SINGLE): cv.one_of(
+            *AUTOMATION_MODES, lower=True
+        ),
         cv.Required(CONF_THEN): validate_action_list,
     }
 )
@@ -521,6 +536,9 @@ async def build_automation(
     arg_types = [arg[0] for arg in args]
     templ = cg.TemplateArguments(*arg_types)
     obj = cg.new_Pvariable(config[CONF_AUTOMATION_ID], templ, trigger)
+    if CONF_MODE in config and config[CONF_MODE] != CONF_SINGLE:
+        mode_name = AUTOMATION_MODES[config[CONF_MODE]]
+        cg.add(obj.set_mode(getattr(AutomationMode, mode_name)))
     actions = await build_action_list(config[CONF_THEN], templ, args)
     cg.add(obj.add_actions(actions))
     return obj

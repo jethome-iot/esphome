@@ -111,8 +111,9 @@ void SelectCall::perform() {
     ESP_LOGW(TAG, "'%s' - Option %s is not a valid option", name, target_value.c_str());
     return;
   }
-
+#ifndef JETHOME_DISABLE_SENDING_STATE_LOG
   ESP_LOGD(TAG, "'%s' - Set selected option to: %s", name, target_value.c_str());
+#endif
   parent->control(target_value);
 }
 

@@ -65,6 +65,8 @@ ProjectUpdateTrigger = cg.esphome_ns.class_(
 Device = cg.esphome_ns.class_("Device")
 Area = cg.esphome_ns.class_("Area")
 
+CONF_VERSION_BANNER = "version_banner"
+CONF_DUMP_CONFIG = "dump_config"
 VALID_INCLUDE_EXTS = {".h", ".hpp", ".tcc", ".ino", ".cpp", ".c"}
 
 
@@ -230,6 +232,8 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_LIBRARIES, default=[]): cv.ensure_list(cv.string_strict),
             cv.Optional(CONF_NAME_ADD_MAC_SUFFIX, default=False): cv.boolean,
             cv.Optional(CONF_DEBUG_SCHEDULER, default=False): cv.boolean,
+            cv.Optional(CONF_VERSION_BANNER, default=True): cv.boolean,
+            cv.Optional(CONF_DUMP_CONFIG, default=True): cv.boolean,
             cv.Optional(CONF_PROJECT): cv.Schema(
                 {
                     cv.Required(CONF_NAME): cv.All(
@@ -425,17 +429,23 @@ DATETIME_SUBTYPES = {"date", "time", "datetime"}
 
 @coroutine_with_priority(CoroPriority.FINAL)
 async def _add_platform_defines() -> None:
-    # Generate compile-time defines for platforms that have actual entities
-    # Only add USE_* and count defines when there are entities
-    for platform_name, count in sorted(CORE.platform_counts.items()):
-        if count <= 0:
+    # Generate compile-time defines for platforms that have actual entities,
+    # plus any platform a component requested via CORE.require_platform_define()
+    # regardless of count (e.g. a component using App.get_switches()).
+    always_defined = CORE.required_platform_defines
+    platform_names = set(CORE.platform_counts) | always_defined
+    for platform_name in sorted(platform_names):
+        count = CORE.platform_counts.get(platform_name, 0)
+        if count <= 0 and platform_name not in always_defined:
             continue
 
         define_name = f"ESPHOME_ENTITY_{platform_name.upper()}_COUNT"
         cg.add_define(define_name, count)
 
         # Reserve space when using dynamic vectors
-        if any(d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines):
+        if count > 0 and any(
+            d.name == "JETHOME_USE_DYNAMIC_VECTORS" for d in CORE.defines
+        ):
             cg.add(
                 cg.RawStatement(f"App.reserve_{platform_name}({count});"), prepend=True
             )
@@ -499,6 +509,10 @@ async def to_code(config: ConfigType) -> None:
     cg.add_build_flag("-Wno-sign-compare")
     if config[CONF_DEBUG_SCHEDULER]:
         cg.add_define("ESPHOME_DEBUG_SCHEDULER")
+    if config[CONF_VERSION_BANNER]:
+        cg.add_define("USE_VERSION_BANNER")
+    if not config[CONF_DUMP_CONFIG]:
+        cg.add(cg.App.set_dump_config(False))
 
     if CORE.using_arduino and not CORE.is_bk72xx:
         CORE.add_job(add_arduino_global_workaround)

@@ -34,7 +34,7 @@ void DisplayMenuComponent::generate_to_menu_items_(MenuItemMenu *menu) {
 
   if (num_items == 0) {
     display_menu_base::MenuItem *back_item = new display_menu_base::MenuItem(display_menu_base::MENU_ITEM_BACK);
-    back_item->set_text("No items in menu. Back");
+    back_item->set_text("No items. Back");
     menu->add_item(back_item);
   }
 
@@ -213,6 +213,40 @@ void DisplayMenuComponent::back() {
   }
 }
 
+void DisplayMenuComponent::back_n(int levels) {
+  if (this->check_healthy_and_active_() && levels > 0) {
+    bool changed = false;
+
+    if (this->editing_) {
+      this->finish_editing_();
+      changed = true;
+    }
+
+    // Lightweight unwind for intermediate levels — skip regeneration and cursor fixes
+    for (int i = 0; i < levels - 1 && this->displayed_item_->get_parent() != nullptr; i++) {
+      this->displayed_item_->on_leave();
+      auto *item = this->displayed_item_;
+      if (item->get_type() == MENU_ITEM_MENU && static_cast<MenuItemMenu *>(item)->is_generate_on_enter()) {
+        static_cast<MenuItemMenu *>(item)->clear_items();
+      }
+      this->displayed_item_ = this->displayed_item_->get_parent();
+      this->selection_stack_.pop_front();
+      changed = true;
+    }
+
+    if (this->displayed_item_->get_parent() != nullptr) {
+      // Full leave for the final level — with regeneration and cursor adjustment
+      changed = this->leave_menu_() || changed;
+    } else if (changed) {
+      // Already at root after intermediate unwind — fix stale cursor state
+      this->reset_();
+    }
+
+    if (changed)
+      this->draw_and_update();
+  }
+}
+
 void DisplayMenuComponent::enter() {
   if (this->check_healthy_and_active_()) {
     bool changed = false;
@@ -353,7 +387,8 @@ void DisplayMenuComponent::hide() {
 
 void DisplayMenuComponent::reset_() {
   this->displayed_item_ = this->root_item_;
-  this->cursor_index_ = this->top_index_ = 0;
+  auto first_visible = this->find_first_visible_();
+  this->cursor_index_ = this->top_index_ = first_visible.value_or(0);
   this->selection_stack_.clear();
 }
 
@@ -373,34 +408,80 @@ bool DisplayMenuComponent::check_healthy_and_active_() {
   return this->active_;
 }
 
-bool DisplayMenuComponent::cursor_up_() {
-  bool changed = false;
+void DisplayMenuComponent::ensure_cursor_visible_() {
+  if (this->displayed_item_->items_size() == 0)
+    return;
 
-  if (this->cursor_index_ > 0) {
-    changed = true;
+  if (this->cursor_index_ >= this->displayed_item_->items_size())
+    this->cursor_index_ = this->displayed_item_->items_size() - 1;
 
-    --this->cursor_index_;
+  if (!this->displayed_item_->get_item(this->cursor_index_)->is_visible()) {
+    auto next = this->find_next_visible_(this->cursor_index_);
+    if (next.has_value()) {
+      this->cursor_index_ = next.value();
+    } else {
+      auto prev = this->find_prev_visible_(this->cursor_index_);
+      this->cursor_index_ = prev.value_or(0);
+    }
 
-    if (this->cursor_index_ < this->top_index_)
+    if (this->cursor_index_ < this->top_index_) {
       this->top_index_ = this->cursor_index_;
+    } else if (this->cursor_index_ >= this->top_index_ + this->rows_) {
+      this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+    }
+  }
+}
+
+optional<size_t> DisplayMenuComponent::find_next_visible_(size_t start) {
+  for (size_t i = start; i < this->displayed_item_->items_size(); i++) {
+    if (this->displayed_item_->get_item(i)->is_visible()) {
+      return i;
+    }
+  }
+  return {};
+}
+
+optional<size_t> DisplayMenuComponent::find_prev_visible_(size_t start) {
+  for (size_t i = start + 1; i > 0; i--) {
+    if (this->displayed_item_->get_item(i - 1)->is_visible()) {
+      return i - 1;
+    }
+  }
+  return {};
+}
+
+optional<size_t> DisplayMenuComponent::find_first_visible_() { return this->find_next_visible_(0); }
+
+bool DisplayMenuComponent::cursor_up_() {
+  if (this->cursor_index_ == 0) {
+    return false;
   }
 
-  return changed;
+  auto prev = this->find_prev_visible_(this->cursor_index_ - 1);
+  if (!prev.has_value()) {
+    return false;
+  }
+
+  this->cursor_index_ = prev.value();
+
+  if (this->cursor_index_ < this->top_index_)
+    this->top_index_ = this->cursor_index_;
+
+  return true;
 }
 
 bool DisplayMenuComponent::cursor_down_() {
-  bool changed = false;
-
-  if (this->cursor_index_ + 1 < this->displayed_item_->items_size()) {
-    changed = true;
-
-    ++this->cursor_index_;
-
-    if (this->cursor_index_ >= this->top_index_ + this->rows_)
-      this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+  auto next = this->find_next_visible_(this->cursor_index_ + 1);
+  if (!next.has_value()) {
+    return false;
   }
 
-  return changed;
+  this->cursor_index_ = next.value();
+
+  if (this->cursor_index_ >= this->top_index_ + this->rows_)
+    this->top_index_ = this->cursor_index_ - this->rows_ + 1;
+
+  return true;
 }
 
 bool DisplayMenuComponent::enter_menu_() {
@@ -411,7 +492,8 @@ bool DisplayMenuComponent::enter_menu_() {
     this->generate_to_menu_items_(static_cast<MenuItemMenu *>(item));
   }
   this->selection_stack_.emplace_front(this->top_index_, this->cursor_index_);
-  this->cursor_index_ = this->top_index_ = 0;
+  auto first_visible = this->find_first_visible_();
+  this->cursor_index_ = this->top_index_ = first_visible.value_or(0);
   this->displayed_item_->on_enter();
 
   return true;
@@ -437,12 +519,10 @@ bool DisplayMenuComponent::leave_menu_() {
       auto *menu_item = static_cast<MenuItemMenu *>(item);
       menu_item->clear_items();
       this->generate_to_menu_items_(menu_item);
-
-      // Fix cursor if some items were deleted
-      if (this->cursor_index_ >= menu_item->items_size()) {
-        this->cursor_index_ = menu_item->items_size() - 1;
-      }
     }
+
+    this->ensure_cursor_visible_();
+
     this->displayed_item_->on_enter();
     changed = true;
   }
@@ -466,9 +546,14 @@ void DisplayMenuComponent::finish_editing_() {
 }
 
 void DisplayMenuComponent::draw_menu() {
-  for (size_t i = 0; i < this->rows_ && this->top_index_ + i < this->displayed_item_->items_size(); ++i) {
-    this->draw_item(this->displayed_item_->get_item(this->top_index_ + i), i,
-                    this->top_index_ + i == this->cursor_index_);
+  uint8_t row = 0;
+  for (size_t i = this->top_index_; i < this->displayed_item_->items_size() && row < this->rows_; ++i) {
+    MenuItem *item = this->displayed_item_->get_item(i);
+    if (!item->is_visible()) {
+      continue;
+    }
+    this->draw_item(item, row, i == this->cursor_index_);
+    ++row;
   }
 }
 

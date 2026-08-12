@@ -14,6 +14,7 @@
 
 #include "esphome/core/optional.h"
 #include "esphome/core/entity_types.h"
+#include "esphome/core/defines.h"
 
 #ifdef USE_ESP8266
 #include <Esp.h>
@@ -674,25 +675,53 @@ constexpr float fahrenheit_to_celsius(float value) { return (value - 32.0f) / 1.
 /// @name Utilities
 /// @{
 
+/// Handle returned by CallbackManager::add() for later removal via remove().
+using CallbackHandle = uint32_t;
+/// Sentinel value indicating an invalid or uninitialized callback handle.
+static constexpr CallbackHandle CALLBACK_HANDLE_INVALID = UINT32_MAX;
+
 template<typename... X> class CallbackManager;
 
 /** Helper class to allow having multiple subscribers to a callback.
+ *
+ * Supports subscribe/unsubscribe via CallbackHandle. Removed slots are nullified
+ * and skipped during call(). No compaction is performed -- slot count per entity is typically small.
  *
  * @tparam Ts The arguments for the callbacks, wrapped in void().
  */
 template<typename... Ts> class CallbackManager<void(Ts...)> {
  public:
-  /// Add a callback to the list.
-  void add(std::function<void(Ts...)> &&callback) { this->callbacks_.push_back(std::move(callback)); }
+  /// Add a callback to the list. Returns a handle that can be used to remove it later.
+  CallbackHandle add(std::function<void(Ts...)> &&callback) {
+    // Reuse a null slot if available
+    for (uint32_t i = 0; i < this->callbacks_.size(); i++) {
+      if (!this->callbacks_[i]) {
+        this->callbacks_[i] = std::move(callback);
+        return i;
+      }
+    }
+    this->callbacks_.push_back(std::move(callback));
+    return static_cast<CallbackHandle>(this->callbacks_.size() - 1);
+  }
 
-  /// Call all callbacks in this manager.
+  /// Remove a callback by handle (nullifies the slot).
+  void remove(CallbackHandle handle) {
+    if (handle < this->callbacks_.size()) {
+      this->callbacks_[handle] = nullptr;
+    }
+  }
+
+  /// Call all active callbacks in this manager (skips removed/null slots).
   void call(Ts... args) {
-    for (auto &cb : this->callbacks_)
-      cb(args...);
+    for (auto &cb : this->callbacks_) {
+      if (cb) {
+        cb(args...);
+      }
+    }
   }
   size_t size() const { return this->callbacks_.size(); }
 
-  /// Call all callbacks in this manager.
+  /// Call all active callbacks in this manager.
   void operator()(Ts... args) { call(args...); }
 
  protected:

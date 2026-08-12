@@ -20,6 +20,7 @@ from esphome.const import (
     CONF_PATH,
     CONF_PLATFORM_VERSION,
     CONF_PLATFORMIO_OPTIONS,
+    CONF_PROJECT,
     CONF_REF,
     CONF_REFRESH,
     CONF_SOURCE,
@@ -33,7 +34,6 @@ from esphome.const import (
     KEY_TARGET_PLATFORM,
     PLATFORM_ESP32,
     ThreadModel,
-    __version__,
 )
 from esphome.core import CORE, HexInt, TimePeriod
 import esphome.final_validate as fv
@@ -706,6 +706,7 @@ FLASH_SIZES = [
 CONF_FLASH_SIZE = "flash_size"
 CONF_CPU_FREQUENCY = "cpu_frequency"
 CONF_PARTITIONS = "partitions"
+CONF_PREFERENCES_NAMESPACE = "preferences_namespace"
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
@@ -718,6 +719,7 @@ CONFIG_SCHEMA = cv.All(
             ),
             cv.Optional(CONF_PARTITIONS): cv.file_,
             cv.Optional(CONF_VARIANT): cv.one_of(*VARIANTS, upper=True),
+            cv.Optional(CONF_PREFERENCES_NAMESPACE): cv.string_strict,
             cv.Optional(CONF_FRAMEWORK): FRAMEWORK_SCHEMA,
         }
     ),
@@ -737,6 +739,8 @@ async def to_code(config):
     cg.set_cpp_standard("gnu++20")
     cg.add_build_flag("-DUSE_ESP32")
     cg.add_define("ESPHOME_BOARD", config[CONF_BOARD])
+    if CONF_PREFERENCES_NAMESPACE in config:
+        cg.add_define("ESP32_PREFERENCES_NAMESPACE", config[CONF_PREFERENCES_NAMESPACE])
     variant = config[CONF_VARIANT]
     cg.add_build_flag(f"-DUSE_ESP32_VARIANT_{variant}")
     cg.add_define("ESPHOME_VARIANT", VARIANT_FRIENDLY[variant])
@@ -1028,10 +1032,16 @@ def copy_files():
     # IDF build scripts look for version string to put in the build.
     # However, if the build path does not have an initialized git repo,
     # and no version.txt file exists, the CMake script fails for some setups.
-    # Fix by manually pasting a version.txt file, containing the ESPHome version
+    # Use project version when available, otherwise device name
+    project_version = None
+    if (esphome_conf := CORE.config.get(CONF_ESPHOME)) and (
+        project_conf := esphome_conf.get(CONF_PROJECT)
+    ):
+        project_version = project_conf.get(CONF_VERSION)
+    version_txt = project_version if project_version else CORE.name
     write_file_if_changed(
         CORE.relative_build_path("version.txt"),
-        __version__,
+        version_txt,
     )
 
     for file in CORE.data[KEY_ESP32][KEY_EXTRA_BUILD_FILES].values():

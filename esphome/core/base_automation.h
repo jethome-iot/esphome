@@ -109,6 +109,10 @@ class StartupTrigger : public Trigger<>, public Component {
   explicit StartupTrigger(float setup_priority) : setup_priority_(setup_priority) {}
   void setup() override { this->trigger(); }
   float get_setup_priority() const override { return this->setup_priority_; }
+  bool prepare_for_deletion() override {
+    this->disable_loop();
+    return false;  // registered in Application, not safe to delete
+  }
 
  protected:
   float setup_priority_;
@@ -119,6 +123,10 @@ class ShutdownTrigger : public Trigger<>, public Component {
   explicit ShutdownTrigger(float setup_priority) : setup_priority_(setup_priority) {}
   void on_shutdown() override { this->trigger(); }
   float get_setup_priority() const override { return this->setup_priority_; }
+  bool prepare_for_deletion() override {
+    this->disable_loop();
+    return false;  // registered in Application, not safe to delete
+  }
 
  protected:
   float setup_priority_;
@@ -128,6 +136,10 @@ class LoopTrigger : public Trigger<>, public Component {
  public:
   void loop() override { this->trigger(); }
   float get_setup_priority() const override { return setup_priority::DATA; }
+  bool prepare_for_deletion() override {
+    this->disable_loop();
+    return false;  // registered in Application, not safe to delete
+  }
 };
 
 #ifdef ESPHOME_PROJECT_NAME

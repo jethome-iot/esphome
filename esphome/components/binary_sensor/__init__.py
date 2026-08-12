@@ -9,6 +9,7 @@ import esphome.config_validation as cv
 from esphome.const import (
     CONF_DELAY,
     CONF_DEVICE_CLASS,
+    CONF_DISABLE_LOG,
     CONF_ENTITY_CATEGORY,
     CONF_FILTERS,
     CONF_ICON,
@@ -441,6 +442,7 @@ _BINARY_SENSOR_SCHEMA = (
             ): cv.boolean,
             cv.Optional(CONF_DEVICE_CLASS): validate_device_class,
             cv.Optional(CONF_FILTERS): validate_filters,
+            cv.Optional(CONF_DISABLE_LOG, default=False): cv.boolean,
             cv.Optional(CONF_ON_PRESS): automation.validate_automation(
                 {
                     cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(PressTrigger),
@@ -555,6 +557,9 @@ async def setup_binary_sensor_core_(var, config):
     if filters_config := config.get(CONF_FILTERS):
         filters = await cg.build_registry_list(FILTER_REGISTRY, filters_config)
         cg.add(var.add_filters(filters))
+    if config.get(CONF_DISABLE_LOG, False):
+        cg.add_define("JETHOME_DISABLE_LOG")
+        cg.add(var.set_disable_log(True))
 
     for conf in config.get(CONF_ON_PRESS, []):
         trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
