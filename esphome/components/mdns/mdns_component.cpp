@@ -50,7 +50,9 @@ void MDNSComponent::compile_records_() {
   MDNS_STATIC_CONST_CHAR(SERVICE_ESPHOMELIB, "_api");
 #endif
   MDNS_STATIC_CONST_CHAR(TXT_FRIENDLY_NAME, "friendly_name");
+#ifdef USE_VERSION_BANNER
   MDNS_STATIC_CONST_CHAR(TXT_VERSION, "version");
+#endif
   MDNS_STATIC_CONST_CHAR(TXT_MAC, "mac");
   MDNS_STATIC_CONST_CHAR(TXT_PLATFORM, "platform");
   MDNS_STATIC_CONST_CHAR(TXT_BOARD, "board");
@@ -170,7 +172,9 @@ void MDNSComponent::compile_records_() {
 
 #if !defined(USE_API) && !defined(USE_PROMETHEUS) && !defined(USE_WEBSERVER) && !defined(USE_MDNS_EXTRA_SERVICES)
   MDNS_STATIC_CONST_CHAR(SERVICE_HTTP, "_http");
+#ifdef USE_VERSION_BANNER
   MDNS_STATIC_CONST_CHAR(TXT_VERSION, "version");
+#endif
 
   // Publish "http" service if not using native API or any other services
   // This is just to have *some* mDNS service so that .local resolution works
