@@ -32,6 +32,8 @@ from .const import (
     CONF_SDK_SILENT,
     CONF_UART_PORT,
     FAMILIES,
+    FAMILY_BK7231N,
+    FAMILY_BK7238,
     FAMILY_COMPONENT,
     FAMILY_FRIENDLY,
     KEY_BOARD,
@@ -50,12 +52,51 @@ CODEOWNERS = ["@kuba2k2"]
 AUTO_LOAD = ["preferences"]
 IS_TARGET_PLATFORM = True
 
+# BLE 5.x BK SDK options to disable unused features.
+# Disabling BLE saves ~21KB RAM and ~200KB Flash because BLE init code is
+# called unconditionally by the SDK. ESPHome doesn't use BLE on LibreTiny.
+#
+# This only works on BLE 5.x BK chips (BK7231N, BK7238). Other BK72XX chips
+# using BLE 4.2 (BK7231T, BK7231Q, BK7251; BK7252 boards use the BK7251 family)
+# have a bug where the BLE library still links and references undefined symbols
+# when CFG_SUPPORT_BLE=0.
+#
+# On BK7238 the SDK also hangs at WiFi STA enable when BLE init runs, so
+# disabling it is required for reliable boot, not just an optimization.
+#
+# Other options like CFG_TX_EVM_TEST, CFG_RX_SENSITIVITY_TEST, CFG_SUPPORT_BKREG,
+# CFG_SUPPORT_OTA_HTTP, and CFG_USE_SPI_SLAVE were evaluated but provide no  # NOLINT
+# measurable benefit - the linker already strips unreferenced code via -gc-sections.
+_BLE5_BK_SYS_CONFIG_OPTIONS = [
+    "CFG_SUPPORT_BLE=0",
+]
+
+# Board ids upstream LibreTiny renamed; configs written against the old id
+# keep validating and building against the new one (with a warning), but only
+# for the chip component that owns the new id.
+# generic-ln882hki -> generic-ln882h: LibreTiny v1.13.0.
+_RENAMED_BOARDS = {
+    "generic-ln882hki": "generic-ln882h",
+}
+
 
 def _detect_variant(value):
     if KEY_LIBRETINY not in CORE.data:
         raise cv.Invalid("Family component didn't populate core data properly!")
     component: LibreTinyComponent = CORE.data[KEY_LIBRETINY][KEY_COMPONENT_DATA]
     board = value[CONF_BOARD]
+    if (
+        board not in component.boards
+        and (renamed := _RENAMED_BOARDS.get(board))
+        and renamed in component.boards
+    ):
+        _LOGGER.warning(
+            "Board '%s' was renamed to '%s'; please update your configuration",
+            board,
+            renamed,
+        )
+        value = value.copy()
+        value[CONF_BOARD] = board = renamed
     # read board-default family if not specified
     if board not in component.boards:
         if CONF_FAMILY not in value:
@@ -173,10 +214,17 @@ def _notify_old_style(config):
 
 
 # The dev and latest branches will be at *least* this version, which is what matters.
+# Use GitHub releases directly to avoid PlatformIO moderation delays.
 ARDUINO_VERSIONS = {
-    "dev": (cv.Version(1, 9, 1), "https://github.com/libretiny-eu/libretiny.git"),
-    "latest": (cv.Version(1, 9, 1), "libretiny"),
-    "recommended": (cv.Version(1, 9, 1), None),
+    "dev": (cv.Version(1, 13, 0), "https://github.com/libretiny-eu/libretiny.git"),
+    "latest": (
+        cv.Version(1, 13, 0),
+        "https://github.com/libretiny-eu/libretiny.git#v1.13.0",
+    ),
+    "recommended": (
+        cv.Version(1, 13, 0),
+        "https://github.com/libretiny-eu/libretiny.git#v1.13.0",
+    ),
 }
 
 
@@ -341,5 +389,11 @@ async def component_to_code(config):
     else:
         cg.add_platformio_option("custom_fw_name", "esphome")
         cg.add_platformio_option("custom_fw_version", __version__)
+
+    # Apply chip-specific SDK options to save RAM/Flash
+    if config[CONF_FAMILY] in (FAMILY_BK7231N, FAMILY_BK7238):
+        cg.add_platformio_option(
+            "custom_options.sys_config#h", _BLE5_BK_SYS_CONFIG_OPTIONS
+        )
 
     await cg.register_component(var, config)
