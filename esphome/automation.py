@@ -536,8 +536,10 @@ async def build_automation(
     arg_types = [arg[0] for arg in args]
     templ = cg.TemplateArguments(*arg_types)
     obj = cg.new_Pvariable(config[CONF_AUTOMATION_ID], templ, trigger)
-    if CONF_MODE in config and config[CONF_MODE] != CONF_SINGLE:
-        mode_name = AUTOMATION_MODES[config[CONF_MODE]]
+    # Components may extend `mode` with values of their own (script adds
+    # `queued`); only the modes the automation core implements are propagated.
+    mode = config.get(CONF_MODE)
+    if mode != CONF_SINGLE and (mode_name := AUTOMATION_MODES.get(mode)) is not None:
         cg.add(obj.set_mode(getattr(AutomationMode, mode_name)))
     actions = await build_action_list(config[CONF_THEN], templ, args)
     cg.add(obj.add_actions(actions))

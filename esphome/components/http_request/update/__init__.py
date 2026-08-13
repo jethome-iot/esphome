@@ -21,6 +21,7 @@ DefaultUpdateManifestParser = http_request_ns.class_(
 
 CONF_OTA_ID = "ota_id"
 CONF_PARSER_ID = "parser_id"
+CONF_DEFAULT_PARSER_ID = "default_parser_id"
 
 CONFIG_SCHEMA = (
     update.update_schema(HttpRequestUpdate)
@@ -30,6 +31,9 @@ CONFIG_SCHEMA = (
             cv.GenerateID(CONF_HTTP_REQUEST_ID): cv.use_id(HttpRequestComponent),
             cv.Required(CONF_SOURCE): cv.url,
             cv.Optional(CONF_PARSER_ID): cv.use_id(UpdateManifestParserInterface),
+            cv.GenerateID(CONF_DEFAULT_PARSER_ID): cv.declare_id(
+                DefaultUpdateManifestParser
+            ),
         }
     )
     .extend(cv.polling_component_schema("6h"))
@@ -49,14 +53,9 @@ async def to_code(config):
 
     await cg.register_component(var, config)
 
-    parser = None
     if parser_id := config.get(CONF_PARSER_ID):
         parser = await cg.get_variable(parser_id)
     else:
-        parser = cg.new_Pvariable(
-            cv.declare_id(DefaultUpdateManifestParser)(
-                cv.GenerateID("update_manifest_parser_id")
-            )
-        )
+        parser = cg.new_Pvariable(config[CONF_DEFAULT_PARSER_ID])
 
     cg.add(var.set_manifest_parser(parser))
