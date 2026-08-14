@@ -125,7 +125,8 @@ class Switch : public EntityBase, public EntityBase_DeviceClass {
 
   bool is_inverted() const;
 
-  void set_restore_mode(SwitchRestoreMode restore_mode) { this->restore_mode = restore_mode; }
+  /// Set the restore mode. Turning persistence on stores the current state right away.
+  void set_restore_mode(SwitchRestoreMode restore_mode);
 
   void update();
 

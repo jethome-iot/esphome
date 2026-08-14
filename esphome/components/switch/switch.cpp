@@ -31,6 +31,16 @@ void Switch::toggle() {
 
 void Switch::update() { this->write_state(this->state != this->inverted_); }
 
+void Switch::set_restore_mode(SwitchRestoreMode restore_mode) {
+  // publish_state() dedups, so switching persistence on has to store the state itself, and
+  // sync it - the user may power-cycle right after. Before setup() rtc_ has no backend.
+  const bool becomes_persistent =
+      (restore_mode & RESTORE_MODE_PERSISTENT_MASK) && !(this->restore_mode & RESTORE_MODE_PERSISTENT_MASK);
+  this->restore_mode = restore_mode;
+  if (becomes_persistent && this->rtc_.save(&this->state))
+    global_preferences->sync();
+}
+
 optional<bool> Switch::get_initial_state() {
 #ifdef JETHOME_DYNAMIC_ENTITY_SETTINGS
   this->rtc_ = global_preferences->make_preference<bool>(this->get_preference_hash());
@@ -48,12 +58,18 @@ optional<bool> Switch::get_initial_state() {
   return initial_state;
 }
 optional<bool> Switch::get_initial_state_with_restore_mode() {
+#ifdef JETHOME_DYNAMIC_ENTITY_SETTINGS
+  // the mode is runtime-changeable, so rtc_ has to exist whatever it currently is
+  const optional<bool> restored_state = this->get_initial_state();
+#endif
   if (restore_mode & RESTORE_MODE_DISABLED_MASK) {
     return {};
   }
   bool initial_state = restore_mode & RESTORE_MODE_ON_MASK;  // default value *_OFF or *_ON
   if (restore_mode & RESTORE_MODE_PERSISTENT_MASK) {         // For RESTORE_*
-    optional<bool> restored_state = this->get_initial_state();
+#ifndef JETHOME_DYNAMIC_ENTITY_SETTINGS
+    const optional<bool> restored_state = this->get_initial_state();
+#endif
     if (restored_state.has_value()) {
       // Invert value if any of the *_INVERTED_* modes
       initial_state = restore_mode & RESTORE_MODE_INVERTED_MASK ? !restored_state.value() : restored_state.value();
