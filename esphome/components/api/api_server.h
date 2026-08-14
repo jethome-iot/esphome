@@ -43,6 +43,9 @@ class APIServer : public Component, public Controller {
 #endif
   void set_port(uint16_t port);
   void set_reboot_timeout(uint32_t reboot_timeout);
+  /// Read once, by setup(); set it from a component above AFTER_WIFI.
+  void set_enable_on_boot(bool enable_on_boot) { this->enable_on_boot_ = enable_on_boot; }
+  bool is_enabled() const { return this->enable_on_boot_; }
   void set_batch_delay(uint16_t batch_delay);
   uint16_t get_batch_delay() const { return batch_delay_; }
   void set_listen_backlog(uint8_t listen_backlog) { this->listen_backlog_ = listen_backlog; }
@@ -219,6 +222,7 @@ class APIServer : public Component, public Controller {
   uint8_t listen_backlog_{4};
   uint8_t max_connections_{8};
   bool shutting_down_ = false;
+  bool enable_on_boot_{true};
 
 #ifdef USE_API_NOISE
   std::shared_ptr<APINoiseContext> noise_ctx_ = std::make_shared<APINoiseContext>();
