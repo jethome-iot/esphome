@@ -15,6 +15,11 @@ namespace esphome {
 template<typename... Ts> class AndCondition : public Condition<Ts...> {
  public:
   explicit AndCondition(const std::vector<Condition<Ts...> *> &conditions) : conditions_(conditions) {}
+  ~AndCondition() override {
+    for (auto *condition : this->conditions_) {
+      delete condition;
+    }
+  }
   bool check(Ts... x) override {
     for (auto *condition : this->conditions_) {
       if (!condition->check(x...))
@@ -31,6 +36,11 @@ template<typename... Ts> class AndCondition : public Condition<Ts...> {
 template<typename... Ts> class OrCondition : public Condition<Ts...> {
  public:
   explicit OrCondition(const std::vector<Condition<Ts...> *> &conditions) : conditions_(conditions) {}
+  ~OrCondition() override {
+    for (auto *condition : this->conditions_) {
+      delete condition;
+    }
+  }
   bool check(Ts... x) override {
     for (auto *condition : this->conditions_) {
       if (condition->check(x...))
@@ -47,6 +57,7 @@ template<typename... Ts> class OrCondition : public Condition<Ts...> {
 template<typename... Ts> class NotCondition : public Condition<Ts...> {
  public:
   explicit NotCondition(Condition<Ts...> *condition) : condition_(condition) {}
+  ~NotCondition() override { delete this->condition_; }
   bool check(Ts... x) override { return !this->condition_->check(x...); }
 
  protected:
@@ -56,6 +67,11 @@ template<typename... Ts> class NotCondition : public Condition<Ts...> {
 template<typename... Ts> class XorCondition : public Condition<Ts...> {
  public:
   explicit XorCondition(const std::vector<Condition<Ts...> *> &conditions) : conditions_(conditions) {}
+  ~XorCondition() override {
+    for (auto *condition : this->conditions_) {
+      delete condition;
+    }
+  }
   bool check(Ts... x) override {
     size_t result = 0;
     for (auto *condition : this->conditions_) {
@@ -81,6 +97,7 @@ template<typename... Ts> class LambdaCondition : public Condition<Ts...> {
 template<typename... Ts> class ForCondition : public Condition<Ts...>, public Component {
  public:
   explicit ForCondition(Condition<> *condition) : condition_(condition) {}
+  ~ForCondition() override { delete this->condition_; }
 
   TEMPLATABLE_VALUE(uint32_t, time);
 
@@ -167,6 +184,9 @@ template<typename... Ts> class DelayAction : public Action<Ts...>, public Compon
  public:
   explicit DelayAction() = default;
 
+  /// SchedulerItem keeps a raw Component*, and stop() does not run on every teardown path.
+  ~DelayAction() override { this->cancel_timeout("delay"); }
+
   TEMPLATABLE_VALUE(uint32_t, delay)
 
   void play_complex(Ts... x) override {
@@ -204,6 +224,8 @@ template<typename... Ts> class LambdaAction : public Action<Ts...> {
 template<typename... Ts> class IfAction : public Action<Ts...> {
  public:
   explicit IfAction(Condition<Ts...> *condition) : condition_(condition) {}
+  /// then_ / else_ are by-value ActionLists and free themselves.
+  ~IfAction() override { delete this->condition_; }
 
   void add_then(const std::vector<Action<Ts...> *> &actions) {
     this->then_.add_actions(actions);
@@ -250,6 +272,7 @@ template<typename... Ts> class IfAction : public Action<Ts...> {
 template<typename... Ts> class WhileAction : public Action<Ts...> {
  public:
   WhileAction(Condition<Ts...> *condition) : condition_(condition) {}
+  ~WhileAction() override { delete this->condition_; }
 
   void add_then(const std::vector<Action<Ts...> *> &actions) {
     this->then_.add_actions(actions);
@@ -333,6 +356,11 @@ template<typename... Ts> class RepeatAction : public Action<Ts...> {
 template<typename... Ts> class WaitUntilAction : public Action<Ts...>, public Component {
  public:
   WaitUntilAction(Condition<Ts...> *condition) : condition_(condition) {}
+  /// Same scheduler hazard as ~DelayAction, plus the owned condition.
+  ~WaitUntilAction() override {
+    this->cancel_timeout("timeout");
+    delete this->condition_;
+  }
 
   TEMPLATABLE_VALUE(uint32_t, timeout_value)
 

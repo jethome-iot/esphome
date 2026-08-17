@@ -93,8 +93,7 @@ struct SprinklerValve {
   uint32_t run_duration;
   optional<size_t> pump_switch_index;
   bool valve_cycle_complete;
-  std::unique_ptr<ShutdownAction<>> valve_shutdown_action;
-  std::unique_ptr<StartSingleValveAction<>> valve_resumeorstart_action;
+  // The shutdown / start actions belong to the automations' ActionLists; a second owning handle would double-free.
   std::unique_ptr<Automation<>> valve_turn_off_automation;
   std::unique_ptr<Automation<>> valve_turn_on_automation;
 };
@@ -598,10 +597,7 @@ class Sprinkler : public Component {
   SprinklerControllerNumber *multiplier_number_{nullptr};
   SprinklerControllerNumber *repeat_number_{nullptr};
 
-  std::unique_ptr<ShutdownAction<>> sprinkler_shutdown_action_;
-  std::unique_ptr<ShutdownAction<>> sprinkler_standby_shutdown_action_;
-  std::unique_ptr<ResumeOrStartAction<>> sprinkler_resumeorstart_action_;
-
+  // As in SprinklerValve: the actions belong to the automations below.
   std::unique_ptr<Automation<>> sprinkler_turn_off_automation_;
   std::unique_ptr<Automation<>> sprinkler_turn_on_automation_;
   std::unique_ptr<Automation<>> sprinkler_standby_turn_on_automation_;

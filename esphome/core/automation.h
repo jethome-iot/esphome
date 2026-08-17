@@ -123,6 +123,9 @@ template<typename T, typename... X> class TemplatableValue {
  */
 template<typename... Ts> class Condition {
  public:
+  /// Virtual so an owner can delete a child through this base.
+  virtual ~Condition() = default;
+
   /// Check whether this condition passes. This condition check must be instant, and not cause any delays.
   virtual bool check(Ts... x) = 0;
 
@@ -177,6 +180,9 @@ template<typename... Ts> class ActionList;
 
 template<typename... Ts> class Action {
  public:
+  /// Virtual so the owning ActionList can delete a node through this base.
+  virtual ~Action() = default;
+
   virtual void play_complex(Ts... x) {
     this->num_running_++;
     this->play(x...);
@@ -242,6 +248,23 @@ template<typename... Ts> class Action {
 
 template<typename... Ts> class ActionList {
  public:
+  ActionList() = default;
+
+  /// Owns its chain. Nothing reachable from a list that gets destroyed may be registered with App: Action and
+  /// Condition have no prepare_for_deletion() to decline with.
+  ~ActionList() {
+    Action<Ts...> *action = this->actions_begin_;
+    while (action != nullptr) {
+      Action<Ts...> *next = action->next_;
+      delete action;
+      action = next;
+    }
+  }
+
+  // Owning, so a copy would free the same chain twice.
+  ActionList(const ActionList &) = delete;
+  ActionList &operator=(const ActionList &) = delete;
+
   void add_action(Action<Ts...> *action) {
     if (this->actions_end_ == nullptr) {
       this->actions_begin_ = action;
