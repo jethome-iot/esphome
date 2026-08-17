@@ -125,7 +125,10 @@ void MQTTClientComponent::send_device_info_() {
           root["friendly_name"] = App.get_friendly_name();
         }
 #ifdef USE_API
-        root["port"] = api::global_api_server->get_port();
+        // A disabled server is not listening; discovery would aim at a closed socket.
+        if (api::global_api_server->is_enabled()) {
+          root["port"] = api::global_api_server->get_port();
+        }
 #endif
 #ifdef USE_VERSION_BANNER
         root["version"] = ESPHOME_VERSION;
@@ -159,10 +162,12 @@ void MQTTClientComponent::send_device_info_() {
 #endif
 
 #ifdef USE_API_NOISE
-        if (api::global_api_server->get_noise_ctx()->has_psk()) {
-          root["api_encryption"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
-        } else {
-          root["api_encryption_supported"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
+        if (api::global_api_server->is_enabled()) {
+          if (api::global_api_server->get_noise_ctx()->has_psk()) {
+            root["api_encryption"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
+          } else {
+            root["api_encryption_supported"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
+          }
         }
 #endif
       },
