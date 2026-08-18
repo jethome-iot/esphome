@@ -158,8 +158,9 @@ async def to_code(config):
     # Dynamic values are those that cannot be stored in flash at compile time
     dynamic_txt_count = 0
     if "api" in CORE.config:
-        # Always: get_mac_address()
-        dynamic_txt_count += 1
+        # get_mac_address(), plus friendly_name — unconditional, because a run-time
+        # rename can fill that slot on a config compiled without a friendly_name:
+        dynamic_txt_count += 2
     # User-provided templatable TXT values (only lambdas, not static strings)
     dynamic_txt_count += sum(
         1
