@@ -253,6 +253,9 @@ class MQTTClientComponent : public Component {
   void enable();
   void disable();
 
+  /// Re-announce device info and every child's discovery + state, e.g. after a rename.
+  void resend_discovery();
+
   void on_shutdown() override;
 
   void set_broker_address(const std::string &address) { this->credentials_.address = address; }

@@ -568,6 +568,16 @@ void MQTTClientComponent::disable() {
   this->on_shutdown();
 }
 
+void MQTTClientComponent::resend_discovery() {
+  if (!this->is_connected())
+    return;
+  ESP_LOGD(TAG, "Re-announcing discovery");
+  // The same pair check_connected() runs on a fresh connection.
+  this->send_device_info_();
+  for (MQTTComponent *component : this->children_)
+    component->schedule_resend_state();
+}
+
 /** Check if the message topic matches the given subscription topic
  *
  * INFO: MQTT spec mandates that topics must not be empty and must be valid NULL-terminated UTF-8 strings.

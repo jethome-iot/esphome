@@ -94,7 +94,8 @@ void MDNSComponent::compile_records_() {
     txt_records.reserve(txt_count);
 
     if (!friendly_name_empty) {
-      txt_records.push_back({MDNS_STR(TXT_FRIENDLY_NAME), MDNS_STR(friendly_name.c_str())});
+      // Owned copy, like the MAC below — App::set_friendly_name() can reallocate the original.
+      txt_records.push_back({MDNS_STR(TXT_FRIENDLY_NAME), MDNS_STR(this->add_dynamic_txt_value(friendly_name))});
     }
 #ifdef USE_VERSION_BANNER
     txt_records.push_back({MDNS_STR(TXT_VERSION), MDNS_STR(VALUE_VERSION)});
