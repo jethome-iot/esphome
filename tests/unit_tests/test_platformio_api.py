@@ -86,6 +86,40 @@ def test_idedata_extra_flash_images_empty(setup_core: Path) -> None:
     assert images == []
 
 
+@pytest.mark.parametrize(
+    ("flasher_args", "expected"),
+    [
+        pytest.param({"app": {"offset": "0x40000"}}, "0x40000", id="non_default_table"),
+        pytest.param({"app": {"offset": "0x10000"}}, "0x10000", id="default_table"),
+        # A table whose rows carry no explicit offset column makes PlatformIO
+        # compute 0x0, which would flash the app over the bootloader.
+        pytest.param({"app": {"offset": "0x0"}}, None, id="zero_is_rejected"),
+        pytest.param({"app": {}}, None, id="no_offset_key"),
+        pytest.param({}, None, id="no_app_key"),
+        pytest.param({"app": {"offset": "nonsense"}}, None, id="unparsable"),
+    ],
+)
+def test_idedata_application_offset(
+    setup_core: Path, flasher_args: dict, expected: str | None
+) -> None:
+    """Test application_offset reads ESP-IDF's own account of the partition table."""
+    build_dir = setup_core / "build" / "test"
+    build_dir.mkdir(parents=True, exist_ok=True)
+    (build_dir / "flasher_args.json").write_text(json.dumps(flasher_args))
+    idedata = platformio_api.IDEData({"prog_path": str(build_dir / "firmware.elf")})
+
+    assert idedata.application_offset == expected
+
+
+def test_idedata_application_offset_without_flasher_args(setup_core: Path) -> None:
+    """Test application_offset is None when the platform writes no flasher_args.json."""
+    build_dir = setup_core / "build" / "test"
+    build_dir.mkdir(parents=True, exist_ok=True)
+    idedata = platformio_api.IDEData({"prog_path": str(build_dir / "firmware.elf")})
+
+    assert idedata.application_offset is None
+
+
 def test_idedata_cc_path(setup_core: Path) -> None:
     """Test IDEData.cc_path returns compiler path."""
     CORE.build_path = setup_core / "build" / "test"

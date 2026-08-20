@@ -490,7 +490,12 @@ def upload_using_esptool(
     else:
         idedata = platformio_api.get_idedata(config)
 
-        firmware_offset = "0x10000" if CORE.is_esp32 else "0x0"
+        # 0x10000 only under the default table; elsewhere it overlaps another partition.
+        # ESP32 only — application_offset reads a file no other platform writes.
+        if CORE.is_esp32:
+            firmware_offset = idedata.application_offset or "0x10000"
+        else:
+            firmware_offset = "0x0"
         flash_images = [
             platformio_api.FlashImage(
                 path=idedata.firmware_bin_path, offset=firmware_offset

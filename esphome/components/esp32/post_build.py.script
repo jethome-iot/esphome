@@ -4,7 +4,32 @@ import itertools  # noqa: E402
 import json  # noqa: E402
 import os  # noqa: E402
 import pathlib  # noqa: E402
+import shlex  # noqa: E402
 import shutil  # noqa: E402
+import subprocess  # noqa: E402
+
+
+# Where the bootloader goes when nothing else says; not the same on every variant.
+BOOTLOADER_OFFSETS = {
+    "esp32": 0x1000,
+    "esp32s2": 0x1000,
+    "esp32p4": 0x2000,
+    "esp32c5": 0x2000,
+}
+
+
+def app_offset(flash_data):
+    """Where the app belongs per flasher_args.json, falling back to the default layout.
+
+    Zero is no answer, not an offset: it is what a table with no offset column yields.
+    """
+    try:
+        offset = flash_data["app"]["offset"]
+        if not int(offset, 16):
+            return "0x10000"
+    except (TypeError, KeyError, ValueError):
+        return "0x10000"
+    return offset
 
 
 def merge_factory_bin(source, target, env):
@@ -20,6 +45,7 @@ def merge_factory_bin(source, target, env):
 
     sections = []
     flasher_args_path = build_dir / "flasher_args.json"
+    flash_data = None
 
     # 1. Try flasher_args.json
     if flasher_args_path.exists():
@@ -29,13 +55,23 @@ def merge_factory_bin(source, target, env):
             for addr, fname in sorted(
                 flash_data["flash_files"].items(), key=lambda kv: int(kv[0], 16)
             ):
+                # Paths in flasher_args.json are relative to the build directory.
                 file_path = pathlib.Path(fname)
-                if file_path.exists():
-                    sections.append((addr, str(file_path)))
-                else:
-                    print(f"Info: {file_path.name} not found - skipping")
+                if not file_path.is_absolute():
+                    file_path = build_dir / file_path
+                if not file_path.exists():
+                    # All or nothing: PlatformIO renames the images, so a partial match
+                    # means this description is not of this build.
+                    print(
+                        f"Info: {file_path.name} from flasher_args.json not found - "
+                        "ignoring it and falling back"
+                    )
+                    sections = []
+                    break
+                sections.append((addr, str(file_path)))
         except Exception as e:
             print(f"Warning: Failed to parse flasher_args.json - {e}")
+            sections = []
 
     # 2. Try FLASH_EXTRA_IMAGES if flasher_args.json failed or was empty
     if not sections:
@@ -62,23 +98,28 @@ def merge_factory_bin(source, target, env):
                 else:
                     print(f"Info: {file_path.name} not found — skipping")
         if sections:
-            # Append main firmware to sections
-            sections.append(("0x10000", firmware_path))
+            # flasher_args.json loses its file names to PlatformIO but keeps its
+            # offsets. $ESP32_APP_OFFSET is NOT usable here — it computes to 0x0.
+            sections.append((app_offset(flash_data), firmware_path))
 
-    # 3. Final fallback: guess standard image locations
+    # 3. Final fallback: guess the idf.py tree at its default offsets. All or nothing
+    #    again — only bootloader + table + app together make a bootable image.
     if not sections:
         print("Fallback: guessing legacy image paths")
-        guesses = [
-            ("0x0", build_dir / "bootloader" / "bootloader.bin"),
-            ("0x8000", build_dir / "partition_table" / "partition-table.bin"),
-            ("0xe000", build_dir / "ota_data_initial.bin"),
-            ("0x10000", firmware_path),
-        ]
-        for addr, file_path in guesses:
-            if file_path.exists():
-                sections.append((addr, file_path))
-            else:
-                print(f"Info: {file_path.name} not found — skipping")
+        bootloader = build_dir / "bootloader" / "bootloader.bin"
+        table = build_dir / "partition_table" / "partition-table.bin"
+        ota_data = build_dir / "ota_data_initial.bin"
+        missing = [p.name for p in (bootloader, table, firmware_path) if not p.exists()]
+        if missing:
+            print(f"Info: {', '.join(missing)} not found — cannot guess this layout")
+        else:
+            sections = [
+                (hex(BOOTLOADER_OFFSETS.get(chip, 0x0)), bootloader),
+                ("0x8000", table),
+                ("0x10000", firmware_path),
+            ]
+            if ota_data.exists():
+                sections.append(("0xe000", ota_data))
 
     # If no valid sections found, skip merge
     if not sections:
@@ -86,9 +127,8 @@ def merge_factory_bin(source, target, env):
         return
 
     output_path = firmware_path.with_suffix(".factory.bin")
-    python_exe = f'"{env.subst("$PYTHONEXE")}"'
     cmd = [
-        python_exe,
+        env.subst("$PYTHONEXE"),
         "-m",
         "esptool",
         "--chip",
@@ -103,14 +143,25 @@ def merge_factory_bin(source, target, env):
         cmd += [addr, str(file_path)]
 
     print(f"Merging binaries into {output_path}")
-    result = env.Execute(
-        env.VerboseAction(" ".join(cmd), "Merging binaries with esptool")
-    )
-
-    if result == 0:
-        print(f"Successfully created {output_path}")
+    for addr, file_path in sections:
+        print(f"  {addr:>10}  {pathlib.Path(file_path).name}")
+    # cmd.exe does not treat single quotes as quoting, so shlex would break paths
+    # with spaces on Windows rather than fix them.
+    parts = [str(part) for part in cmd]
+    if os.name == "nt":
+        cmd_line = subprocess.list2cmdline(parts)
     else:
+        cmd_line = " ".join(shlex.quote(part) for part in parts)
+
+    result = env.Execute(env.VerboseAction(cmd_line, "Merging binaries with esptool"))
+
+    if result != 0:
+        # Do not let the build report success without the artifact: .factory.bin is
+        # what the web flasher and the factory image are made of.
         print(f"Error: esptool merge-bin failed with code {result}")
+        env.Exit(1)
+
+    print(f"Successfully created {output_path}")
 
 
 def esp32_copy_ota_bin(source, target, env):
@@ -123,6 +174,7 @@ def esp32_copy_ota_bin(source, target, env):
     print(f"Copied firmware to {new_file_name}")
 
 
-# Run merge first, then ota copy second
-env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", merge_factory_bin)  # noqa: F821
+# The OTA copy runs first: a failed merge aborts the whole post-action list, and
+# .ota.bin has no stake in whether a factory image could be assembled.
 env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", esp32_copy_ota_bin)  # noqa: F821
+env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", merge_factory_bin)  # noqa: F821
