@@ -723,6 +723,11 @@ void MQTTClientComponent::set_discovery_info(std::string &&prefix, MQTTDiscovery
   this->discovery_info_.object_id_generator = object_id_generator;
   this->discovery_info_.retain = retain;
   this->discovery_info_.clean = clean;
+  this->discovery_prefix_configured_ = this->discovery_info_.prefix;
+}
+
+void MQTTClientComponent::set_discovery_enabled(bool enabled) {
+  this->discovery_info_.prefix = enabled ? this->discovery_prefix_configured_ : "";
 }
 
 void MQTTClientComponent::disable_last_will() {
@@ -739,6 +744,7 @@ void MQTTClientComponent::disable_discovery() {
       .unique_id_generator = MQTT_LEGACY_UNIQUE_ID_GENERATOR,
       .object_id_generator = MQTT_NONE_OBJECT_ID_GENERATOR,
   };
+  this->discovery_prefix_configured_ = "";
 }
 void MQTTClientComponent::on_shutdown() {
   if (!this->shutdown_message_.topic.empty()) {
