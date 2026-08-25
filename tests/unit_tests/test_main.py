@@ -859,6 +859,8 @@ def test_upload_using_esptool_path_conversion(
         platformio_api.FlashImage(path=tmp_path / "bootloader.bin", offset="0x1000"),
         platformio_api.FlashImage(path=tmp_path / "partitions.bin", offset="0x8000"),
     ]
+    # No offset reported: the ESP32 default applies
+    mock_idedata.application_offset = None
 
     mock_get_idedata.return_value = mock_idedata
 
@@ -913,6 +915,32 @@ def test_upload_using_esptool_path_conversion(
     partitions_path = cmd_list[partitions_offset_idx + 1]
     assert isinstance(partitions_path, str)
     assert partitions_path.endswith("partitions.bin")
+
+
+def test_upload_using_esptool_uses_reported_application_offset(
+    tmp_path: Path,
+    mock_run_external_command: Mock,
+    mock_get_idedata: Mock,
+) -> None:
+    """Test upload_using_esptool flashes the app where the build says it goes."""
+    setup_core(platform=PLATFORM_ESP32, tmp_path=tmp_path, name="test")
+    CORE.data[KEY_ESP32] = {KEY_VARIANT: VARIANT_ESP32}
+
+    mock_idedata = MagicMock(spec=platformio_api.IDEData)
+    mock_idedata.firmware_bin_path = tmp_path / "firmware.bin"
+    mock_idedata.extra_flash_images = []
+    mock_idedata.application_offset = "0x40000"
+    mock_get_idedata.return_value = mock_idedata
+
+    (tmp_path / "firmware.bin").touch()
+
+    config = {CONF_ESPHOME: {"platformio_options": {}}}
+    assert upload_using_esptool(config, "/dev/ttyUSB0", None, None) == 0
+
+    cmd_list = list(mock_run_external_command.call_args[0][1:])
+    firmware_offset_idx = cmd_list.index("write-flash") + 4
+    assert cmd_list[firmware_offset_idx] == "0x40000"
+    assert cmd_list[firmware_offset_idx + 1].endswith("firmware.bin")
 
 
 def test_upload_using_esptool_with_file_path(

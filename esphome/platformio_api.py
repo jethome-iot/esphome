@@ -361,6 +361,21 @@ class IDEData:
         ]
 
     @property
+    def application_offset(self) -> str | None:
+        """Where the app image goes, or None if nothing here can say.
+
+        Not PlatformIO's extra.application_offset: that is 0x0 for a table whose rows
+        carry no explicit offset column, which is what ESPHome generates by default.
+        """
+        flasher_args = self.firmware_bin_path.parent / "flasher_args.json"
+        try:
+            with flasher_args.open(encoding="utf-8") as f_handle:
+                offset = json.load(f_handle)["app"]["offset"]
+            return offset if int(offset, 16) else None
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    @property
     def cc_path(self) -> str:
         # For example /Users/<USER>/.platformio/packages/toolchain-xtensa32/bin/xtensa-esp32-elf-gcc
         return self.raw["cc_path"]

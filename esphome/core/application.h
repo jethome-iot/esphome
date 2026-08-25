@@ -306,6 +306,10 @@ class Application {
   /// Get the friendly name of this Application set by pre_setup().
   const std::string &get_friendly_name() const { return this->friendly_name_; }
 
+  /// Replace the friendly name at run time. NOT safe once an entity inherits it
+  /// (`name: ""`): set_name("") caches a StringRef into this very buffer.
+  void set_friendly_name(const std::string &friendly_name) { this->friendly_name_ = friendly_name; }
+
   /// Get the area of this Application set by pre_setup().
   const char *get_area() const {
 #ifdef USE_AREAS

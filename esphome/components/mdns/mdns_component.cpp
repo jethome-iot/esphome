@@ -59,7 +59,8 @@ void MDNSComponent::compile_records_() {
   MDNS_STATIC_CONST_CHAR(TXT_NETWORK, "network");
   MDNS_STATIC_CONST_CHAR(VALUE_BOARD, ESPHOME_BOARD);
 
-  if (api::global_api_server != nullptr) {
+  // A disabled server has no socket; advertising it would point clients at a closed port.
+  if (api::global_api_server != nullptr && api::global_api_server->is_enabled()) {
     auto &service = this->services_.emplace_next();
     service.service_type = MDNS_STR(SERVICE_ESPHOMELIB);
     service.proto = MDNS_STR(SERVICE_TCP);
@@ -93,7 +94,8 @@ void MDNSComponent::compile_records_() {
     txt_records.reserve(txt_count);
 
     if (!friendly_name_empty) {
-      txt_records.push_back({MDNS_STR(TXT_FRIENDLY_NAME), MDNS_STR(friendly_name.c_str())});
+      // Owned copy, like the MAC below — App::set_friendly_name() can reallocate the original.
+      txt_records.push_back({MDNS_STR(TXT_FRIENDLY_NAME), MDNS_STR(this->add_dynamic_txt_value(friendly_name))});
     }
 #ifdef USE_VERSION_BANNER
     txt_records.push_back({MDNS_STR(TXT_VERSION), MDNS_STR(VALUE_VERSION)});
@@ -170,21 +172,24 @@ void MDNSComponent::compile_records_() {
   web_service.port = USE_WEBSERVER_PORT;
 #endif
 
-#if !defined(USE_API) && !defined(USE_PROMETHEUS) && !defined(USE_WEBSERVER) && !defined(USE_MDNS_EXTRA_SERVICES)
+#if !defined(USE_PROMETHEUS) && !defined(USE_WEBSERVER) && !defined(USE_MDNS_EXTRA_SERVICES)
   MDNS_STATIC_CONST_CHAR(SERVICE_HTTP, "_http");
-#ifdef USE_VERSION_BANNER
+#if defined(USE_VERSION_BANNER) && !defined(USE_API)
+  // With USE_API the same constant is already declared above.
   MDNS_STATIC_CONST_CHAR(TXT_VERSION, "version");
 #endif
 
-  // Publish "http" service if not using native API or any other services
-  // This is just to have *some* mDNS service so that .local resolution works
-  auto &fallback_service = this->services_.emplace_next();
-  fallback_service.service_type = MDNS_STR(SERVICE_HTTP);
-  fallback_service.proto = MDNS_STR(SERVICE_TCP);
-  fallback_service.port = USE_WEBSERVER_PORT;
+  // Publish "http" if nothing else was advertised, so .local resolution still works.
+  // Runtime, not just compile-time: an api-only build ends up empty when it is disabled.
+  if (this->services_.empty()) {
+    auto &fallback_service = this->services_.emplace_next();
+    fallback_service.service_type = MDNS_STR(SERVICE_HTTP);
+    fallback_service.proto = MDNS_STR(SERVICE_TCP);
+    fallback_service.port = USE_WEBSERVER_PORT;
 #ifdef USE_VERSION_BANNER
-  fallback_service.txt_records.push_back({MDNS_STR(TXT_VERSION), MDNS_STR(VALUE_VERSION)});
+    fallback_service.txt_records.push_back({MDNS_STR(TXT_VERSION), MDNS_STR(VALUE_VERSION)});
 #endif
+  }
 #endif
 }
 

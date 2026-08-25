@@ -125,7 +125,10 @@ void MQTTClientComponent::send_device_info_() {
           root["friendly_name"] = App.get_friendly_name();
         }
 #ifdef USE_API
-        root["port"] = api::global_api_server->get_port();
+        // A disabled server is not listening; discovery would aim at a closed socket.
+        if (api::global_api_server->is_enabled()) {
+          root["port"] = api::global_api_server->get_port();
+        }
 #endif
 #ifdef USE_VERSION_BANNER
         root["version"] = ESPHOME_VERSION;
@@ -159,10 +162,12 @@ void MQTTClientComponent::send_device_info_() {
 #endif
 
 #ifdef USE_API_NOISE
-        if (api::global_api_server->get_noise_ctx()->has_psk()) {
-          root["api_encryption"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
-        } else {
-          root["api_encryption_supported"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
+        if (api::global_api_server->is_enabled()) {
+          if (api::global_api_server->get_noise_ctx()->has_psk()) {
+            root["api_encryption"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
+          } else {
+            root["api_encryption_supported"] = "Noise_NNpsk0_25519_ChaChaPoly_SHA256";
+          }
         }
 #endif
       },
@@ -563,6 +568,16 @@ void MQTTClientComponent::disable() {
   this->on_shutdown();
 }
 
+void MQTTClientComponent::resend_discovery() {
+  if (!this->is_connected())
+    return;
+  ESP_LOGD(TAG, "Re-announcing discovery");
+  // The same pair check_connected() runs on a fresh connection.
+  this->send_device_info_();
+  for (MQTTComponent *component : this->children_)
+    component->schedule_resend_state();
+}
+
 /** Check if the message topic matches the given subscription topic
  *
  * INFO: MQTT spec mandates that topics must not be empty and must be valid NULL-terminated UTF-8 strings.
@@ -708,6 +723,11 @@ void MQTTClientComponent::set_discovery_info(std::string &&prefix, MQTTDiscovery
   this->discovery_info_.object_id_generator = object_id_generator;
   this->discovery_info_.retain = retain;
   this->discovery_info_.clean = clean;
+  this->discovery_prefix_configured_ = this->discovery_info_.prefix;
+}
+
+void MQTTClientComponent::set_discovery_enabled(bool enabled) {
+  this->discovery_info_.prefix = enabled ? this->discovery_prefix_configured_ : "";
 }
 
 void MQTTClientComponent::disable_last_will() {
@@ -724,6 +744,7 @@ void MQTTClientComponent::disable_discovery() {
       .unique_id_generator = MQTT_LEGACY_UNIQUE_ID_GENERATOR,
       .object_id_generator = MQTT_NONE_OBJECT_ID_GENERATOR,
   };
+  this->discovery_prefix_configured_ = "";
 }
 void MQTTClientComponent::on_shutdown() {
   if (!this->shutdown_message_.topic.empty()) {

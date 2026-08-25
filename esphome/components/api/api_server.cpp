@@ -34,6 +34,13 @@ APIServer::APIServer() {
 }
 
 void APIServer::setup() {
+  if (!this->enable_on_boot_) {
+    // No socket and no reboot timeout; the object stays alive for its consumers.
+    ESP_LOGCONFIG(TAG, "Disabled by configuration");
+    this->disable_loop();
+    return;
+  }
+
   this->setup_controller();
 
 #ifdef USE_API_NOISE
@@ -219,6 +226,10 @@ void APIServer::loop() {
 }
 
 void APIServer::dump_config() {
+  if (!this->enable_on_boot_) {
+    ESP_LOGCONFIG(TAG, "Server: disabled");
+    return;
+  }
   ESP_LOGCONFIG(TAG,
                 "Server:\n"
                 "  Address: %s:%u\n"
