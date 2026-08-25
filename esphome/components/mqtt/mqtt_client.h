@@ -132,6 +132,8 @@ class MQTTClientComponent : public Component {
   const MQTTDiscoveryInfo &get_discovery_info() const;
   /// Globally disable Home Assistant discovery.
   void disable_discovery();
+  /// Flip discovery at run time; off keeps the configured prefix so a later on can restore it.
+  void set_discovery_enabled(bool enabled);
   bool is_discovery_enabled() const;
   bool is_discovery_ip_enabled() const;
 
@@ -314,6 +316,8 @@ class MQTTClientComponent : public Component {
       .unique_id_generator = MQTT_LEGACY_UNIQUE_ID_GENERATOR,
       .object_id_generator = MQTT_NONE_OBJECT_ID_GENERATOR,
   };
+  /// What set_discovery_enabled(true) restores; empty once discovery is off at build time.
+  std::string discovery_prefix_configured_{"homeassistant"};
   std::string topic_prefix_{};
   bool topic_prefix_auto_{true};
   bool birth_message_auto_{true};
