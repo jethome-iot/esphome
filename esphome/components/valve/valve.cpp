@@ -32,7 +32,7 @@ const char *valve_operation_to_str(ValveOperation op) {
   }
 }
 
-Valve::Valve() : position{VALVE_OPEN} {}
+Valve::Valve() : EntityBase(EntityType::VALVE), position{VALVE_OPEN} {}
 
 ValveCall::ValveCall(Valve *parent) : parent_(parent) {}
 ValveCall &ValveCall::set_command(const char *command) {

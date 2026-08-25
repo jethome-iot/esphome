@@ -29,6 +29,7 @@ enum UpdateState : uint8_t {
 
 class UpdateEntity : public EntityBase, public EntityBase_DeviceClass {
  public:
+  UpdateEntity() : EntityBase(EntityType::UPDATE) {}
   void publish_state();
 
   void perform() { this->perform(false); }

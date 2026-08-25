@@ -24,6 +24,7 @@ enum AlarmControlPanelFeature : uint8_t {
 
 class AlarmControlPanel : public EntityBase {
  public:
+  AlarmControlPanel() : EntityBase(EntityType::ALARM_CONTROL_PANEL) {}
   /** Make a AlarmControlPanelCall
    *
    */

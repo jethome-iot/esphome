@@ -29,6 +29,7 @@ class Number;
  */
 class Number : public EntityBase {
  public:
+  Number() : EntityBase(EntityType::NUMBER) {}
   float state;
 
   void publish_state(float state);

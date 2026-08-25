@@ -142,6 +142,7 @@ class MediaPlayer : public EntityBase {
   MediaPlayerState state{MEDIA_PLAYER_STATE_NONE};
   float volume{1.0f};
 
+  MediaPlayer() : EntityBase(EntityType::MEDIA_PLAYER) {}
   MediaPlayerCall make_call() { return MediaPlayerCall(this); }
 
   void publish_state();

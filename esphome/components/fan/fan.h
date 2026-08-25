@@ -106,6 +106,7 @@ struct FanRestoreState {
 
 class Fan : public EntityBase {
  public:
+  Fan() : EntityBase(EntityType::FAN) {}
   /// The current on/off state of the fan.
   bool state{false};
   /// The current oscillation state of the fan.

@@ -33,6 +33,7 @@ class Select : public EntityBase {
   std::string state;
   SelectTraits traits;
 
+  Select() : EntityBase(EntityType::SELECT) {}
   void publish_state(const std::string &state);
 
   /// Instantiate a SelectCall object to modify this select component's state.
