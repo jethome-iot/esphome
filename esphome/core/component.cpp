@@ -238,7 +238,7 @@ void IRAM_ATTR HOT Component::enable_loop_soon_any_context() {
   // 2. No read-modify-write operations that could be interrupted
   // 3. No memory allocation, object construction, or function calls
   // 4. IRAM_ATTR ensures code is in IRAM, not flash (required for ISR execution)
-  // 5. Components are never destroyed, so no use-after-free concerns
+  // 5. Components registered with App are never destroyed, so no use-after-free concerns
   // 6. App is guaranteed to be initialized before any ISR could fire
   // 7. Multiple ISR/thread calls are safe - just sets the same flags to true
   // 8. Race condition with main loop is handled by clearing flag before processing

@@ -441,17 +441,12 @@ void HOT Scheduler::call(uint32_t now) {
       // Not reached timeout yet, done for this call
       break;
     }
-    // Don't run on failed components
-    if (item->component != nullptr && item->component->is_failed()) {
-      LockGuard guard{this->lock_};
-      this->pop_raw_();
-      continue;
-    }
-
     // Check if item is marked for removal
     // This handles two cases:
     // 1. Item was marked for removal after cleanup_() but before we got here
     // 2. Item is marked for removal but wasn't at the front of the heap during cleanup_()
+    // Must precede the is_failed() check below, as should_skip_item_() orders them: a merely marked item keeps a
+    // raw Component * that may already be freed.
 #ifdef ESPHOME_THREAD_MULTI_NO_ATOMICS
     // Multi-threaded platforms without atomics: must take lock to safely read remove flag
     {
@@ -471,6 +466,13 @@ void HOT Scheduler::call(uint32_t now) {
       continue;
     }
 #endif
+
+    // Don't run on failed components
+    if (item->component != nullptr && item->component->is_failed()) {
+      LockGuard guard{this->lock_};
+      this->pop_raw_();
+      continue;
+    }
 
 #ifdef ESPHOME_DEBUG_SCHEDULER
     const char *item_name = item->get_name();
