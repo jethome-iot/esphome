@@ -5,8 +5,20 @@ namespace ds2484 {
 static const char *const TAG = "ds2484.onewire";
 
 void DS2484OneWireBus::setup() {
-  this->reset_device();
-  this->search();
+  // Generous, because one attempt is a dozen transfers and any of them can lose a settling bus;
+  // an absent bridge NACKs the first write of every attempt, so it still costs microseconds.
+  for (uint8_t attempt = 0; attempt < 5; attempt++) {
+    if (attempt != 0) {
+      delay(5);
+    }
+    if (this->reset_device()) {
+      this->search();
+      return;
+    }
+  }
+  // Any stage of reset_device() can lose it, so the reason stays broad; searching an unusable
+  // bridge on top of that would only report a phantom held-low bus.
+  this->mark_failed("bridge did not initialize");
 }
 
 void DS2484OneWireBus::dump_config() {
